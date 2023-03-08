@@ -5,16 +5,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="Blackbird.Applications.Sdk.Common">
-      <HintPath>..\..\Applications_SDK\Applications_SDK\Blackbird.Applications.Sdk.Common\bin\Debug\net6.0\Blackbird.Applications.Sdk.Common.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
     <Folder Include="Connections\" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Blackbird.Applications.Sdk.Common" Version="1.0.1" />
     <PackageReference Include="Betalgo.OpenAI.GPT3" Version="6.7.2" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="7.0.0" />
