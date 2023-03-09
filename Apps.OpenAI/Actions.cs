@@ -52,6 +52,25 @@ namespace Apps.OpenAI
             return new EditResponse() { EditText = editResult };
         }
 
+        [Action]
+        public ChatResponse ChatMessageRequest(string organizationId, AuthenticationCredentialsProvider authenticationCredentialsProvider,
+            [ActionParameter] ChatRequest input)
+        {
+            var openAIService = GetOpenAIServiceSdk(organizationId, authenticationCredentialsProvider.Value);
+
+            var chatResult = openAIService.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
+            {
+                Messages = new List<ChatMessage>
+                {
+                    ChatMessage.FromUser(input.Message),
+                },
+                MaxTokens = input.MaximumTokens,
+                Model = Models.ChatGpt3_5Turbo
+            });
+
+            return new ChatResponse() { Message = chatResult.Result.Choices.FirstOrDefault().Message.Content };
+        }
+
         private IOpenAIService GetOpenAIServiceSdk(string organization, string apiKey)
         {
             var connectionParams = new Dictionary<string, string>(){

@@ -1,0 +1,16 @@
+{
+  "definition": [
+    {
+      "name": "organizationId",
+      "description": "Your OpenAI organization ID"
+    },
+    {
+      "name": "apiKey",
+      "description": "Your OpenAI API key"
+    }
+  ],
+  "communicationWrapperType": "HttpWrapper",
+  "authenticationType": null,
+  "authenticationDefition": null,
+  "authenticationResponseMapping": null
+}
