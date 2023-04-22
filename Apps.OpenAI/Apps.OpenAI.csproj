@@ -5,12 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Connections\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Blackbird.Applications.Sdk.Common" Version="1.0.1" />
-    <PackageReference Include="Betalgo.OpenAI.GPT3" Version="6.7.2" />
+    <PackageReference Include="Betalgo.OpenAI.GPT3" Version="6.8.4" />
+    <PackageReference Include="Blackbird.Applications.Sdk.Common" Version="2.0.4" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="7.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />

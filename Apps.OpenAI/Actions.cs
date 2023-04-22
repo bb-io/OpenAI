@@ -14,18 +14,18 @@ using Newtonsoft.Json;
 using Apps.OpenAI.Model.Requests;
 using Apps.OpenAI.Model.Responses;
 using System.Linq;
-
+using Blackbird.Applications.Sdk.Common.Actions;
 
 namespace Apps.OpenAI
 {
     [ActionList]
     public class Actions
     {
-        [Action]
-        public CompletionResponse CreateCompletion(string organizationId, AuthenticationCredentialsProvider authenticationCredentialsProvider, 
+        [Action("Complete", Description = "Completes the given prompt")]
+        public CompletionResponse CreateCompletion(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders, 
             [ActionParameter] CompletionRequest input)
         {
-            var openAIService = GetOpenAIServiceSdk(organizationId, authenticationCredentialsProvider.Value);
+            var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
 
             var completionResult = openAIService.Completions.CreateCompletion(new CompletionCreateRequest
             {
@@ -37,11 +37,11 @@ namespace Apps.OpenAI
             return new CompletionResponse(){ CompletionText = completionResult };
         }
 
-        [Action]
-        public EditResponse CreateEdit(string organizationId, AuthenticationCredentialsProvider authenticationCredentialsProvider,
+        [Action("Edit", Description = "Edit the input text given an instruction prompt")]
+        public EditResponse CreateEdit(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
             [ActionParameter] EditRequest input)
         {
-            var openAIService = GetOpenAIServiceSdk(organizationId, authenticationCredentialsProvider.Value);
+            var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
 
             var editResult = openAIService.Edit.CreateEdit(new EditCreateRequest
             {
@@ -52,11 +52,11 @@ namespace Apps.OpenAI
             return new EditResponse() { EditText = editResult };
         }
 
-        [Action]
-        public ChatResponse ChatMessageRequest(string organizationId, AuthenticationCredentialsProvider authenticationCredentialsProvider,
+        [Action("Chat", Description = "Gives a response given a chat message")]
+        public ChatResponse ChatMessageRequest(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
             [ActionParameter] ChatRequest input)
         {
-            var openAIService = GetOpenAIServiceSdk(organizationId, authenticationCredentialsProvider.Value);
+            var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
 
             var chatResult = openAIService.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
             {
@@ -71,8 +71,11 @@ namespace Apps.OpenAI
             return new ChatResponse() { Message = chatResult.Result.Choices.FirstOrDefault().Message.Content };
         }
 
-        private IOpenAIService GetOpenAIServiceSdk(string organization, string apiKey)
+        private IOpenAIService CreateOpenAIServiceSdk(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders)
         {
+            var organization = authenticationCredentialsProviders.First(p => p.KeyName == "organizationId").Value;
+            var apiKey = authenticationCredentialsProviders.First(p => p.KeyName == "apiKey").Value;
+
             var connectionParams = new Dictionary<string, string>(){
                 {"Organization",  organization},
                 {"ApiKey", apiKey}
