@@ -2,10 +2,6 @@
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using OpenAI.GPT3.Extensions;
-using OpenAI.GPT3.Interfaces;
-using OpenAI.GPT3.ObjectModels.RequestModels;
-using OpenAI.GPT3.ObjectModels;
 using System.Collections.Generic;
 using System;
 using System.IO;
@@ -15,60 +11,175 @@ using Apps.OpenAI.Model.Requests;
 using Apps.OpenAI.Model.Responses;
 using System.Linq;
 using Blackbird.Applications.Sdk.Common.Actions;
+using OpenAI.ObjectModels.RequestModels;
+using OpenAI.ObjectModels;
+using OpenAI.Interfaces;
+using OpenAI.Extensions;
+using Apps.OpenAI.Models.Responses;
+using Apps.OpenAI.Models.Requests;
+using System.Threading.Tasks;
+using OpenAI.ObjectModels.ResponseModels;
 
 namespace Apps.OpenAI
 {
     [ActionList]
     public class Actions
     {
-        [Action("Complete", Description = "Completes the given prompt")]
-        public CompletionResponse CreateCompletion(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders, 
+        public static List<string> CompletionsModels = new List<string>()
+        {
+            "text-davinci-003", 
+            "text-davinci-002", 
+            "text-curie-001", 
+            "text-babbage-001", 
+            "text-ada-001"
+        };
+
+        public static List<string> ChatCompletionsModels = new List<string>()
+        {
+            "gpt-4",
+            "gpt-4-0613",
+            "gpt-4-32k", 
+            "gpt-4-32k-0613", 
+            "gpt-3.5-turbo", 
+            "gpt-3.5-turbo-0613", 
+            "gpt-3.5-turbo-16k", 
+            "gpt-3.5-turbo-16k-0613"
+        };
+
+        public static List<string> EditsModels = new List<string>()
+        {
+            "text-davinci-edit-001",
+            "code-davinci-edit-001"
+        };
+
+        [Action("Generate completion", Description = "Completes the given prompt")]
+        public async Task<CompletionResponse> CreateCompletion(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders, 
             [ActionParameter] CompletionRequest input)
         {
-            var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
+            if (!CompletionsModels.Contains(input.Model))
+                throw new Exception($"Not a valid model provided. Please provide either of: {String.Join(", ", CompletionsModels)}");
 
-            var completionResult = openAIService.Completions.CreateCompletion(new CompletionCreateRequest
+            var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);            
+
+            var completionResult = await openAIService.Completions.CreateCompletion(new CompletionCreateRequest
             {
                 Prompt = input.Prompt,
                 MaxTokens = input.MaximumTokens,
-                LogProbs = 1
-            }, Models.Davinci).Result.Choices.FirstOrDefault().Text;
+                LogProbs = 1,
+                Model = input.Model
+            });
+            ThrowOnError(completionResult);
 
-            return new CompletionResponse(){ CompletionText = completionResult };
+            return new CompletionResponse(){ CompletionText = completionResult.Choices.FirstOrDefault()?.Text };
         }
 
-        [Action("Edit", Description = "Edit the input text given an instruction prompt")]
-        public EditResponse CreateEdit(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+        [Action("Generate edit", Description = "Edit the input text given an instruction prompt")]
+        public async Task<EditResponse> CreateEdit(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
             [ActionParameter] EditRequest input)
         {
+            if (!EditsModels.Contains(input.Model))
+                throw new Exception($"Not a valid model provided. Please provide either of: {String.Join(", ", EditsModels)}");
+
             var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
 
-            var editResult = openAIService.Edit.CreateEdit(new EditCreateRequest
+            var editResult = await openAIService.Edit.CreateEdit(new EditCreateRequest
             {
                 Input = input.InputText,
-                Instruction = input.Instruction
-            }, Models.TextEditDavinciV1).Result.Choices.FirstOrDefault().Text;
+                Instruction = input.Instruction,
+                Model = input.Model
+            });
+            ThrowOnError(editResult);
 
-            return new EditResponse() { EditText = editResult };
+            return new EditResponse() { EditText = editResult.Choices.FirstOrDefault()?.Text };
         }
 
         [Action("Chat", Description = "Gives a response given a chat message")]
-        public ChatResponse ChatMessageRequest(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+        public async Task<ChatResponse> ChatMessageRequest(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
             [ActionParameter] ChatRequest input)
         {
+            if (!ChatCompletionsModels.Contains(input.Model))
+                throw new Exception($"Not a valid model provided. Please provide either of: {String.Join(", ", ChatCompletionsModels)}");
+
             var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
 
-            var chatResult = openAIService.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
+            var chatResult = await openAIService.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
             {
                 Messages = new List<ChatMessage>
                 {
                     ChatMessage.FromUser(input.Message),
                 },
                 MaxTokens = input.MaximumTokens,
-                Model = Models.ChatGpt3_5Turbo
+                Model = input.Model
             });
 
-            return new ChatResponse() { Message = chatResult.Result.Choices.FirstOrDefault().Message.Content };
+            ThrowOnError(chatResult);
+
+            return new ChatResponse() { Message = chatResult.Choices.FirstOrDefault()?.Message.Content };
+        }
+
+        [Action("Generate image", Description = "Generates an image based on a prompt")]
+        public async Task<ImageResponse> GenerateImage(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+            [ActionParameter] ImageRequest input)
+        {
+            var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
+
+            var imageResult = await openAIService.Image.CreateImage(new ImageCreateRequest
+            {
+                Prompt = input.Prompt,
+                ResponseFormat = StaticValues.ImageStatics.ResponseFormat.Url,
+                N = 1
+            });
+            ThrowOnError(imageResult);
+
+            return new ImageResponse() { Url = imageResult.Results.FirstOrDefault()?.Url };
+        }
+
+        [Action("Create transcription", Description = "Generates a transcription given an audio or video file. ( mp3, mp4, mpeg, mpga, m4a, wav, or webm)")]
+        public async Task<TranscriptionResponse> CreateTranscription(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+            [ActionParameter] TranscriptionRequest input)
+        {
+            var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
+
+            var audioResult = await openAIService.Audio.CreateTranscription(new AudioCreateTranscriptionRequest
+            {
+                FileName = input.FileName,
+                File = input.File,
+                Model = "whisper-1",
+                ResponseFormat = StaticValues.AudioStatics.ResponseFormat.VerboseJson,
+                Language = input.Language
+            });
+            ThrowOnError(audioResult);
+
+            return new TranscriptionResponse() { Transcription = audioResult.Text };
+        }
+
+        [Action("Create English translation", Description = "Generates a transcription given an audio or video file in English. ( mp3, mp4, mpeg, mpga, m4a, wav, or webm)")]
+        public async Task<TranscriptionResponse> CreateTranslation(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+            [ActionParameter] TranscriptionRequest input)
+        {
+            var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
+
+            var audioResult = await openAIService.Audio.CreateTranslation(new AudioCreateTranscriptionRequest
+            {
+                FileName = input.FileName,
+                File = input.File,
+                Model = "whisper-1",
+                ResponseFormat = StaticValues.AudioStatics.ResponseFormat.VerboseJson
+            });
+            ThrowOnError(audioResult);
+
+            return new TranscriptionResponse() { Transcription = audioResult.Text };
+        }
+
+        private void ThrowOnError(BaseResponse response)
+        {
+            if (!response.Successful)
+            {
+                if (response.Error == null)
+                    throw new Exception("Unknown error");
+
+                throw new Exception($"{response.Error.Code}: {response.Error.Message}");
+            }
         }
 
         private IOpenAIService CreateOpenAIServiceSdk(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders)

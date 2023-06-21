@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Blackbird.Applications.Sdk.Common;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,6 +11,8 @@ namespace Apps.OpenAI.Model.Requests
     {
         public string Message { get; set; }
 
+        [Display("Maximum tokens")]
         public int MaximumTokens { get; set; }
+        public string Model { get; set; }
     }
 }
