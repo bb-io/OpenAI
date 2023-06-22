@@ -73,6 +73,38 @@ namespace Apps.OpenAI
             return new CompletionResponse(){ CompletionText = completionResult.Choices.FirstOrDefault()?.Text };
         }
 
+        [Action("Create summary", Description = "Summarizes the input text")]
+        public async Task<SummaryResponse> CreateSummary(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+            [ActionParameter] SummaryRequest input)
+        {
+            if (!CompletionsModels.Contains(input.Model))
+                throw new Exception($"Not a valid model provided. Please provide either of: {String.Join(", ", CompletionsModels)}");
+
+            var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
+
+            var prompt = @$"
+                Summarize the following text.
+
+                Text:
+                """"""
+                {input.Text}
+                """"""
+
+                Summary:
+            ";
+
+            var completionResult = await openAIService.Completions.CreateCompletion(new CompletionCreateRequest
+            {
+                Prompt = prompt,
+                MaxTokens = input.MaximumTokens,
+                LogProbs = 1,
+                Model = input.Model
+            });
+            ThrowOnError(completionResult);
+
+            return new SummaryResponse() { Summary = completionResult.Choices.FirstOrDefault()?.Text };
+        }
+
         [Action("Generate edit", Description = "Edit the input text given an instruction prompt")]
         public async Task<EditResponse> CreateEdit(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
             [ActionParameter] EditRequest input)
@@ -106,6 +138,31 @@ namespace Apps.OpenAI
             {
                 Messages = new List<ChatMessage>
                 {
+                    ChatMessage.FromUser(input.Message),
+                },
+                MaxTokens = input.MaximumTokens,
+                Model = input.Model
+            });
+
+            ThrowOnError(chatResult);
+
+            return new ChatResponse() { Message = chatResult.Choices.FirstOrDefault()?.Message.Content };
+        }
+
+        [Action("Chat with system prompt", Description = "Gives a response given a chat message and a configurable system prompt")]
+        public async Task<ChatResponse> ChatWithSystemMessageRequest(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+            [ActionParameter] SystemChatRequest input)
+        {
+            if (!ChatCompletionsModels.Contains(input.Model))
+                throw new Exception($"Not a valid model provided. Please provide either of: {String.Join(", ", ChatCompletionsModels)}");
+
+            var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
+
+            var chatResult = await openAIService.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
+            {
+                Messages = new List<ChatMessage>
+                {
+                    ChatMessage.FromSystem(input.SystemPrompt),
                     ChatMessage.FromUser(input.Message),
                 },
                 MaxTokens = input.MaximumTokens,
