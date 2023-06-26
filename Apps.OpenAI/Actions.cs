@@ -174,6 +174,34 @@ namespace Apps.OpenAI
             return new ChatResponse() { Message = chatResult.Choices.FirstOrDefault()?.Message.Content };
         }
 
+        [Action("Post-edit MT", Description = "Review MT translated text and generate a post-edited version")]
+        public async Task<EditResponse> PostEditRequest(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+            [ActionParameter] PostEditRequest input)
+        {
+            if (!ChatCompletionsModels.Contains(input.Model))
+                throw new Exception($"Not a valid model provided. Please provide either of: {String.Join(", ", ChatCompletionsModels)}");
+
+            var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
+
+            var chatResult = await openAIService.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
+            {
+                Messages = new List<ChatMessage>
+                {
+                    ChatMessage.FromSystem("You are receiving a source text that was translated by NMT into target text. Review the target text and respond with edits of the target text as necessary."),
+                    ChatMessage.FromUser(@$"
+                        Source text: ""{input.SourceText}""
+                        Target text: ""{input.TargetText}""
+                    "),
+                },
+                MaxTokens = input.TargetText.Count(),
+                Model = input.Model
+            });
+
+            ThrowOnError(chatResult);
+
+            return new EditResponse() { EditText = chatResult.Choices.FirstOrDefault()?.Message.Content };
+        }
+
         [Action("Generate image", Description = "Generates an image based on a prompt")]
         public async Task<ImageResponse> GenerateImage(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
             [ActionParameter] ImageRequest input)
