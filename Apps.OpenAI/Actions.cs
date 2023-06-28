@@ -189,8 +189,15 @@ namespace Apps.OpenAI
                 {
                     ChatMessage.FromSystem("You are receiving a source text that was translated by NMT into target text. Review the target text and respond with edits of the target text as necessary."),
                     ChatMessage.FromUser(@$"
-                        Source text: ""{input.SourceText}""
-                        Target text: ""{input.TargetText}""
+                        Source text: 
+                        """"""
+                        {input.SourceText}
+                        """"""
+
+                        Target text: 
+                        """"""
+                        {input.TargetText}
+                        """"""
                     "),
                 },
                 MaxTokens = input.TargetText.Count(),
