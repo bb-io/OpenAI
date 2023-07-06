@@ -12,5 +12,8 @@ namespace Apps.OpenAI.Models.Requests
         [Display("File name")]
         public string FileName { get; set; }
         public byte[] File { get; set; }
+
+        [Display("Temperature")]
+        public float? Temperature { get; set; }
     }
 }

@@ -52,6 +52,13 @@ namespace Apps.OpenAI
             "code-davinci-edit-001"
         };
 
+        public static List<string> ImageSizes = new List<string>()
+        {
+            "256x256",
+            "512x512",
+            "1024x1024",
+        };
+
         [Action("Generate completion", Description = "Completes the given prompt")]
         public async Task<CompletionResponse> CreateCompletion(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders, 
             [ActionParameter] CompletionRequest input)
@@ -64,9 +71,13 @@ namespace Apps.OpenAI
             var completionResult = await openAIService.Completions.CreateCompletion(new CompletionCreateRequest
             {
                 Prompt = input.Prompt,
-                MaxTokens = input.MaximumTokens,
                 LogProbs = 1,
-                Model = input.Model
+                MaxTokens = input.MaximumTokens,
+                Model = input.Model,
+                TopP = input.TopP,
+                PresencePenalty = input.PresencePenalty,
+                FrequencyPenalty = input.FrequencyPenalty,
+                Temperature = input.Temperature
             });
             ThrowOnError(completionResult);
 
@@ -96,9 +107,13 @@ namespace Apps.OpenAI
             var completionResult = await openAIService.Completions.CreateCompletion(new CompletionCreateRequest
             {
                 Prompt = prompt,
-                MaxTokens = input.MaximumTokens,
                 LogProbs = 1,
-                Model = input.Model
+                MaxTokens = input.MaximumTokens,
+                Model = input.Model,
+                TopP = input.TopP,
+                PresencePenalty = input.PresencePenalty,
+                FrequencyPenalty = input.FrequencyPenalty,
+                Temperature = input.Temperature
             });
             ThrowOnError(completionResult);
 
@@ -118,7 +133,9 @@ namespace Apps.OpenAI
             {
                 Input = input.InputText,
                 Instruction = input.Instruction,
-                Model = input.Model
+                Model = input.Model,
+                Temperature = input.Temperature,
+                TopP = input.TopP,
             });
             ThrowOnError(editResult);
 
@@ -129,7 +146,7 @@ namespace Apps.OpenAI
         public async Task<ChatResponse> ChatMessageRequest(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
             [ActionParameter] ChatRequest input)
         {
-            if (!ChatCompletionsModels.Contains(input.Model))
+            if (input.Model != null && !ChatCompletionsModels.Contains(input.Model))
                 throw new Exception($"Not a valid model provided. Please provide either of: {String.Join(", ", ChatCompletionsModels)}");
 
             var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
@@ -141,7 +158,11 @@ namespace Apps.OpenAI
                     ChatMessage.FromUser(input.Message),
                 },
                 MaxTokens = input.MaximumTokens,
-                Model = input.Model
+                Model = input.Model,
+                TopP = input.TopP,
+                PresencePenalty = input.PresencePenalty,
+                FrequencyPenalty = input.FrequencyPenalty,
+                Temperature = input.Temperature
             });
 
             ThrowOnError(chatResult);
@@ -166,7 +187,11 @@ namespace Apps.OpenAI
                     ChatMessage.FromUser(input.Message),
                 },
                 MaxTokens = input.MaximumTokens,
-                Model = input.Model
+                Model = input.Model,
+                TopP = input.TopP,
+                PresencePenalty = input.PresencePenalty,
+                FrequencyPenalty = input.FrequencyPenalty,
+                Temperature = input.Temperature
             });
 
             ThrowOnError(chatResult);
@@ -209,13 +234,16 @@ namespace Apps.OpenAI
         public async Task<ImageResponse> GenerateImage(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
             [ActionParameter] ImageRequest input)
         {
+            if (input.Size != null && !ImageSizes.Contains(input.Size))
+                throw new Exception($"Not a valid size provided. Please provide either of: {String.Join(", ", ImageSizes)}");
             var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
 
             var imageResult = await openAIService.Image.CreateImage(new ImageCreateRequest
             {
                 Prompt = input.Prompt,
                 ResponseFormat = StaticValues.ImageStatics.ResponseFormat.Url,
-                N = 1
+                N = 1,
+                Size = input.Size,
             });
             ThrowOnError(imageResult);
 
@@ -234,7 +262,8 @@ namespace Apps.OpenAI
                 File = input.File,
                 Model = "whisper-1",
                 ResponseFormat = StaticValues.AudioStatics.ResponseFormat.VerboseJson,
-                Language = input.Language
+                Language = input.Language,
+                Temperature = input.Temperature,
             });
             ThrowOnError(audioResult);
 
@@ -252,7 +281,8 @@ namespace Apps.OpenAI
                 FileName = input.FileName,
                 File = input.File,
                 Model = "whisper-1",
-                ResponseFormat = StaticValues.AudioStatics.ResponseFormat.VerboseJson
+                ResponseFormat = StaticValues.AudioStatics.ResponseFormat.VerboseJson,
+                Temperature = input.Temperature,
             });
             ThrowOnError(audioResult);
 

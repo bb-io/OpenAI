@@ -13,6 +13,12 @@ namespace Apps.OpenAI.Model.Requests
         public string InputText { get; set; }
 
         public string Instruction { get; set; }
-        public string Model { get; set; }
+        public string? Model { get; set; }
+
+        [Display("Temperature")]
+        public float? Temperature { get; set; }
+
+        [Display("top_p")]
+        public float? TopP { get; set; }
     }
 }

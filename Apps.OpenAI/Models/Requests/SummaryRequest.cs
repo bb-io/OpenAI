@@ -10,9 +10,21 @@ namespace Apps.OpenAI.Models.Requests
     public class SummaryRequest
     {
         public string Text { get; set; }
-        public string Model { get; set; }
 
         [Display("Maximum tokens")]
-        public int MaximumTokens { get; set; }
+        public int? MaximumTokens { get; set; }
+        public string? Model { get; set; }
+
+        [Display("Temperature")]
+        public float? Temperature { get; set; }
+
+        [Display("top_p")]
+        public float? TopP { get; set; }
+
+        [Display("Presency Penality")]
+        public float? PresencePenalty { get; set; }
+
+        [Display("Frequency Penality")]
+        public float? FrequencyPenalty { get; set; }
     }
 }

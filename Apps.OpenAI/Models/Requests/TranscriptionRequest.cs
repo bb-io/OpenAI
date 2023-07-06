@@ -12,7 +12,11 @@ namespace Apps.OpenAI.Models.Requests
         [Display("File name")]
         public string FileName { get; set; }
         public byte[] File { get; set; }
+
         [Display("Language (ISO 639-1)")]
-        public string Language { get; set; }
+        public string? Language { get; set; }
+
+        [Display("Temperature")]
+        public float? Temperature { get; set; }
     }
 }
