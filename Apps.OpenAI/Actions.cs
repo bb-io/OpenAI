@@ -63,7 +63,8 @@ namespace Apps.OpenAI
         public async Task<CompletionResponse> CreateCompletion(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders, 
             [ActionParameter] CompletionRequest input)
         {
-            if (!CompletionsModels.Contains(input.Model))
+            var model = input.Model ?? "text-davinci-003";
+            if (!CompletionsModels.Contains(model))
                 throw new Exception($"Not a valid model provided. Please provide either of: {String.Join(", ", CompletionsModels)}");
 
             var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);            
@@ -73,7 +74,7 @@ namespace Apps.OpenAI
                 Prompt = input.Prompt,
                 LogProbs = 1,
                 MaxTokens = input.MaximumTokens,
-                Model = input.Model,
+                Model = model,
                 TopP = input.TopP,
                 PresencePenalty = input.PresencePenalty,
                 FrequencyPenalty = input.FrequencyPenalty,
@@ -88,7 +89,8 @@ namespace Apps.OpenAI
         public async Task<SummaryResponse> CreateSummary(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
             [ActionParameter] SummaryRequest input)
         {
-            if (!CompletionsModels.Contains(input.Model))
+            var model = input.Model ?? "text-davinci-003";
+            if (!CompletionsModels.Contains(model))
                 throw new Exception($"Not a valid model provided. Please provide either of: {String.Join(", ", CompletionsModels)}");
 
             var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
@@ -109,7 +111,7 @@ namespace Apps.OpenAI
                 Prompt = prompt,
                 LogProbs = 1,
                 MaxTokens = input.MaximumTokens,
-                Model = input.Model,
+                Model = model,
                 TopP = input.TopP,
                 PresencePenalty = input.PresencePenalty,
                 FrequencyPenalty = input.FrequencyPenalty,
@@ -124,7 +126,8 @@ namespace Apps.OpenAI
         public async Task<EditResponse> CreateEdit(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
             [ActionParameter] EditRequest input)
         {
-            if (!EditsModels.Contains(input.Model))
+            var model = input.Model ?? "text-davinci-edit-001";
+            if (!EditsModels.Contains(model))
                 throw new Exception($"Not a valid model provided. Please provide either of: {String.Join(", ", EditsModels)}");
 
             var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
@@ -133,7 +136,7 @@ namespace Apps.OpenAI
             {
                 Input = input.InputText,
                 Instruction = input.Instruction,
-                Model = input.Model,
+                Model = model,
                 Temperature = input.Temperature,
                 TopP = input.TopP,
             });
@@ -146,7 +149,8 @@ namespace Apps.OpenAI
         public async Task<ChatResponse> ChatMessageRequest(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
             [ActionParameter] ChatRequest input)
         {
-            if (input.Model != null && !ChatCompletionsModels.Contains(input.Model))
+            var model = input.Model ?? "gpt-3.5-turbo";
+            if (!ChatCompletionsModels.Contains(model))
                 throw new Exception($"Not a valid model provided. Please provide either of: {String.Join(", ", ChatCompletionsModels)}");
 
             var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
@@ -158,7 +162,7 @@ namespace Apps.OpenAI
                     ChatMessage.FromUser(input.Message),
                 },
                 MaxTokens = input.MaximumTokens,
-                Model = input.Model,
+                Model = model,
                 TopP = input.TopP,
                 PresencePenalty = input.PresencePenalty,
                 FrequencyPenalty = input.FrequencyPenalty,
@@ -174,7 +178,8 @@ namespace Apps.OpenAI
         public async Task<ChatResponse> ChatWithSystemMessageRequest(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
             [ActionParameter] SystemChatRequest input)
         {
-            if (!ChatCompletionsModels.Contains(input.Model))
+            var model = input.Model ?? "gpt-3.5-turbo";
+            if (!ChatCompletionsModels.Contains(model))
                 throw new Exception($"Not a valid model provided. Please provide either of: {String.Join(", ", ChatCompletionsModels)}");
 
             var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
@@ -187,7 +192,7 @@ namespace Apps.OpenAI
                     ChatMessage.FromUser(input.Message),
                 },
                 MaxTokens = input.MaximumTokens,
-                Model = input.Model,
+                Model = model,
                 TopP = input.TopP,
                 PresencePenalty = input.PresencePenalty,
                 FrequencyPenalty = input.FrequencyPenalty,
@@ -203,7 +208,8 @@ namespace Apps.OpenAI
         public async Task<EditResponse> PostEditRequest(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
             [ActionParameter] PostEditRequest input)
         {
-            if (!ChatCompletionsModels.Contains(input.Model))
+            var model = input.Model ?? "gpt-3.5-turbo";
+            if (!ChatCompletionsModels.Contains(model))
                 throw new Exception($"Not a valid model provided. Please provide either of: {String.Join(", ", ChatCompletionsModels)}");
 
             var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
@@ -222,7 +228,7 @@ namespace Apps.OpenAI
                     "),
                 },
                 MaxTokens = input.TargetText.Count(),
-                Model = input.Model
+                Model = model
             });
 
             ThrowOnError(chatResult);
