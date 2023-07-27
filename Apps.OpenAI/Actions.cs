@@ -235,6 +235,38 @@ namespace Apps.OpenAI
 
             return new EditResponse() { EditText = chatResult.Choices.FirstOrDefault()?.Message.Content };
         }
+        
+        [Action("Get translation issues", Description = "Review text translation and generate a comment with the issue description")]
+        public async Task<EditResponse> GetTranslationIssues(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+            [ActionParameter] GetTranslationIssuesRequest input)
+        {
+            var model = input.Model ?? "gpt-3.5-turbo";
+            if (!ChatCompletionsModels.Contains(model))
+                throw new Exception($"Not a valid model provided. Please provide either of: {String.Join(", ", ChatCompletionsModels)}");
+
+            var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
+
+            var chatResult = await openAIService.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
+            {
+                Messages = new List<ChatMessage>
+                {
+                    ChatMessage.FromSystem("You are receiving a source text that was translated by NMT into target text. Review the target text and respond with the issue description."),
+                    ChatMessage.FromUser(@$"
+                        Source text: 
+                        {input.SourceText}
+
+                        Target text: 
+                        {input.TargetText}
+                    "),
+                },
+                MaxTokens = input.TargetText.Count(),
+                Model = model
+            });
+
+            ThrowOnError(chatResult);
+
+            return new EditResponse() { EditText = chatResult.Choices.FirstOrDefault()?.Message.Content };
+        }
 
         [Action("Generate image", Description = "Generates an image based on a prompt")]
         public async Task<ImageResponse> GenerateImage(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
