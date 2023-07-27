@@ -14,6 +14,9 @@ namespace Apps.OpenAI.Models.Requests
 
         [Display("Target text")]
         public string TargetText { get; set; }
-        public string? Model { get; set; }        
+        public string? Model { get; set; }
+
+        [Display("Additional prompt")]
+        public string? AdditionalPrompt { get; set; }
     }
 }

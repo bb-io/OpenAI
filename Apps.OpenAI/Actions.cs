@@ -149,7 +149,7 @@ namespace Apps.OpenAI
         public async Task<ChatResponse> ChatMessageRequest(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
             [ActionParameter] ChatRequest input)
         {
-            var model = input.Model ?? "gpt-3.5-turbo";
+            var model = input.Model ?? "gpt-4";
             if (!ChatCompletionsModels.Contains(model))
                 throw new Exception($"Not a valid model provided. Please provide either of: {String.Join(", ", ChatCompletionsModels)}");
 
@@ -178,7 +178,7 @@ namespace Apps.OpenAI
         public async Task<ChatResponse> ChatWithSystemMessageRequest(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
             [ActionParameter] SystemChatRequest input)
         {
-            var model = input.Model ?? "gpt-3.5-turbo";
+            var model = input.Model ?? "gpt-4";
             if (!ChatCompletionsModels.Contains(model))
                 throw new Exception($"Not a valid model provided. Please provide either of: {String.Join(", ", ChatCompletionsModels)}");
 
@@ -208,17 +208,22 @@ namespace Apps.OpenAI
         public async Task<EditResponse> PostEditRequest(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
             [ActionParameter] PostEditRequest input)
         {
-            var model = input.Model ?? "gpt-3.5-turbo";
+            var model = input.Model ?? "gpt-4";
             if (!ChatCompletionsModels.Contains(model))
                 throw new Exception($"Not a valid model provided. Please provide either of: {String.Join(", ", ChatCompletionsModels)}");
 
             var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
 
+            var prompt = "You are receiving a source text that was translated by NMT into target text. Review the target text and respond with edits of the target text as necessary.";
+
+            if (input.AdditionalPrompt != null)
+                prompt = $"{prompt} {input.AdditionalPrompt}";
+
             var chatResult = await openAIService.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
             {
                 Messages = new List<ChatMessage>
                 {
-                    ChatMessage.FromSystem("You are receiving a source text that was translated by NMT into target text. Review the target text and respond with edits of the target text as necessary."),
+                    ChatMessage.FromSystem(prompt),
                     ChatMessage.FromUser(@$"
                         Source text: 
                         {input.SourceText}
@@ -240,7 +245,7 @@ namespace Apps.OpenAI
         public async Task<ChatResponse> GetTranslationIssues(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
             [ActionParameter] GetTranslationIssuesRequest input)
         {
-            var model = input.Model ?? "gpt-3.5-turbo";
+            var model = input.Model ?? "gpt-4";
             if (!ChatCompletionsModels.Contains(model))
                 throw new Exception($"Not a valid model provided. Please provide either of: {String.Join(", ", ChatCompletionsModels)}");
 
