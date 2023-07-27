@@ -237,7 +237,7 @@ namespace Apps.OpenAI
         }
         
         [Action("Get translation issues", Description = "Review text translation and generate a comment with the issue description")]
-        public async Task<EditResponse> GetTranslationIssues(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+        public async Task<ChatResponse> GetTranslationIssues(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
             [ActionParameter] GetTranslationIssuesRequest input)
         {
             var model = input.Model ?? "gpt-3.5-turbo";
@@ -265,7 +265,7 @@ namespace Apps.OpenAI
 
             ThrowOnError(chatResult);
 
-            return new EditResponse() { EditText = chatResult.Choices.FirstOrDefault()?.Message.Content };
+            return new() { Message = chatResult.Choices.FirstOrDefault()?.Message.Content };
         }
 
         [Action("Generate image", Description = "Generates an image based on a prompt")]
