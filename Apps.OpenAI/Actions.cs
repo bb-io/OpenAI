@@ -51,6 +51,27 @@ namespace Apps.OpenAI
             "text-davinci-edit-001",
             "code-davinci-edit-001"
         };
+        
+        public static List<string> EmbedModels = new List<string>()
+        {
+            "text-embedding-ada-002",
+            "text-similarity-ada-001",
+            "text-similarity-babbage-001",
+            "text-similarity-curie-001",
+            "text-similarity-davinci-001",
+            "text-search-ada-doc-001",
+            "text-search-ada-query-001",
+            "text-search-babbage-doc-001",
+            "text-search-babbage-query-001",
+            "text-search-curie-doc-001",
+            "text-search-curie-query-001",
+            "text-search-davinci-doc-001",
+            "text-search-davinci-query-001",
+            "code-search-ada-code-001",
+            "code-search-ada-text-001",
+            "code-search-babbage-code-001",
+            "code-search-babbage-text-001"
+        };
 
         public static List<string> ImageSizes = new List<string>()
         {
@@ -330,6 +351,28 @@ namespace Apps.OpenAI
             ThrowOnError(audioResult);
 
             return new TranscriptionResponse() { Transcription = audioResult.Text };
+        }
+
+        [Action("Create embedding", Description = "Generate an embedding for a text provided. An embedding is a list of " +
+                                                  "floating point numbers that captures semantic information about the " +
+                                                  "text that it represents.")]
+        public async Task<EmbeddingResponse> CreateEmbedding(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+            [ActionParameter] EmbeddingRequest input)
+        {
+            var model = input.Model ?? "text-embedding-ada-002";
+            if (!EmbedModels.Contains(model))
+                throw new Exception($"Not a valid model provided. Please provide either of: {String.Join(", ", EmbedModels)}");
+
+            var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
+
+            var embedResult = await openAIService.Embeddings.CreateEmbedding(new EmbeddingCreateRequest
+            {
+                Input = input.Text,
+                Model = model
+            });
+            ThrowOnError(embedResult);
+
+            return new() { Embedding = embedResult.Data.First().Embedding };
         }
 
         private void ThrowOnError(BaseResponse response)
