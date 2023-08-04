@@ -19,6 +19,7 @@ using Apps.OpenAI.Models.Responses;
 using Apps.OpenAI.Models.Requests;
 using System.Threading.Tasks;
 using OpenAI.ObjectModels.ResponseModels;
+using TiktokenSharp;
 
 namespace Apps.OpenAI
 {
@@ -373,6 +374,39 @@ namespace Apps.OpenAI
             ThrowOnError(embedResult);
 
             return new() { Embedding = embedResult.Data.First().Embedding };
+        }
+        
+        [Action("Localize text", Description = "Localize the text provided")]
+        public async Task<ChatResponse> LocalizeText(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+            [ActionParameter] LocalizeTextRequest input)
+        {
+            var model = input.Model ?? "gpt-4";
+            if (!ChatCompletionsModels.Contains(model))
+                throw new Exception($"Not a valid model provided. Please provide either of: {String.Join(", ", ChatCompletionsModels)}");
+
+            var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
+
+            var prompt = @$"
+                    Original text: {input.Text}
+                    Locale: {input.Locale}
+                    Localized text:
+                    ";
+            var tikToken = await TikToken.GetEncodingAsync("cl100k_base");
+            var maximumTokensNumber = tikToken.Encode(input.Text).Count + 100;
+            
+            var chatResult = await openAIService.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
+            {
+                Messages = new List<ChatMessage>
+                {
+                    ChatMessage.FromUser(prompt),
+                },
+                MaxTokens = maximumTokensNumber,
+                Model = model,
+                Temperature = 0.1f
+            });
+            ThrowOnError(chatResult);
+
+            return new ChatResponse { Message = chatResult.Choices.FirstOrDefault()?.Message.Content };
         }
 
         private void ThrowOnError(BaseResponse response)
