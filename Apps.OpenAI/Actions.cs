@@ -236,7 +236,9 @@ namespace Apps.OpenAI
 
             var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
 
-            var prompt = "You are receiving a source text that was translated by NMT into target text. Review the target text and respond with edits of the target text as necessary.";
+            var prompt = "You are receiving a source text that was translated by NMT into target text. Review the " +
+                         "target text and respond with edits of the target text as necessary. If no edits required, " +
+                         "respond with target text.";
 
             if (input.AdditionalPrompt != null)
                 prompt = $"{prompt} {input.AdditionalPrompt}";
