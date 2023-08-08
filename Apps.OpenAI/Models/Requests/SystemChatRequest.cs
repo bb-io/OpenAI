@@ -1,9 +1,6 @@
 ﻿using Blackbird.Applications.Sdk.Common;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Apps.OpenAI.DataSourceHandlers;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.OpenAI.Models.Requests
 {
@@ -11,10 +8,13 @@ namespace Apps.OpenAI.Models.Requests
     {
         [Display("System prompt")]
         public string SystemPrompt { get; set; }
+        
         public string Message { get; set; }
 
         [Display("Maximum tokens")]
         public int? MaximumTokens { get; set; }
+        
+        [DataSource(typeof(ChatCompletionsModelDataSourceHandler))]
         public string? Model { get; set; }
 
         [Display("Temperature")]
@@ -23,10 +23,10 @@ namespace Apps.OpenAI.Models.Requests
         [Display("top_p")]
         public float? TopP { get; set; }
 
-        [Display("Presency Penality")]
+        [Display("Presence penalty")]
         public float? PresencePenalty { get; set; }
 
-        [Display("Frequency Penality")]
+        [Display("Frequency penalty")]
         public float? FrequencyPenalty { get; set; }
     }
 }

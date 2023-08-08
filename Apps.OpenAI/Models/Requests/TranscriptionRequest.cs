@@ -1,9 +1,6 @@
-﻿using Blackbird.Applications.Sdk.Common;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Apps.OpenAI.DataSourceHandlers;
+using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.OpenAI.Models.Requests
 {
@@ -11,9 +8,11 @@ namespace Apps.OpenAI.Models.Requests
     {
         [Display("File name")]
         public string FileName { get; set; }
+        
         public byte[] File { get; set; }
 
         [Display("Language (ISO 639-1)")]
+        [DataSource(typeof(ISOLanguageDataSourceHandler))]
         public string? Language { get; set; }
 
         [Display("Temperature")]

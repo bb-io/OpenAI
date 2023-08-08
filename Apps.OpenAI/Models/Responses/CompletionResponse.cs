@@ -1,11 +1,6 @@
 ﻿using Blackbird.Applications.Sdk.Common;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Apps.OpenAI.Model.Responses
+namespace Apps.OpenAI.Models.Responses
 {
     public class CompletionResponse
     {

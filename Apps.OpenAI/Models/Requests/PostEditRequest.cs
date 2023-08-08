@@ -1,9 +1,6 @@
 ﻿using Blackbird.Applications.Sdk.Common;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Apps.OpenAI.DataSourceHandlers;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.OpenAI.Models.Requests
 {
@@ -14,6 +11,8 @@ namespace Apps.OpenAI.Models.Requests
 
         [Display("Target text")]
         public string TargetText { get; set; }
+        
+        [DataSource(typeof(ChatCompletionsModelDataSourceHandler))]
         public string? Model { get; set; }
 
         [Display("Additional prompt")]

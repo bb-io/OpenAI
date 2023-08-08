@@ -1,18 +1,17 @@
 ﻿using Blackbird.Applications.Sdk.Common;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Apps.OpenAI.DataSourceHandlers;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 
-namespace Apps.OpenAI.Model.Requests
+namespace Apps.OpenAI.Models.Requests
 {
     public class EditRequest
     {
-        [Display("Input Text")]
+        [Display("Input text")]
         public string InputText { get; set; }
 
         public string Instruction { get; set; }
+        
+        [DataSource(typeof(EditsModelDataSourceHandler))]
         public string? Model { get; set; }
 
         [Display("Temperature")]

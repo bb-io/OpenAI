@@ -1,4 +1,6 @@
-﻿using Blackbird.Applications.Sdk.Common;
+﻿using Apps.OpenAI.DataSourceHandlers;
+using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.OpenAI.Models.Requests
 {
@@ -7,6 +9,7 @@ namespace Apps.OpenAI.Models.Requests
         [Display("Text to embed")]
         public string Text { get; set; }
 
+        [DataSource(typeof(EmbedModelDataSourceHandler))]
         public string? Model { get; set; }
     }
 }
