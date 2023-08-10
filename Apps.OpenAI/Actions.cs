@@ -265,11 +265,11 @@ namespace Apps.OpenAI
             return new TranscriptionResponse { Transcription = audioResult.Text };
         }
 
-        [Action("Create English translation", Description = "Generates a transcription given an audio or video file in " +
-                                                            "English. ( mp3, mp4, mpeg, mpga, m4a, wav, or webm)")]
-        public async Task<TranscriptionResponse> CreateTranslation(
+        [Action("Create English translation", Description = "Generates a translation into English given an audio or " +
+                                                            "video file (mp3, mp4, mpeg, mpga, m4a, wav, or webm).")]
+        public async Task<TranslationResponse> CreateTranslation(
             IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
-            [ActionParameter] TranscriptionRequest input)
+            [ActionParameter] TranslationRequest input)
         {
             var openAIService = CreateOpenAIServiceSdk(authenticationCredentialsProviders);
 
@@ -283,7 +283,7 @@ namespace Apps.OpenAI
             });
             ThrowOnError(audioResult);
 
-            return new TranscriptionResponse { Transcription = audioResult.Text };
+            return new TranslationResponse { TranslatedText = audioResult.Text };
         }
 
         [Action("Create embedding", Description = "Generate an embedding for a text provided. An embedding is a list of " +
