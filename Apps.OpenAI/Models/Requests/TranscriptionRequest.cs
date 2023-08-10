@@ -16,6 +16,7 @@ namespace Apps.OpenAI.Models.Requests
         public string? Language { get; set; }
 
         [Display("Temperature")]
+        [DataSource(typeof(TemperatureDataSourceHandler))]
         public float? Temperature { get; set; }
     }
 }

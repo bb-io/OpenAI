@@ -15,15 +15,19 @@ namespace Apps.OpenAI.Models.Requests
         public string? Model { get; set; }
 
         [Display("Temperature")]
+        [DataSource(typeof(TemperatureDataSourceHandler))]
         public float? Temperature { get; set; }
 
         [Display("top_p")]
+        [DataSource(typeof(TopPDataSourceHandler))]
         public float? TopP { get; set; }
 
         [Display("Presence penalty")]
+        [DataSource(typeof(PenaltyDataSourceHandler))]
         public float? PresencePenalty { get; set; }
 
         [Display("Frequency penalty")]
+        [DataSource(typeof(PenaltyDataSourceHandler))]
         public float? FrequencyPenalty { get; set; }
     }
 }

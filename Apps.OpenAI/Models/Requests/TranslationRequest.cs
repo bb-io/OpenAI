@@ -1,4 +1,6 @@
-﻿using Blackbird.Applications.Sdk.Common;
+﻿using Apps.OpenAI.DataSourceHandlers;
+using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.OpenAI.Models.Requests
 {
@@ -10,6 +12,7 @@ namespace Apps.OpenAI.Models.Requests
         public byte[] File { get; set; }
 
         [Display("Temperature")]
+        [DataSource(typeof(TemperatureDataSourceHandler))]
         public float? Temperature { get; set; }
     }
 }

@@ -15,9 +15,11 @@ namespace Apps.OpenAI.Models.Requests
         public string? Model { get; set; }
 
         [Display("Temperature")]
+        [DataSource(typeof(TemperatureDataSourceHandler))]
         public float? Temperature { get; set; }
 
         [Display("top_p")]
+        [DataSource(typeof(TopPDataSourceHandler))]
         public float? TopP { get; set; }
     }
 }
