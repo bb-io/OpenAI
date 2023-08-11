@@ -16,8 +16,8 @@ namespace Apps.OpenAI.Connections
                 ConnectionUsage = ConnectionUsage.Actions,
                 ConnectionProperties = new List<ConnectionProperty>
                 {
-                    new("organizationId"),
-                    new("apiKey")
+                    new("Organization ID"),
+                    new("API key")
                 }
             }
         };
@@ -25,14 +25,14 @@ namespace Apps.OpenAI.Connections
         public IEnumerable<AuthenticationCredentialsProvider> CreateAuthorizationCredentialsProviders(
             Dictionary<string, string> values)
         {
-            var organizationId = values.First(v => v.Key == "organizationId");
+            var organizationId = values.First(v => v.Key == "Organization ID");
             yield return new AuthenticationCredentialsProvider(
                 AuthenticationCredentialsRequestLocation.None,
                 organizationId.Key,
                 organizationId.Value
             );
 
-            var apiKey = values.First(v => v.Key == "apiKey");
+            var apiKey = values.First(v => v.Key == "API key");
             yield return new AuthenticationCredentialsProvider(
                 AuthenticationCredentialsRequestLocation.None,
                 apiKey.Key,

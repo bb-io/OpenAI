@@ -350,8 +350,8 @@ namespace Apps.OpenAI
         private IOpenAIService CreateOpenAIServiceSdk(
             IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders)
         {
-            var organization = authenticationCredentialsProviders.First(p => p.KeyName == "organizationId").Value;
-            var apiKey = authenticationCredentialsProviders.First(p => p.KeyName == "apiKey").Value;
+            var organization = authenticationCredentialsProviders.First(p => p.KeyName == "Organization ID").Value;
+            var apiKey = authenticationCredentialsProviders.First(p => p.KeyName == "API key").Value;
 
             var connectionParams = new Dictionary<string, string>(){
                 {"Organization",  organization},
