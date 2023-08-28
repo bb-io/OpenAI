@@ -1,7 +1,6 @@
-﻿namespace Apps.OpenAI.Models.Responses
+﻿namespace Apps.OpenAI.Models.Responses;
+
+public class ImageResponse
 {
-    public class ImageResponse
-    {
-        public string Url { get; set; }
-    }
+    public string Url { get; set; }
 }

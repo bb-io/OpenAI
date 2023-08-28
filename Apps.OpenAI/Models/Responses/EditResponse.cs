@@ -1,10 +1,9 @@
 ﻿using Blackbird.Applications.Sdk.Common;
 
-namespace Apps.OpenAI.Models.Responses
+namespace Apps.OpenAI.Models.Responses;
+
+public class EditResponse
 {
-    public class EditResponse
-    {
-        [Display("Edited text")]
-        public string EditText { get; set; }
-    }
+    [Display("Edited text")]
+    public string EditText { get; set; }
 }

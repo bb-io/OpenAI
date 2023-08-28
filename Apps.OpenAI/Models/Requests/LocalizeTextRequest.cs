@@ -1,17 +1,15 @@
 ﻿using Apps.OpenAI.DataSourceHandlers;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 
-namespace Apps.OpenAI.Models.Requests
-{
-    public class LocalizeTextRequest
-    {
-        public string Text { get; set; }
-        
-        [DataSource(typeof(LocaleDataSourceHandler))]
-        public string Locale { get; set; }
-        
-        [DataSource(typeof(ChatCompletionsModelDataSourceHandler))]
-        public string? Model { get; set; }
-    }
-}
+namespace Apps.OpenAI.Models.Requests;
 
+public class LocalizeTextRequest
+{
+    public string Text { get; set; }
+        
+    [DataSource(typeof(LocaleDataSourceHandler))]
+    public string Locale { get; set; }
+        
+    [DataSource(typeof(ChatCompletionsModelDataSourceHandler))]
+    public string? Model { get; set; }
+}

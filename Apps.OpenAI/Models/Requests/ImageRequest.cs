@@ -1,13 +1,12 @@
 ﻿using Apps.OpenAI.DataSourceHandlers;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 
-namespace Apps.OpenAI.Models.Requests
+namespace Apps.OpenAI.Models.Requests;
+
+public class ImageRequest
 {
-    public class ImageRequest
-    {
-        public string Prompt { get; set; }
+    public string Prompt { get; set; }
         
-        [DataSource(typeof(ImageSizeDataSourceHandler))]
-        public string? Size { get; set; }
-    }
+    [DataSource(typeof(ImageSizeDataSourceHandler))]
+    public string? Size { get; set; }
 }

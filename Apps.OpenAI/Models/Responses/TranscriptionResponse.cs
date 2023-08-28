@@ -1,7 +1,6 @@
-﻿namespace Apps.OpenAI.Models.Responses
+﻿namespace Apps.OpenAI.Models.Responses;
+
+public class TranscriptionResponse
 {
-    public class TranscriptionResponse
-    {
-        public string Transcription { get; set; }
-    }
+    public string Transcription { get; set; }
 }
