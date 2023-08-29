@@ -185,7 +185,6 @@ public class Actions
                         {input.TargetText}
                     "),
             },
-            MaxTokens = input.TargetText.Count(),
             Model = model
         });
 
@@ -216,7 +215,6 @@ public class Actions
                         {input.TargetText}
                     "),
             },
-            MaxTokens = input.TargetText.Count(),
             Model = model
         });
         ThrowOnError(chatResult);
