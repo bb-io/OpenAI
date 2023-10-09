@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Globalization;
 using System.Linq;
 using Blackbird.Applications.Sdk.Common;
@@ -48,11 +47,10 @@ public class LocaleDataSourceHandler : BaseInvocable, IDataSourceHandler
 
     private Dictionary<string, string> GetLocales(string searchString)
     {
-        var locales = CultureInfo.GetCultures(CultureTypes.SpecificCultures)
+        return CultureInfo.GetCultures(CultureTypes.SpecificCultures)
             .Where(c => c.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase) 
                         || c.DisplayName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
             .Take(20)
             .ToDictionary(c => c.Name, c => c.DisplayName);
-        return locales;
     }
 }

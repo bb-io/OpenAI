@@ -10,7 +10,7 @@ public class ConnectionDefinition : IConnectionDefinition
 {
     public IEnumerable<ConnectionPropertyGroup> ConnectionPropertyGroups => new List<ConnectionPropertyGroup>
     {
-        new ConnectionPropertyGroup
+        new()
         {
             Name = "Developer API token",
             AuthenticationType = ConnectionAuthenticationType.Undefined,
@@ -18,7 +18,7 @@ public class ConnectionDefinition : IConnectionDefinition
             ConnectionProperties = new List<ConnectionProperty>
             {
                 new("Organization ID"),
-                new("API key")
+                new("API key") { Sensitive = true }
             }
         }
     };

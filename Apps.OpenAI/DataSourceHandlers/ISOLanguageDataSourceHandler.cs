@@ -8,15 +8,15 @@ using Blackbird.Applications.Sdk.Common.Invocation;
 
 namespace Apps.OpenAI.DataSourceHandlers;
 
-public class ISOLanguageDataSourceHandler : BaseInvocable, IDataSourceHandler
+public class IsoLanguageDataSourceHandler : BaseInvocable, IDataSourceHandler
 {
-    public ISOLanguageDataSourceHandler(InvocationContext invocationContext) : base(invocationContext)
+    public IsoLanguageDataSourceHandler(InvocationContext invocationContext) : base(invocationContext)
     {
     }
 
     public Dictionary<string, string> GetData(DataSourceContext context)
     {
-        var languages = CultureInfo.GetCultures(CultureTypes.NeutralCultures)
+        return CultureInfo.GetCultures(CultureTypes.NeutralCultures)
             .Where(c => c.Name.Length >= 2)
             .Where(c => context.SearchString == null 
                         || c.Name.Contains(context.SearchString, StringComparison.OrdinalIgnoreCase)
@@ -24,7 +24,5 @@ public class ISOLanguageDataSourceHandler : BaseInvocable, IDataSourceHandler
             .GroupBy(c => c.Name.Substring(0, 2), StringComparer.OrdinalIgnoreCase)
             .Take(20)
             .ToDictionary(g => g.Key, g => g.First().EnglishName);
-
-        return languages;
     }
 }

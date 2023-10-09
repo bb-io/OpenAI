@@ -15,10 +15,8 @@ public class TemperatureDataSourceHandler : BaseInvocable, IDataSourceHandler
 
     public Dictionary<string, string> GetData(DataSourceContext context)
     {
-        var temperatures = DataSourceHandlersExtensions.GenerateFormattedFloatArray(0.0f, 2.0f, 0.1f)
+        return DataSourceHandlersExtensions.GenerateFormattedFloatArray(0.0f, 2.0f, 0.1f)
             .Where(t => context.SearchString == null || t.Contains(context.SearchString))
             .ToDictionary(t => t, t => t);
-
-        return temperatures;
     }
 }

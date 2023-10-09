@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Apps.OpenAI.Models.Responses;
+namespace Apps.OpenAI.Models.Responses.Analysis;
 
 public class TokenizeTextResponse
 {

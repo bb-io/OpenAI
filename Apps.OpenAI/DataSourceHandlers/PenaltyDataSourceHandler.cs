@@ -15,10 +15,8 @@ public class PenaltyDataSourceHandler : BaseInvocable, IDataSourceHandler
 
     public Dictionary<string, string> GetData(DataSourceContext context)
     {
-        var penalties = DataSourceHandlersExtensions.GenerateFormattedFloatArray(-2.0f, 2.0f, 0.1f)
+        return DataSourceHandlersExtensions.GenerateFormattedFloatArray(-2.0f, 2.0f, 0.1f)
             .Where(p => context.SearchString == null || p.Contains(context.SearchString))
             .ToDictionary(p => p, p => p);
-
-        return penalties;
     }
 }

@@ -1,8 +1,8 @@
-﻿using Blackbird.Applications.Sdk.Common;
-using Apps.OpenAI.DataSourceHandlers;
+﻿using Apps.OpenAI.DataSourceHandlers;
+using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 
-namespace Apps.OpenAI.Models.Requests;
+namespace Apps.OpenAI.Models.Requests.Chat;
 
 public class SystemChatRequest
 {

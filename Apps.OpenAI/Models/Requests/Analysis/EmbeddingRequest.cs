@@ -2,7 +2,7 @@
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 
-namespace Apps.OpenAI.Models.Requests;
+namespace Apps.OpenAI.Models.Requests.Analysis;
 
 public class EmbeddingRequest
 {

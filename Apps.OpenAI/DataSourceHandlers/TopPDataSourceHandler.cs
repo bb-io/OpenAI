@@ -15,10 +15,8 @@ public class TopPDataSourceHandler : BaseInvocable, IDataSourceHandler
 
     public Dictionary<string, string> GetData(DataSourceContext context)
     {
-        var topPs = DataSourceHandlersExtensions.GenerateFormattedFloatArray(0.0f, 1.0f, 0.1f)
+        return DataSourceHandlersExtensions.GenerateFormattedFloatArray(0.0f, 1.0f, 0.1f)
             .Where(p => context.SearchString == null || p.Contains(context.SearchString))
             .ToDictionary(p => p, p => p);
-
-        return topPs;
     }
 }

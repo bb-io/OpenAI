@@ -1,4 +1,4 @@
-﻿namespace Apps.OpenAI.Models.Responses;
+﻿namespace Apps.OpenAI.Models.Responses.Image;
 
 public class ImageResponse
 {

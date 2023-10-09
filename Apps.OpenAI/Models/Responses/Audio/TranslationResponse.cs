@@ -1,6 +1,6 @@
 ﻿using Blackbird.Applications.Sdk.Common;
 
-namespace Apps.OpenAI.Models.Responses;
+namespace Apps.OpenAI.Models.Responses.Audio;
 
 public class TranslationResponse
 {

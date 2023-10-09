@@ -1,17 +1,17 @@
-﻿using Blackbird.Applications.Sdk.Common;
-using Apps.OpenAI.DataSourceHandlers;
+﻿using Apps.OpenAI.DataSourceHandlers;
+using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 
-namespace Apps.OpenAI.Models.Requests;
+namespace Apps.OpenAI.Models.Requests.Chat;
 
-public class ChatRequest
+public class SummaryRequest
 {
-    public string Message { get; set; }
+    public string Text { get; set; }
 
     [Display("Maximum tokens")]
     public int? MaximumTokens { get; set; }
         
-    [DataSource(typeof(ChatCompletionsModelDataSourceHandler))]
+    [DataSource(typeof(CompletionsModelDataSourceHandler))]
     public string? Model { get; set; }
 
     [Display("Temperature")]
