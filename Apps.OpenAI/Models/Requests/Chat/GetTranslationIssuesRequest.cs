@@ -11,7 +11,23 @@ public class GetTranslationIssuesRequest
 
     [Display("Target text")]
     public string TargetText { get; set; }
-    
-    [DataSource(typeof(ChatCompletionsModelDataSourceHandler))]
-    public string? Model { get; set; }  
+
+    [Display("Additional prompt")]
+    public string? AdditionalPrompt { get; set; }
+
+    [Display("Source langauge")]
+    public string? SourceLanguage { get; set; }
+
+    [Display("Target langauge")]
+    public string? TargetLanguage { get; set; }
+
+    [Display("Maximum tokens")]
+    public int? MaximumTokens { get; set; }
+
+    [DataSource(typeof(CompletionsModelDataSourceHandler))]
+    public string? Model { get; set; }
+
+    [Display("Temperature")]
+    [DataSource(typeof(TemperatureDataSourceHandler))]
+    public float? Temperature { get; set; }
 }

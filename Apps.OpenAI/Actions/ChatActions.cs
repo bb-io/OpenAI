@@ -199,12 +199,18 @@ public class ChatActions : OpenAiInvocable
     public async Task<ChatResponse> GetTranslationIssues([ActionParameter] GetTranslationIssuesRequest input)
     {
         var model = input.Model ?? "gpt-4";
+
+        var prompt = $"You are receiving a source text {(input.SourceLanguage != null ? $"written in {input.SourceLanguage} " : "")}that was translated by NMT into target text {(input.TargetLanguage != null ? $"written in {input.TargetLanguage}" : "")}. " +
+                     "Review the target text and respond with the issue description.";
+
+        if (input.AdditionalPrompt != null)
+            prompt = $"{prompt} {input.AdditionalPrompt}";
+
         var chatResult = await Client.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
         {
             Messages = new List<ChatMessage>
             {
-                ChatMessage.FromSystem("You are receiving a source text that was translated by NMT into target text. " +
-                                       "Review the target text and respond with the issue description."),
+                ChatMessage.FromSystem(prompt),
                 ChatMessage.FromUser(@$"
                         Source text: 
                         {input.SourceText}
@@ -213,7 +219,41 @@ public class ChatActions : OpenAiInvocable
                         {input.TargetText}
                     "),
             },
-            Model = model
+            Model = model,
+            MaxTokens = input.MaximumTokens ?? 5000,
+            Temperature = (float?)(input.Temperature ?? 0.5)
+        });
+        chatResult.ThrowOnError();
+
+        return new()
+        {
+            Message = chatResult.Choices.First().Message.Content
+        };
+    }
+
+    [Action("Perform LQA Analysis", Description = "Perform an LQA Analysis of the translation. The result will contain a text with issues if any.")]
+    public async Task<ChatResponse> GetLqaAnalysis([ActionParameter] GetTranslationIssuesRequest input)
+    {
+        var model = input.Model ?? "gpt-4";
+
+        var prompt = "You are an expert linguist and your task is to perform a Language Quality Assessment on input sentences. " +
+                     "Provide a quality rating for the original translation from 0 (completely bad) to 10 (perfect). " +
+                     "Perform an LQA analysis and use the MQM 2.0 format. For each issue found, specify the category, description of the issue, and severity. " +
+                     "Try to propose a correct translation that would have no LQA errors.";
+
+        if (input.AdditionalPrompt != null)
+            prompt = $"{prompt} {input.AdditionalPrompt}";
+
+        var chatResult = await Client.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
+        {
+            Messages = new List<ChatMessage>
+            {
+                ChatMessage.FromSystem(prompt),
+                ChatMessage.FromUser($"{(input.SourceLanguage != null ? $"The {input.SourceLanguage} " : "")}\"{input.SourceText}\" was translated as \"{input.TargetText}\"{(input.TargetLanguage != null ? $" into {input.TargetLanguage}" : "")}"),
+            },
+            Model = model,
+            MaxTokens = input.MaximumTokens ?? 5000,
+            Temperature = (float?)(input.Temperature ?? 0.5)
         });
         chatResult.ThrowOnError();
 
@@ -251,7 +291,7 @@ public class ChatActions : OpenAiInvocable
         {
             Message = chatResult.Choices.First().Message.Content
         };
-    }
+    }    
 
     #endregion
 }
