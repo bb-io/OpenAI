@@ -1,44 +1,43 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
-using Apps.OpenAI.Extensions;
-using Apps.OpenAI.Invocables;
+using Apps.OpenAI.Actions.Base;
+using Apps.OpenAI.Api;
+using Apps.OpenAI.Dtos;
+using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Analysis;
 using Apps.OpenAI.Models.Responses.Analysis;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Invocation;
-using OpenAI.Interfaces;
-using OpenAI.ObjectModels.RequestModels;
+using RestSharp;
 using TiktokenSharp;
 
 namespace Apps.OpenAI.Actions;
 
 [ActionList]
-public class TextAnalysisActions : OpenAiInvocable
+public class TextAnalysisActions : BaseActions
 {
-    private IOpenAIService Client { get; }
-
-    public TextAnalysisActions(InvocationContext invocationContext) : base(invocationContext)
-    {
-        Client = Creds.CreateOpenAiServiceSdk();
-    }
+    public TextAnalysisActions(InvocationContext invocationContext) : base(invocationContext) { }
 
     [Action("Create embedding", Description = "Generate an embedding for a text provided. An embedding is a list of " +
                                               "floating point numbers that captures semantic information about the " +
                                               "text that it represents.")]
-    public async Task<CreateEmbeddingResponse> CreateEmbedding([ActionParameter] EmbeddingRequest input)
+    public async Task<CreateEmbeddingResponse> CreateEmbedding([ActionParameter] ModelIdentifier modelIdentifier, 
+        [ActionParameter] EmbeddingRequest input)
     {
-        var model = input.Model ?? "text-embedding-ada-002";
-        var embedResult = await Client.Embeddings.CreateEmbedding(new EmbeddingCreateRequest
+        var model = modelIdentifier.ModelId ?? "text-embedding-ada-002";
+        
+        var request = new OpenAIRequest("/embeddings", Method.Post, Creds);
+        request.AddJsonBody(new
         {
-            Input = input.Text,
-            Model = model
+            model,
+            input = input.Text
         });
-        embedResult.ThrowOnError();
 
+        var response = await Client.ExecuteWithErrorHandling<DataDto<EmbeddingDto>>(request);
         return new()
         {
-            Embedding = embedResult.Data.First().Embedding
+            Embedding = response.Data.First().Embedding
         };
     }
 

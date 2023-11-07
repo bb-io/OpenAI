@@ -9,7 +9,4 @@ public class LocalizeTextRequest
         
     [DataSource(typeof(LocaleDataSourceHandler))]
     public string Locale { get; set; }
-        
-    [DataSource(typeof(ChatCompletionsModelDataSourceHandler))]
-    public string? Model { get; set; }
 }

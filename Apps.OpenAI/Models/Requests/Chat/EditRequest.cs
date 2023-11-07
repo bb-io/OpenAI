@@ -10,9 +10,6 @@ public class EditRequest
     public string InputText { get; set; }
 
     public string Instruction { get; set; }
-        
-    [DataSource(typeof(EditsModelDataSourceHandler))]
-    public string? Model { get; set; }
 
     [Display("Temperature")]
     [DataSource(typeof(TemperatureDataSourceHandler))]

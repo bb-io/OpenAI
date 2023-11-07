@@ -7,9 +7,6 @@ namespace Apps.OpenAI.Models.Requests.Audio;
 
 public class TranscriptionRequest
 {
-    [Display("File name")]
-    public string? FileName { get; set; }
-        
     public File File { get; set; }
 
     [Display("Language (ISO 639-1)")]
