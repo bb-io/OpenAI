@@ -1,43 +1,37 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
-using Apps.OpenAI.Extensions;
-using Apps.OpenAI.Invocables;
+using Apps.OpenAI.Actions.Base;
+using Apps.OpenAI.Api;
+using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Requests.Image;
 using Apps.OpenAI.Models.Responses.Image;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Invocation;
-using OpenAI.Interfaces;
-using OpenAI.ObjectModels;
-using OpenAI.ObjectModels.RequestModels;
+using RestSharp;
 
 namespace Apps.OpenAI.Actions;
 
 [ActionList]
-public class ImageActions : OpenAiInvocable
+public class ImageActions : BaseActions
 {
-    private IOpenAIService Client { get; }
-
-    public ImageActions(InvocationContext invocationContext) : base(invocationContext)
-    {
-        Client = Creds.CreateOpenAiServiceSdk();
-    }
+    public ImageActions(InvocationContext invocationContext) : base(invocationContext) { }
 
     [Action("Generate image", Description = "Generates an image based on a prompt")]
     public async Task<ImageResponse> GenerateImage([ActionParameter] ImageRequest input)
     {
-        var imageResult = await Client.Image.CreateImage(new ImageCreateRequest
+        var request = new OpenAIRequest("/images/generations", Method.Post, Creds);
+        request.AddJsonBody(new
         {
-            Prompt = input.Prompt,
-            ResponseFormat = StaticValues.ImageStatics.ResponseFormat.Url,
-            N = 1,
-            Size = input.Size,
+            prompt = input.Prompt,
+            response_format = "url",
+            size = input.Size ?? "1024x1024"
         });
-        imageResult.ThrowOnError();
 
+        var response = await Client.ExecuteWithErrorHandling<DataDto<ImageDataDto>>(request);
         return new()
         {
-            Url = imageResult.Results.FirstOrDefault()?.Url ?? throw new("Unable to create image")
+            Url = response.Data.FirstOrDefault()?.Url ?? throw new("Unable to create image")
         };
     }
 }

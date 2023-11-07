@@ -2,10 +2,12 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Apps.OpenAI.Extensions;
+using Apps.OpenAI.Api;
+using Apps.OpenAI.Dtos;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using RestSharp;
 
 namespace Apps.OpenAI.DataSourceHandlers;
 
@@ -18,12 +20,12 @@ public class ModelDataSourceHandler : BaseInvocable, IAsyncDataSourceHandler
     public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context,
         CancellationToken cancellationToken)
     {
-        var client = InvocationContext.AuthenticationCredentialsProviders.CreateOpenAiServiceSdk();
-        var models = await client.Models.ListModel(cancellationToken);
-        var modelsDictionary = models.Models
-            .Where(model => model.Owner != "openai-dev" && model.Owner != "openai-internal")
+        var client = new OpenAIClient();
+        var request = new OpenAIRequest("/models", Method.Get, InvocationContext.AuthenticationCredentialsProviders);
+        var models = await client.ExecuteWithErrorHandling<ModelsList>(request);
+        var modelsDictionary = models.Data
+            .Where(model => model.OwnedBy != "openai-dev" && model.OwnedBy != "openai-internal")
             .Where(model => context.SearchString == null || model.Id.Contains(context.SearchString))
-            .OrderByDescending(model => model.CreatedTime)
             .ToDictionary(model => model.Id, model => model.Id);
         return modelsDictionary;
     }

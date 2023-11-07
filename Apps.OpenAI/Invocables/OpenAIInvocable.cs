@@ -5,12 +5,12 @@ using Blackbird.Applications.Sdk.Common.Invocation;
 
 namespace Apps.OpenAI.Invocables;
 
-public class OpenAiInvocable : BaseInvocable
+public class OpenAIInvocable : BaseInvocable
 {
     public AuthenticationCredentialsProvider[] Creds 
         => InvocationContext.AuthenticationCredentialsProviders.ToArray();
 
-    public OpenAiInvocable(InvocationContext invocationContext) : base(invocationContext)
+    public OpenAIInvocable(InvocationContext invocationContext) : base(invocationContext)
     {
     }
 }
