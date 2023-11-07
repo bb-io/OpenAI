@@ -1,13 +1,17 @@
-﻿using System.Threading.Tasks;
+﻿using System.Linq;
+using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
 using Apps.OpenAI.Api;
 using Apps.OpenAI.Dtos;
+using Apps.OpenAI.Models.Identifiers;
+using Apps.OpenAI.Models.Requests;
 using Apps.OpenAI.Models.Requests.Audio;
 using Apps.OpenAI.Models.Responses.Audio;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using RestSharp;
+using File = Blackbird.Applications.Sdk.Common.Files.File;
 
 namespace Apps.OpenAI.Actions;
 
@@ -49,5 +53,30 @@ public class AudioActions : BaseActions
         {
             Transcription = response.Text
         };
+    }
+
+    [Action("Create speech", Description = "Generates audio from the text input.")]
+    public async Task<CreateSpeechResponse> CreateSpeech([ActionParameter] ModelIdentifier modelIdentifier, 
+        [ActionParameter] CreateSpeechRequest input)
+    {
+        var model = modelIdentifier.ModelId ?? "tts-1-hd";
+        var responseFormat = input.ResponseFormat ?? "mp3";
+
+        var request = new OpenAIRequest("/audio/speech", Method.Post, Creds);
+        request.AddJsonBody(new
+        {
+            model,
+            input = input.InputText,
+            voice = input.Voice,
+            response_format = responseFormat,
+            speed = input.Speed ?? 1.0f
+        });
+        
+        var response = await Client.ExecuteWithErrorHandling(request);
+        return new(new File(response.RawBytes)
+        {
+            ContentType = response.ContentType,
+            Name = $"{input.OutputAudioName}.{responseFormat}"
+        });
     }
 }
