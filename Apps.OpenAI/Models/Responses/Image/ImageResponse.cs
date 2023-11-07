@@ -1,6 +1,8 @@
-﻿namespace Apps.OpenAI.Models.Responses.Image;
+﻿using File = Blackbird.Applications.Sdk.Common.Files.File;
+
+namespace Apps.OpenAI.Models.Responses.Image;
 
 public class ImageResponse
 {
-    public string Url { get; set; }
+    public File Image { get; set; }
 }
