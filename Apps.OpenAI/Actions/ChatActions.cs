@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Apps.OpenAI.Extensions;
 using Apps.OpenAI.Invocables;
+using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Models.Responses.Chat;
 using Blackbird.Applications.Sdk.Common;
@@ -27,9 +28,10 @@ public class ChatActions : OpenAiInvocable
     #region Chat actions
 
     [Action("Generate completion", Description = "Completes the given prompt")]
-    public async Task<CompletionResponse> CreateCompletion([ActionParameter] CompletionRequest input)
+    public async Task<CompletionResponse> CreateCompletion([ActionParameter] ModelIdentifier modelIdentifier, 
+        [ActionParameter] CompletionRequest input)
     {
-        var model = input.Model ?? "text-davinci-003";
+        var model = modelIdentifier.Model ?? "text-davinci-003";
 
         var completionResult = await Client.Completions.CreateCompletion(new CompletionCreateRequest
         {
@@ -51,9 +53,10 @@ public class ChatActions : OpenAiInvocable
     }
 
     [Action("Create summary", Description = "Summarizes the input text")]
-    public async Task<SummaryResponse> CreateSummary([ActionParameter] SummaryRequest input)
+    public async Task<SummaryResponse> CreateSummary([ActionParameter] ModelIdentifier modelIdentifier, 
+        [ActionParameter] SummaryRequest input)
     {
-        var model = input.Model ?? "text-davinci-003";
+        var model = modelIdentifier.Model ?? "text-davinci-003";
         var prompt = @$"
                 Summarize the following text.
 
@@ -85,9 +88,10 @@ public class ChatActions : OpenAiInvocable
     }
 
     [Action("Generate edit", Description = "Edit the input text given an instruction prompt")]
-    public async Task<EditResponse> CreateEdit([ActionParameter] EditRequest input)
+    public async Task<EditResponse> CreateEdit([ActionParameter] ModelIdentifier modelIdentifier, 
+        [ActionParameter] EditRequest input)
     {
-        var model = input.Model ?? "text-davinci-edit-001";
+        var model = modelIdentifier.Model ?? "text-davinci-edit-001";
         var editResult = await Client.Edit.CreateEdit(new EditCreateRequest
         {
             Input = input.InputText,
@@ -105,9 +109,10 @@ public class ChatActions : OpenAiInvocable
     }
 
     [Action("Chat", Description = "Gives a response given a chat message")]
-    public async Task<ChatResponse> ChatMessageRequest([ActionParameter] ChatRequest input)
+    public async Task<ChatResponse> ChatMessageRequest([ActionParameter] ModelIdentifier modelIdentifier, 
+        [ActionParameter] ChatRequest input)
     {
-        var model = input.Model ?? "gpt-4";
+        var model = modelIdentifier.Model ?? "gpt-4";
         var chatResult = await Client.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
         {
             Messages = new List<ChatMessage>
@@ -131,9 +136,10 @@ public class ChatActions : OpenAiInvocable
 
     [Action("Chat with system prompt",
         Description = "Gives a response given a chat message and a configurable system prompt")]
-    public async Task<ChatResponse> ChatWithSystemMessageRequest([ActionParameter] SystemChatRequest input)
+    public async Task<ChatResponse> ChatWithSystemMessageRequest([ActionParameter] ModelIdentifier modelIdentifier, 
+        [ActionParameter] SystemChatRequest input)
     {
-        var model = input.Model ?? "gpt-4";
+        var model = modelIdentifier.Model ?? "gpt-4";
         var chatResult = await Client.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
         {
             Messages = new List<ChatMessage>
@@ -161,9 +167,10 @@ public class ChatActions : OpenAiInvocable
     #region Translation-related actions
 
     [Action("Post-edit MT", Description = "Review MT translated text and generate a post-edited version")]
-    public async Task<EditResponse> PostEditRequest([ActionParameter] PostEditRequest input)
+    public async Task<EditResponse> PostEditRequest([ActionParameter] ModelIdentifier modelIdentifier, 
+        [ActionParameter] PostEditRequest input)
     {
-        var model = input.Model ?? "gpt-4";
+        var model = modelIdentifier.Model ?? "gpt-4";
         var prompt = "You are receiving a source text that was translated by NMT into target text. Review the " +
                      "target text and respond with edits of the target text as necessary. If no edits required, " +
                      "respond with target text.";
@@ -196,9 +203,10 @@ public class ChatActions : OpenAiInvocable
 
     [Action("Get translation issues",
         Description = "Review text translation and generate a comment with the issue description")]
-    public async Task<ChatResponse> GetTranslationIssues([ActionParameter] GetTranslationIssuesRequest input)
+    public async Task<ChatResponse> GetTranslationIssues([ActionParameter] ModelIdentifier modelIdentifier, 
+        [ActionParameter] GetTranslationIssuesRequest input)
     {
-        var model = input.Model ?? "gpt-4";
+        var model = modelIdentifier.Model ?? "gpt-4";
 
         var prompt = $"You are receiving a source text {(input.SourceLanguage != null ? $"written in {input.SourceLanguage} " : "")}that was translated by NMT into target text {(input.TargetLanguage != null ? $"written in {input.TargetLanguage}" : "")}. " +
                      "Review the target text and respond with the issue description.";
@@ -232,9 +240,10 @@ public class ChatActions : OpenAiInvocable
     }
 
     [Action("Perform LQA Analysis", Description = "Perform an LQA Analysis of the translation. The result will contain a text with issues if any.")]
-    public async Task<ChatResponse> GetLqaAnalysis([ActionParameter] GetTranslationIssuesRequest input)
+    public async Task<ChatResponse> GetLqaAnalysis([ActionParameter] ModelIdentifier modelIdentifier, 
+        [ActionParameter] GetTranslationIssuesRequest input)
     {
-        var model = input.Model ?? "gpt-4";
+        var model = modelIdentifier.Model ?? "gpt-4";
 
         var prompt = "Perform an LQA analysis and use the MQM error typology format using all 7 dimensions. " +
                      "Here is a brief description of the seven high-level error type dimensions: " +
@@ -273,9 +282,10 @@ public class ChatActions : OpenAiInvocable
     }
 
     [Action("Localize text", Description = "Localize the text provided")]
-    public async Task<ChatResponse> LocalizeText([ActionParameter] LocalizeTextRequest input)
+    public async Task<ChatResponse> LocalizeText([ActionParameter] ModelIdentifier modelIdentifier, 
+        [ActionParameter] LocalizeTextRequest input)
     {
-        var model = input.Model ?? "gpt-4";
+        var model = modelIdentifier.Model ?? "gpt-4";
         var prompt = @$"
                     Original text: {input.Text}
                     Locale: {input.Locale}

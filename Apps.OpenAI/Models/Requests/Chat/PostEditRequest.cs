@@ -11,9 +11,6 @@ public class PostEditRequest
 
     [Display("Target text")]
     public string TargetText { get; set; }
-        
-    [DataSource(typeof(ChatCompletionsModelDataSourceHandler))]
-    public string? Model { get; set; }
 
     [Display("Additional prompt")]
     public string? AdditionalPrompt { get; set; }

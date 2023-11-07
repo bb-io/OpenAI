@@ -10,9 +10,6 @@ public class SummaryRequest
 
     [Display("Maximum tokens")]
     public int? MaximumTokens { get; set; }
-        
-    [DataSource(typeof(CompletionsModelDataSourceHandler))]
-    public string? Model { get; set; }
 
     [Display("Temperature")]
     [DataSource(typeof(TemperatureDataSourceHandler))]

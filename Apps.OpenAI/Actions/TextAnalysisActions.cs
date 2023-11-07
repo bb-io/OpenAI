@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Apps.OpenAI.Extensions;
 using Apps.OpenAI.Invocables;
+using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Analysis;
 using Apps.OpenAI.Models.Responses.Analysis;
 using Blackbird.Applications.Sdk.Common;
@@ -26,9 +27,10 @@ public class TextAnalysisActions : OpenAiInvocable
     [Action("Create embedding", Description = "Generate an embedding for a text provided. An embedding is a list of " +
                                               "floating point numbers that captures semantic information about the " +
                                               "text that it represents.")]
-    public async Task<CreateEmbeddingResponse> CreateEmbedding([ActionParameter] EmbeddingRequest input)
+    public async Task<CreateEmbeddingResponse> CreateEmbedding([ActionParameter] ModelIdentifier modelIdentifier, 
+        [ActionParameter] EmbeddingRequest input)
     {
-        var model = input.Model ?? "text-embedding-ada-002";
+        var model = modelIdentifier.Model ?? "text-embedding-ada-002";
         var embedResult = await Client.Embeddings.CreateEmbedding(new EmbeddingCreateRequest
         {
             Input = input.Text,

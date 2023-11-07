@@ -10,9 +10,6 @@ public class ChatRequest
 
     [Display("Maximum tokens")]
     public int? MaximumTokens { get; set; }
-        
-    [DataSource(typeof(ChatCompletionsModelDataSourceHandler))]
-    public string? Model { get; set; }
 
     [Display("Temperature")]
     [DataSource(typeof(TemperatureDataSourceHandler))]
