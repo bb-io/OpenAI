@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
@@ -11,6 +12,8 @@ using Apps.OpenAI.Models.Responses.Chat;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using RestSharp;
 using TiktokenSharp;
 
@@ -127,6 +130,42 @@ public class ChatActions : BaseActions
             temperature = input.Temperature ?? 1
         });
 
+        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+        return new()
+        {
+            Message = response.Choices.First().Message.Content
+        };
+    }
+
+    [Action("Chat with image", Description = "Gives a response given a chat message and image")]
+    public async Task<ChatResponse> ChatWithImage([ActionParameter] ChatWithImageRequest input)
+    {
+        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
+        var jsonBody = new
+        {
+            model = "gpt-4-vision-preview",
+            messages = new List<ChatImageMessageDto>
+            {
+                new(MessageRoles.User, new List<ChatImageMessageContentDto>
+                {
+                    new ChatImageMessageTextContentDto("text", input.Message),
+                    new ChatImageMessageImageContentDto("image_url", new ImageUrlDto(
+                        $"data:{input.Image.ContentType};base64,{Convert.ToBase64String(input.Image.Bytes)}"))
+                })
+            },
+            max_tokens = input.MaximumTokens ?? 1000,
+            top_p = input.TopP ?? 1,
+            presence_penalty = input.PresencePenalty ?? 0,
+            frequency_penalty = input.FrequencyPenalty ?? 0,
+            temperature = input.Temperature ?? 1
+        };
+        var jsonBodySerialized = JsonConvert.SerializeObject(jsonBody, new JsonSerializerSettings
+        {
+            ContractResolver = new CamelCasePropertyNamesContractResolver()
+        });
+        
+        request.AddJsonBody(jsonBodySerialized);
+        
         var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
