@@ -76,7 +76,7 @@ public class AudioActions : BaseActions
         return new(new File(response.RawBytes)
         {
             ContentType = response.ContentType,
-            Name = $"{input.OutputAudioName}.{responseFormat}"
+            Name = $"{input.OutputAudioName ?? input.Voice}.{responseFormat}"
         });
     }
 }
