@@ -93,22 +93,34 @@ public class ChatActions : BaseActions
     public async Task<EditResponse> CreateEdit([ActionParameter] ModelIdentifier modelIdentifier, 
         [ActionParameter] EditRequest input)
     {
-        var model = modelIdentifier.ModelId ?? "text-davinci-edit-001";
+        var model = modelIdentifier.ModelId ?? "gpt-4";
         
-        var request = new OpenAIRequest("/edits", Method.Post, Creds);
+        var systemPrompt = "You are a text editor. Given provided input text, edit it following the instruction and " +
+                           "respond with the edited text.";
+        
+        var userPrompt = @$"
+                    Input text: {input.InputText}
+                    Instruction: {input.Instruction}
+                    Edited text:
+                    ";
+        
+        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
         request.AddJsonBody(new
         {
             model,
-            input = input.InputText,
-            instruction = input.Instruction,
+            messages = new List<ChatMessageDto> 
+                { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) },
+            max_tokens = input.MaximumTokens,
             top_p = input.TopP ?? 1,
+            presence_penalty = input.PresencePenalty ?? 0,
+            frequency_penalty = input.FrequencyPenalty ?? 0,
             temperature = input.Temperature ?? 1
         });
 
-        var response = await Client.ExecuteWithErrorHandling<CompletionDto>(request);
+        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
-            EditText = response.Choices.First().Text
+            EditText = response.Choices.First().Message.Content
         };
     }
 
