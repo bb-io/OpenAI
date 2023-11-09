@@ -38,6 +38,18 @@ All textual actions have the following optional input values in order to modify 
 
 For more in-depth information about most actions consult the [OpenAI API reference](https://platform.openai.com/docs/api-reference).
 
+Be aware that model parameter's dynamic input returns all available models. You should select the model that is appropriate for the given task (e.g. gpt-4 model for **Chat** action). Action groups and models that should be used for them are shown in the table below.
+
+| Action group |                                                                                                             Latest models                                                                                                              |                                                                                                                                                                                                                        Deprecated models                                                                                                                                                                                                                         |
+|:------------:|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
+|     Chat     | gpt-4 and dated model releases, gpt-4-1106-preview, gpt-4-vision-preview, gpt-4-32k and dated model releases, gpt-3.5-turbo and dated model releases, gpt-3.5-turbo-16k and dated model releases, fine-tuned versions of gpt-3.5-turbo |                                                                                                                                                                                    gpt-3.5-turbo-0613, gpt-3.5-turbo-16k-0613, gpt-3.5-turbo-0301, gpt-4-0314, gpt-4-32k-0314                                                                                                                                                                                    |
+| Completions  |                                                                                            gpt-3.5-turbo-instruct, babbage-002, davinci-002                                                                                            |                                                                                                                                                                               text-ada-001, text-babbage-001, text-curie-001, text-davinci-001, text-davinci-002, text-davinci-003                                                                                                                                                                               |
+| Audiovisual  |                                                         Only whisper-1 is supported for transcriptions and translations. tts-1 and tts-1-hd are supported for speech creation.                                                         |                                                                                                                                                                                                                                -                                                                                                                                                                                                                                 |
+|    Images    |                                                                                                           dall-e-2, dall-e-3                                                                                                           |                                                                                                                                                                                                                                -                                                                                                                                                                                                                                 |
+|  Embeddings  |                                                                                                         text-embedding-ada-002                                                                                                         | text-similarity-ada-001, text-similarity-babbage-001, text-similarity-curie-001, text-similarity-davinci-001, text-search-ada-doc-001, text-search-ada-query-001, text-search-babbage-doc-001, text-search-babbage-query-001, text-search-curie-doc-001, text-search-curie-query-001, text-search-davinci-doc-001, text-search-davinci-query-001, code-search-ada-code-001, code-search-ada-text-001, code-search-babbage-code-001, code-search-babbage-text-001 |
+
+You can refer to the [Models](https://platform.openai.com/docs/models) documentation to find information about available models and the differences between them. 
+
 Some actions that are offered are pre-engineered on top of OpenAI. This means that they extend OpenAI's endpoints with additional prompt engineering for common language and content operations.
 
 Do you have a cool use case that we can turn into an action? Let us know!
@@ -46,23 +58,22 @@ Do you have a cool use case that we can turn into an action? Let us know!
 
 - **Chat** given a chat message, returns a response.
 - **Chat with system prompt** same as above but with an extra instructional system prompt parameter.
+- **Generate edit** edits the provided text given an instruction.
+- **Post-edit MT** (Pre-engineered) given a source segment and NMT translated target segment, responds with a post-edited version of the target segment taking into account typical NMT mistakes.
+- **Get translation issues** (Pre-engineered) given a source segment and NMT translated target segment, highlights potential translation issues. Can be used to prepopulate TMS segment comments.
+- **Perform LQA Analysis** performs an LQA Analysis of the translation and returns a text with issues if any. 
+- **Localize text** (Pre-engineered) given a text and a locale, tries to create a localized version of the text.
 
 ### Completions
 
 - **Generate completion** generates a completion of the given text.
 - **Create summary** (Pre-engineered) given a text, generates a summary.
-- **Get translation issues** (Pre-engineered) given a source segment and NMT translated target segment, highlights potential translation issues. Can be used to prepopulate TMS segment comments.
-- **Localize text** (Pre-engineered) given a text and a locale, tries to create a localized version of the text.
-- **Post-edit MT** (Pre-engineered) given a source segment and NMT translated target segment, responds with a post-edited version of the target segment taking into account typical NMT mistakes.
-
-### Edits
-
-- **Generate edit** Given a text and an instruction, edits the given text.
 
 ### Audiovisual
 
 - **Create transcription** transcribes the supported audiovisual file formats into a textual response.
 - **Create English translation** same as above but automatically translated into English.
+- **Create speech** generates audio from the text input.
 
 ### Images
 

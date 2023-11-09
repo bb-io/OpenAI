@@ -24,7 +24,6 @@ public class ModelDataSourceHandler : BaseInvocable, IAsyncDataSourceHandler
         var request = new OpenAIRequest("/models", Method.Get, InvocationContext.AuthenticationCredentialsProviders);
         var models = await client.ExecuteWithErrorHandling<ModelsList>(request);
         var modelsDictionary = models.Data
-            .Where(model => model.OwnedBy != "openai-dev" && model.OwnedBy != "openai-internal")
             .Where(model => context.SearchString == null || model.Id.Contains(context.SearchString))
             .ToDictionary(model => model.Id, model => model.Id);
         return modelsDictionary;

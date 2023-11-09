@@ -9,8 +9,8 @@ namespace Apps.OpenAI.Api;
 
 public class OpenAIClient : BlackBirdRestClient
 {
-    protected override JsonSerializerSettings JsonSettings =>
-        new() { MissingMemberHandling = MissingMemberHandling.Ignore,  };
+    protected override JsonSerializerSettings JsonSettings => 
+        new() { MissingMemberHandling = MissingMemberHandling.Ignore };
 
     public OpenAIClient() : base(new RestClientOptions
         { ThrowOnAnyError = false, BaseUrl = new Uri("https://api.openai.com/v1") }) { }
