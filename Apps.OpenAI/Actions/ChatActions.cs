@@ -359,6 +359,47 @@ public class ChatActions : BaseActions
             Message = response.Choices.First().Message.Content
         };
     }    
+    
+    [Action("Get localizable content from image", Description = "Retrieve localizable content from image")]
+    public async Task<ChatResponse> GetLocalizableContentFromImage(
+        [ActionParameter] GetLocalizableContentFromImageRequest input)
+    {
+        var prompt = "Your objective is to conduct optical character recognition (OCR) to identify and extract any " +
+                     "localizable content present in the image. Respond with the text found in the image, if any. " +
+                     "If no localizable content is detected, provide an empty response.";
+        
+        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
+        var jsonBody = new
+        {
+            model = "gpt-4-vision-preview",
+            messages = new List<ChatImageMessageDto>
+            {
+                new(MessageRoles.User, new List<ChatImageMessageContentDto>
+                {
+                    new ChatImageMessageTextContentDto("text", prompt),
+                    new ChatImageMessageImageContentDto("image_url", new ImageUrlDto(
+                        $"data:{input.Image.ContentType};base64,{Convert.ToBase64String(input.Image.Bytes)}"))
+                })
+            },
+            max_tokens = input.MaximumTokens ?? 1000,
+            top_p = input.TopP ?? 1,
+            presence_penalty = input.PresencePenalty ?? 0,
+            frequency_penalty = input.FrequencyPenalty ?? 0,
+            temperature = input.Temperature ?? 1
+        };
+        var jsonBodySerialized = JsonConvert.SerializeObject(jsonBody, new JsonSerializerSettings
+        {
+            ContractResolver = new CamelCasePropertyNamesContractResolver()
+        });
+        
+        request.AddJsonBody(jsonBodySerialized);
+        
+        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+        return new()
+        {
+            Message = response.Choices.First().Message.Content
+        };
+    }
 
     #endregion
 }
