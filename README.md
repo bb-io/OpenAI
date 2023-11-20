@@ -58,6 +58,7 @@ Do you have a cool use case that we can turn into an action? Let us know!
 
 - **Chat** given a chat message, returns a response.
 - **Chat with system prompt** same as above but with an extra instructional system prompt parameter.
+- **Chat with image** provides response given a chat message and image.
 - **Generate edit** edits the provided text given an instruction.
 - **Chat with image** provides response given a chat message and image.
 - **Post-edit MT** (Pre-engineered) given a source segment and NMT translated target segment, responds with a post-edited version of the target segment taking into account typical NMT mistakes.
