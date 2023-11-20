@@ -8,6 +8,7 @@ using Apps.OpenAI.Models.Responses.Chat;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using Newtonsoft.Json;
 using OpenAI.Interfaces;
 using OpenAI.ObjectModels.RequestModels;
 using TiktokenSharp;
@@ -231,7 +232,7 @@ public class ChatActions : OpenAiInvocable
         };
     }
 
-    [Action("Perform LQA Analysis", Description = "Perform an LQA Analysis of the translation. The result will contain a text with issues if any.")]
+    [Action("Get MQM report", Description = "Perform an LQA Analysis of the translation. The result will be in the MQM framework form.")]
     public async Task<ChatResponse> GetLqaAnalysis([ActionParameter] GetTranslationIssuesRequest input)
     {
         var model = input.Model ?? "gpt-4";
@@ -258,12 +259,12 @@ public class ChatActions : OpenAiInvocable
             Messages = new List<ChatMessage>
             {
                 ChatMessage.FromSystem(prompt),
-                ChatMessage.FromUser($"{(input.SourceLanguage != null ? $"The {input.SourceLanguage} " : "")}\"{input.SourceText}\" was translated as \"{input.TargetText}\"{(input.TargetLanguage != null ? $" into {input.TargetLanguage}" : "")}"),
+                ChatMessage.FromUser($"{(input.SourceLanguage != null ? $"The {input.SourceLanguage} " : "")}\"{input.SourceText}\" was translated as \"{input.TargetText}\"{(input.TargetLanguage != null ? $" into {input.TargetLanguage}" : "")}.{(input.TargetAudience != null ? $" The target audience is {input.TargetAudience}" : "")}"),
             },
             Model = model,
             MaxTokens = input.MaximumTokens ?? 5000,
             Temperature = (float?)(input.Temperature ?? 0.5)
-        });
+        }); ;
         chatResult.ThrowOnError();
 
         return new()
@@ -272,7 +273,56 @@ public class ChatActions : OpenAiInvocable
         };
     }
 
-    [Action("Localize text", Description = "Localize the text provided")]
+    [Action("Get MQM dimension values", Description = "Perform an LQA Analysis of the translation. The result will be in the MQM framework form. This action only returns the scores (between 1 and 10) of each dimension.")]
+    public async Task<MqmAnalysis> GetLqaDimensionValues([ActionParameter] GetTranslationIssuesRequest input)
+    {
+        var possibleModels = new List<string> { "gpt-4-1106-preview", "gpt-3.5-turbo-1106" };
+        var model = input.Model ?? "gpt-4-1106-preview";
+
+        if (!possibleModels.Contains(model)) throw new System.Exception("This model is not supported. Please use one of the following: " + string.Join(", ", possibleModels));
+
+        var prompt = "Perform an LQA analysis and use the MQM error typology format using all 7 dimensions. " +
+                     "Here is a brief description of the seven high-level error type dimensions: " +
+                     "1. Terminology – errors arising when a term does not conform to normative domain or organizational terminology standards or when a term in the target text is not the correct, normative equivalent of the corresponding term in the source text. " +
+                     "2. Accuracy – errors occurring when the target text does not accurately correspond to the propositional content of the source text, introduced by distorting, omitting, or adding to the message. " +
+                     "3. Linguistic conventions  – errors related to the linguistic well-formedness of the text, including problems with grammaticality, spelling, punctuation, and mechanical correctness. " +
+                     "4. Style – errors occurring in a text that are grammatically acceptable but are inappropriate because they deviate from organizational style guides or exhibit inappropriate language style. " +
+                     "5. Locale conventions – errors occurring when the translation product violates locale-specific content or formatting requirements for data elements. " +
+                     "6. Audience appropriateness – errors arising from the use of content in the translation product that is invalid or inappropriate for the target locale or target audience. " +
+                     "7. Design and markup – errors related to the physical design or presentation of a translation product, including character, paragraph, and UI element formatting and markup, integration of text with graphical elements, and overall page or window layout. " +
+                     "Provide a quality rating for each dimension from 0 (completely bad) to 10 (perfect). You are an expert linguist and your task is to perform a Language Quality Assessment on input sentences. " +
+                     "Try to propose a fixed translation that would have no LQA errors. " +
+                     "The response should be in the following json format: " +
+                     "{\r\n  \"terminology\": 0,\r\n  \"accuracy\": 0,\r\n  \"linguistic_conventions\": 0,\r\n  \"style\": 0,\r\n  \"locale_conventions\": 0,\r\n  \"audience_appropriateness\": 0,\r\n  \"design_and_markup\": 0,\r\n  \"proposed_translation\": \"fixed translation\"\r\n}"
+                     ;
+
+        if (input.AdditionalPrompt != null)
+            prompt = $"{prompt} {input.AdditionalPrompt}";
+
+        var chatResult = await Client.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
+        {
+            Messages = new List<ChatMessage>
+            {
+                ChatMessage.FromSystem(prompt),
+                ChatMessage.FromUser($"{(input.SourceLanguage != null ? $"The {input.SourceLanguage} " : "")}\"{input.SourceText}\" was translated as \"{input.TargetText}\"{(input.TargetLanguage != null ? $" into {input.TargetLanguage}" : "")}.{(input.TargetAudience != null ? $" The target audience is {input.TargetAudience}" : "")}"),
+            },
+            Model = model,
+            MaxTokens = input.MaximumTokens ?? 4096,
+            Temperature = (float?)(input.Temperature ?? 0.5),
+            ResponseFormat = new ResponseFormat { Type = "json_object" }
+        }); ;
+        chatResult.ThrowOnError();
+
+        try
+        {
+            return JsonConvert.DeserializeObject<MqmAnalysis>(chatResult.Choices.First().Message.Content);
+        } catch
+        {
+            throw new System.Exception("Something went wrong parsing the output from OpenAI, most likely due to a hallucination!");
+        }
+    }
+
+    [Action("Translate text", Description = "Translate/localize the text provided.")]
     public async Task<ChatResponse> LocalizeText([ActionParameter] LocalizeTextRequest input)
     {
         var model = input.Model ?? "gpt-4";

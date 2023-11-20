@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Betalgo.OpenAI" Version="7.0.0" />
+    <PackageReference Include="Betalgo.OpenAI" Version="7.4.1" />
     <PackageReference Include="Blackbird.Applications.Sdk.Common" Version="2.2.0-alpha3" />
     <PackageReference Include="Blackbird.Applications.Sdk.Utils" Version="1.0.12" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0" />
