@@ -1,13 +1,11 @@
-﻿using Apps.OpenAI.Extensions;
-using Blackbird.Applications.Sdk.Common.Authentication;
+﻿using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Connections;
 using RestSharp;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Apps.OpenAI.Api;
 
 namespace Apps.OpenAI.Connections
 {
@@ -16,13 +14,12 @@ namespace Apps.OpenAI.Connections
         public async ValueTask<ConnectionValidationResponse> ValidateConnection(
             IEnumerable<AuthenticationCredentialsProvider> authProviders, CancellationToken cancellationToken)
         {
-            var client = authProviders.CreateOpenAiServiceSdk();
+            var client = new OpenAIClient();
+            var request = new OpenAIRequest("/models", Method.Get, authProviders);
 
             try
             {
-                var result = await client.Models.ListModel();
-                result.ThrowOnError();
-
+                await client.ExecuteWithErrorHandling(request);
                 return new()
                 {
                     IsValid = true

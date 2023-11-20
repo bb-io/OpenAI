@@ -3,6 +3,7 @@ using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Connections;
 using System.Collections.Generic;
 using System.Linq;
+using Apps.OpenAI.Constants;
 
 namespace Apps.OpenAI.Connections;
 
@@ -17,8 +18,8 @@ public class ConnectionDefinition : IConnectionDefinition
             ConnectionUsage = ConnectionUsage.Actions,
             ConnectionProperties = new List<ConnectionProperty>
             {
-                new("Organization ID"),
-                new("API key") { Sensitive = true }
+                new(CredNames.OrganizationId),
+                new(CredNames.ApiKey) { Sensitive = true }
             }
         }
     };
@@ -28,8 +29,8 @@ public class ConnectionDefinition : IConnectionDefinition
     {
         try
         {
-            var organizationId = values.First(v => v.Key == "Organization ID");
-            var apiKey = values.First(v => v.Key == "API key");
+            var organizationId = values.First(v => v.Key == CredNames.OrganizationId);
+            var apiKey = values.First(v => v.Key == CredNames.ApiKey);
             return new AuthenticationCredentialsProvider[]
             {
                 new(AuthenticationCredentialsRequestLocation.None, organizationId.Key, organizationId.Value),

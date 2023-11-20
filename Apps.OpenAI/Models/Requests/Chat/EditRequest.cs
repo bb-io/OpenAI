@@ -1,24 +1,11 @@
-﻿using Apps.OpenAI.DataSourceHandlers;
-using Blackbird.Applications.Sdk.Common;
-using Blackbird.Applications.Sdk.Common.Dynamic;
+﻿using Blackbird.Applications.Sdk.Common;
 
 namespace Apps.OpenAI.Models.Requests.Chat;
 
-public class EditRequest
+public class EditRequest : BaseChatRequest
 {
     [Display("Input text")]
     public string InputText { get; set; }
 
     public string Instruction { get; set; }
-        
-    [DataSource(typeof(EditsModelDataSourceHandler))]
-    public string? Model { get; set; }
-
-    [Display("Temperature")]
-    [DataSource(typeof(TemperatureDataSourceHandler))]
-    public float? Temperature { get; set; }
-
-    [Display("top_p")]
-    [DataSource(typeof(TopPDataSourceHandler))]
-    public float? TopP { get; set; }
 }

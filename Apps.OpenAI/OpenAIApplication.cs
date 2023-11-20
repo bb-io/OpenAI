@@ -3,7 +3,7 @@ using System;
 
 namespace Apps.OpenAI;
 
-public class OpenAiApplication : IApplication
+public class OpenAIApplication : IApplication
 {
     public string Name
     {

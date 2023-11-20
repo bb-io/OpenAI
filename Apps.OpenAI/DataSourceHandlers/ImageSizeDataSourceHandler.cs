@@ -14,15 +14,17 @@ public class ImageSizeDataSourceHandler : BaseInvocable, IDataSourceHandler
 
     public Dictionary<string, string> GetData(DataSourceContext context)
     {
-        var imageSizes = new List<string>
+        var imageSizes = new Dictionary<string, string>
         {
-            "256x256",
-            "512x512",
-            "1024x1024"
+            { "256x256", "256x256 (dall-e-2)" },
+            { "512x512", "512x512 (dall-e-2)" },
+            { "1024x1024", "1024x1024" },
+            { "1792x1024", "1792x1024 (dall-e-3)" },
+            { "1024x1792", "1024x1792 (dall-e-3)" },
         };
-        
+
         return imageSizes
-            .Where(s => context.SearchString == null || s.Contains(context.SearchString))
-            .ToDictionary(s => s, s => s);
+            .Where(size => context.SearchString == null || size.Value.Contains(context.SearchString))
+            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
     }
 }
