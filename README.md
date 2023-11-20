@@ -59,20 +59,18 @@ Do you have a cool use case that we can turn into an action? Let us know!
 - **Chat** given a chat message, returns a response.
 - **Chat with system prompt** same as above but with an extra instructional system prompt parameter.
 - **Generate edit** edits the provided text given an instruction.
+- **Chat with image** provides response given a chat message and image.
 - **Post-edit MT** (Pre-engineered) given a source segment and NMT translated target segment, responds with a post-edited version of the target segment taking into account typical NMT mistakes.
 - **Get translation issues** (Pre-engineered) given a source segment and NMT translated target segment, highlights potential translation issues. Can be used to prepopulate TMS segment comments.
-- **Perform LQA Analysis** performs an LQA Analysis of the translation and returns a text with issues if any.
-- **Localize text** (Pre-engineered) given a text and a locale, tries to create a localized version of the text.
+- **Get MQM report** (Pre-engineered) performs an LQA Analysis of the translation. The result will be in the MQM framework form. The dimensions are: terminology, accuracy, linguistic conventions, style, locale conventions, audience appropriateness, design and markup. The input consists of the source and translated text. Optionally one can add languages and a description of the target audience.
+- **Get MQM dimension values** (Pre-engineered) uses the same input and prompt as 'Get MQM report'. However, in this action the scores are returned as individual numbers so that they can be used in decisions. Also returns the proposed translation.
+- **Translate text** (Pre-engineered) given a text and a locale, tries to create a localized version of the text.
+- **Get localizable content from image** retrieves localizable content from given image.
 
 ### Completions
 
 - **Generate completion** generates a completion of the given text.
 - **Create summary** (Pre-engineered) given a text, generates a summary.
-- **Get translation issues** (Pre-engineered) given a source segment and NMT translated target segment, highlights potential translation issues. Can be used to prepopulate TMS segment comments.
-- **Translate text** (Pre-engineered) given a text and a locale, tries to create a localized version of the text.
-- **Post-edit MT** (Pre-engineered) given a source segment and NMT translated target segment, responds with a post-edited version of the target segment taking into account typical NMT mistakes.
-- **Get MQM report** (Pre-engineered) performs an LQA Analysis of the translation. The result will be in the MQM framework form. The dimensions are: terminology, accuracy, linguistic conventions, style, locale conventions, audience appropriateness, design and markup. The input consists of the source and translated text. Optionally one can add languages and a description of the target audience.
-- **Get MQM dimension values** (Pre-engineered) uses the same input and prompt as 'Get MQM report'. However, in this action the scores are returned as individual numbers so that they can be used in decisions. Also returns the proposed translation.
 
 ### Edits
 
