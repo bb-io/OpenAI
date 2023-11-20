@@ -27,4 +27,7 @@ public class GetTranslationIssuesRequest
     [Display("Temperature")]
     [DataSource(typeof(TemperatureDataSourceHandler))]
     public float? Temperature { get; set; }
+
+    [Display("Target audience")]
+    public string? TargetAudience { get; set; }
 }
