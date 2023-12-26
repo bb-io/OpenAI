@@ -9,6 +9,7 @@ using Apps.OpenAI.Models.Responses.Analysis;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using RestSharp;
 using TiktokenSharp;
 
@@ -17,7 +18,8 @@ namespace Apps.OpenAI.Actions;
 [ActionList]
 public class TextAnalysisActions : BaseActions
 {
-    public TextAnalysisActions(InvocationContext invocationContext) : base(invocationContext) { }
+    public TextAnalysisActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
+        : base(invocationContext, fileManagementClient) { }
 
     [Action("Create embedding", Description = "Generate an embedding for a text provided. An embedding is a list of " +
                                               "floating point numbers that captures semantic information about the " +

@@ -1,8 +1,8 @@
-﻿using File = Blackbird.Applications.Sdk.Common.Files.File;
+﻿using Blackbird.Applications.Sdk.Common.Files;
 
 namespace Apps.OpenAI.Models.Requests.Chat;
 
 public class GetLocalizableContentFromImageRequest : BaseChatRequest
 {
-    public File Image { get; set; }
+    public FileReference Image { get; set; }
 }

@@ -7,7 +7,7 @@ namespace Apps.OpenAI.Models.Requests.Audio;
 
 public class TranslationRequest
 {
-    public File File { get; set; }
+    public FileReference File { get; set; }
 
     [Display("Temperature")]
     [DataSource(typeof(TemperatureDataSourceHandler))]
