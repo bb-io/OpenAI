@@ -12,14 +12,14 @@ public static class BlackbirdPromptParser
         var promptSegments = inputPrompt.Split(";;");
 
         if (promptSegments.Length is 1)
-            return (new() { new(MessageRoles.User, promptSegments[0]) });
+            return (new() { new(MessageRoles.User, promptSegments[0]) }, null);
 
         if (promptSegments.Length is 2)
             return (new()
             {
                 new(MessageRoles.System, promptSegments[0]),
                 new(MessageRoles.User, promptSegments[1])
-            });
+            }, null);
 
         if (promptSegments.Length is 3)
             return (new()
