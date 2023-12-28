@@ -1,4 +1,4 @@
-﻿using System.Linq;
+﻿using System.IO;
 using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
 using Apps.OpenAI.Api;
@@ -10,22 +10,26 @@ using Apps.OpenAI.Models.Responses.Audio;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
+using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using RestSharp;
-using File = Blackbird.Applications.Sdk.Common.Files.File;
 
 namespace Apps.OpenAI.Actions;
 
 [ActionList]
 public class AudioActions : BaseActions
 {
-    public AudioActions(InvocationContext invocationContext) : base(invocationContext) { }
+    public AudioActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
+        : base(invocationContext, fileManagementClient) { }
 
     [Action("Create English translation", Description = "Generates a translation into English given an audio or " +
                                                         "video file (mp3, mp4, mpeg, mpga, m4a, wav, or webm).")]
     public async Task<TranslationResponse> CreateTranslation([ActionParameter] TranslationRequest input)
     {
         var request = new OpenAIRequest("/audio/translations", Method.Post, Creds);
-        request.AddFile("file", input.File.Bytes, input.File.Name);
+        var fileStream = await FileManagementClient.DownloadAsync(input.File);
+        var fileBytes = await fileStream.GetByteData();
+        request.AddFile("file", fileBytes, input.File.Name);
         request.AddParameter("model", "whisper-1");
         request.AddParameter("response_format", "verbose_json");
         request.AddParameter("temperature", input.Temperature ?? 0);
@@ -42,7 +46,9 @@ public class AudioActions : BaseActions
     public async Task<TranscriptionResponse> CreateTranscription([ActionParameter] TranscriptionRequest input)
     {
         var request = new OpenAIRequest("/audio/transcriptions", Method.Post, Creds);
-        request.AddFile("file", input.File.Bytes, input.File.Name);
+        var fileStream = await FileManagementClient.DownloadAsync(input.File);
+        var fileBytes = await fileStream.GetByteData();
+        request.AddFile("file", fileBytes, input.File.Name);
         request.AddParameter("model", "whisper-1");
         request.AddParameter("response_format", "verbose_json");
         request.AddParameter("temperature", input.Temperature ?? 0);
@@ -73,10 +79,11 @@ public class AudioActions : BaseActions
         });
         
         var response = await Client.ExecuteWithErrorHandling(request);
-        return new(new File(response.RawBytes)
-        {
-            ContentType = response.ContentType,
-            Name = $"{input.OutputAudioName ?? input.Voice}.{responseFormat}"
-        });
+        
+        using var stream = new MemoryStream(response.RawBytes);
+        var file = await FileManagementClient.UploadAsync(stream, response.ContentType, 
+            $"{input.OutputAudioName ?? input.Voice}.{responseFormat}");
+        
+        return new(file);
     }
 }

@@ -8,12 +8,13 @@ using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Chat;
-using Apps.OpenAI.Models.Responses;
 using Apps.OpenAI.Models.Responses.Chat;
 using Apps.OpenAI.Utils;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
+using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RestSharp;
@@ -24,7 +25,8 @@ namespace Apps.OpenAI.Actions;
 [ActionList]
 public class ChatActions : BaseActions
 {
-    public ChatActions(InvocationContext invocationContext) : base(invocationContext)
+    public ChatActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
+        : base(invocationContext, fileManagementClient)
     {
     }
 
@@ -157,6 +159,8 @@ public class ChatActions : BaseActions
     public async Task<ChatResponse> ChatWithImage([ActionParameter] ChatWithImageRequest input)
     {
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
+        var fileStream = await FileManagementClient.DownloadAsync(input.Image);
+        var fileBytes = await fileStream.GetByteData();
         var jsonBody = new
         {
             model = "gpt-4-vision-preview",
@@ -166,7 +170,7 @@ public class ChatActions : BaseActions
                 {
                     new ChatImageMessageTextContentDto("text", input.Message),
                     new ChatImageMessageImageContentDto("image_url", new ImageUrlDto(
-                        $"data:{input.Image.ContentType};base64,{Convert.ToBase64String(input.Image.Bytes)}"))
+                        $"data:{input.Image.ContentType};base64,{Convert.ToBase64String(fileBytes)}"))
                 })
             },
             max_tokens = input.MaximumTokens ?? 1000,
@@ -463,6 +467,8 @@ public class ChatActions : BaseActions
                      "If no localizable content is detected, provide an empty response.";
 
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
+        var fileStream = await FileManagementClient.DownloadAsync(input.Image);
+        var fileBytes = await fileStream.GetByteData();
         var jsonBody = new
         {
             model = "gpt-4-vision-preview",
@@ -472,7 +478,7 @@ public class ChatActions : BaseActions
                 {
                     new ChatImageMessageTextContentDto("text", prompt),
                     new ChatImageMessageImageContentDto("image_url", new ImageUrlDto(
-                        $"data:{input.Image.ContentType};base64,{Convert.ToBase64String(input.Image.Bytes)}"))
+                        $"data:{input.Image.ContentType};base64,{Convert.ToBase64String(fileBytes)}"))
                 })
             },
             max_tokens = input.MaximumTokens ?? 1000,

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Net.Mime;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ using Apps.OpenAI.Models.Responses.Image;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using RestSharp;
 
 namespace Apps.OpenAI.Actions;
@@ -18,7 +20,8 @@ namespace Apps.OpenAI.Actions;
 [ActionList]
 public class ImageActions : BaseActions
 {
-    public ImageActions(InvocationContext invocationContext) : base(invocationContext) { }
+    public ImageActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
+        : base(invocationContext, fileManagementClient) { }
 
     [Action("Generate image", Description = "Generates an image based on a prompt")]
     public async Task<ImageResponse> GenerateImage([ActionParameter] ModelIdentifier modelIdentifier, 
@@ -48,13 +51,10 @@ public class ImageActions : BaseActions
 
         var response = await Client.ExecuteWithErrorHandling<DataDto<ImageDataDto>>(request);
         var bytes = Convert.FromBase64String(response.Data.First().Base64);
-        return new()
-        {
-            Image = new(bytes)
-            {
-                ContentType = "image/png",
-                Name = $"{input.OutputImageName ?? input.Prompt}.png"
-            }
-        };
+        
+        using var stream = new MemoryStream(bytes);
+        var file = await FileManagementClient.UploadAsync(stream, "image/png",
+            $"{input.OutputImageName ?? input.Prompt}.png");
+        return new() { Image = file };
     }
 }

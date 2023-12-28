@@ -1,5 +1,5 @@
-﻿using File = Blackbird.Applications.Sdk.Common.Files.File;
+﻿using Blackbird.Applications.Sdk.Common.Files;
 
 namespace Apps.OpenAI.Models.Responses.Audio;
 
-public record CreateSpeechResponse(File Audio);
+public record CreateSpeechResponse(FileReference Audio);
