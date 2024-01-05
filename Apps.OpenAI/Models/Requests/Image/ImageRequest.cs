@@ -8,7 +8,7 @@ public class ImageRequest
 {
     public string Prompt { get; set; }
     
-    [Display("Output image name")]
+    [Display("Output image name", Description = "The name of the output image without the extension.")]
     public string? OutputImageName { get; set; }
         
     [DataSource(typeof(ImageSizeDataSourceHandler))]

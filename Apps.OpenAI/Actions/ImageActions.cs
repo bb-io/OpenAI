@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using System.Net.Mime;
 using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
 using Apps.OpenAI.Api;
@@ -29,7 +28,7 @@ public class ImageActions : BaseActions
     {
         var model = modelIdentifier.ModelId ?? "dall-e-3";
         var request = new OpenAIRequest("/images/generations", Method.Post, Creds);
-        
+
         if (model == "dall-e-3")
             request.AddJsonBody(new
             {
@@ -51,10 +50,10 @@ public class ImageActions : BaseActions
 
         var response = await Client.ExecuteWithErrorHandling<DataDto<ImageDataDto>>(request);
         var bytes = Convert.FromBase64String(response.Data.First().Base64);
-        
+
         using var stream = new MemoryStream(bytes);
-        var file = await FileManagementClient.UploadAsync(stream, "image/png",
-            $"{input.OutputImageName ?? input.Prompt}.png");
+        var filename = (input.OutputImageName ?? "image") + ".png";
+        var file = await FileManagementClient.UploadAsync(stream, "image/png", filename);
         return new() { Image = file };
     }
 }
