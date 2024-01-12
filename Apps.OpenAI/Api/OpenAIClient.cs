@@ -13,10 +13,13 @@ public class OpenAIClient : BlackBirdRestClient
         new() { MissingMemberHandling = MissingMemberHandling.Ignore };
 
     public OpenAIClient() : base(new RestClientOptions
-        { ThrowOnAnyError = false, BaseUrl = new Uri("https://api.openai.com/v1") }) { }
+        { ThrowOnAnyError = false, BaseUrl = new Uri("https://api.openai.com/v1"), MaxTimeout = TimeSpan.FromMinutes(10).Milliseconds }) { }
 
     protected override Exception ConfigureErrorException(RestResponse response)
     {
+        if (response.Content == null)
+            throw new Exception(response.ErrorMessage);
+
         var error = JsonConvert.DeserializeObject<ErrorDtoWrapper>(response.Content, JsonSettings);
 
         if (response.StatusCode == HttpStatusCode.NotFound && error.Error.Type == "invalid_request_error")
