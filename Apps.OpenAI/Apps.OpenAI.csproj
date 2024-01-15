@@ -4,14 +4,15 @@
     <TargetFramework>net8.0</TargetFramework>
 	  <Product>OpenAI</Product>
 	  <Description>Creating safe artificial general intelligence that benefits all of humanity</Description>
-	  <Version>2.3.4</Version>
+	  <Version>2.3.5</Version>
 	  <AssemblyName>Apps.OpenAI</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Blackbird.Applications.Sdk.Common" Version="2.3.2-alpha1" />
     <PackageReference Include="Blackbird.Applications.SDK.Extensions.FileManagement" Version="1.0.1" />
-    <PackageReference Include="Blackbird.Applications.Sdk.Utils" Version="1.0.16" />
+    <PackageReference Include="Blackbird.Applications.Sdk.Glossaries.Utils" Version="1.0.0-alpha9" />
+    <PackageReference Include="Blackbird.Applications.Sdk.Utils" Version="1.0.19" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
     <PackageReference Include="TiktokenSharp" Version="1.0.6" />
