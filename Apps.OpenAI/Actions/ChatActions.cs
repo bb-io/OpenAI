@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
 using Apps.OpenAI.Api;
@@ -12,8 +13,10 @@ using Apps.OpenAI.Models.Responses.Chat;
 using Apps.OpenAI.Utils;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
+using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
+using Blackbird.Applications.Sdk.Glossaries.Utils.Converters;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -255,13 +258,20 @@ public class ChatActions : BaseActions
 
     [Action("Post-edit MT", Description = "Review MT translated text and generate a post-edited version")]
     public async Task<EditResponse> PostEditRequest([ActionParameter] ModelIdentifier modelIdentifier,
-        [ActionParameter] PostEditRequest input)
+        [ActionParameter] PostEditRequest input, [ActionParameter] GlossaryRequest glossary)
     {
         var model = modelIdentifier.ModelId ?? "gpt-4";
 
         var systemPrompt = "You are receiving a source text that was translated by NMT into target text. Review the " +
                            "target text and respond with edits of the target text as necessary. If no edits required, " +
                            "respond with target text.";
+
+        if (glossary.Glossary != null)
+            systemPrompt += " Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
+                            "Ensure that the translation aligns with the glossary entries for the respective languages. " +
+                            "If a term has variations or synonyms, consider them and choose the most appropriate " +
+                            "translation to maintain consistency and precision. If the translation already aligns " +
+                            "with the glossary, no edits are required.";
 
         if (input.AdditionalPrompt != null)
             systemPrompt = $"{systemPrompt} {input.AdditionalPrompt}";
@@ -273,6 +283,12 @@ public class ChatActions : BaseActions
             Target text: 
             {input.TargetText}
         ";
+
+        if (glossary.Glossary != null)
+        {
+            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary);
+            userPrompt += glossaryPromptPart;
+        }
 
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
         request.AddJsonBody(new
@@ -292,13 +308,20 @@ public class ChatActions : BaseActions
     [Action("Get translation issues",
         Description = "Review text translation and generate a comment with the issue description")]
     public async Task<ChatResponse> GetTranslationIssues([ActionParameter] ModelIdentifier modelIdentifier,
-        [ActionParameter] GetTranslationIssuesRequest input)
+        [ActionParameter] GetTranslationIssuesRequest input, [ActionParameter] GlossaryRequest glossary)
     {
         var model = modelIdentifier.ModelId ?? "gpt-4";
 
         var systemPrompt =
-            $"You are receiving a source text {(input.SourceLanguage != null ? $"written in {input.SourceLanguage} " : "")}that was translated by NMT into target text {(input.TargetLanguage != null ? $"written in {input.TargetLanguage}" : "")}. " +
-            "Review the target text and respond with the issue description.";
+            $"You are receiving a source text {(input.SourceLanguage != null ? $"written in {input.SourceLanguage} " : "")}" +
+            $"that was translated by NMT into target text {(input.TargetLanguage != null ? $"written in {input.TargetLanguage}" : "")}. " +
+            "Evaluate the target text for grammatical errors, language structure issues, and overall linguistic coherence, " +
+            "including them in the issues description. Respond with the issues description.";
+
+        if (glossary.Glossary != null)
+            systemPrompt += " Ensure that the translation aligns with the glossary entries provided for the respective " +
+                            "languages, and note any discrepancies, ambiguities, or incorrect usage of terms. Include " +
+                            "these observations in the issues description.";
 
         if (input.AdditionalPrompt != null)
             systemPrompt = $"{systemPrompt} {input.AdditionalPrompt}";
@@ -310,6 +333,12 @@ public class ChatActions : BaseActions
             Target text: 
             {input.TargetText}
         ";
+        
+        if (glossary.Glossary != null)
+        {
+            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary);
+            userPrompt += glossaryPromptPart;
+        }
 
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
         request.AddJsonBody(new
@@ -331,7 +360,7 @@ public class ChatActions : BaseActions
     [Action("Get MQM report",
         Description = "Perform an LQA Analysis of the translation. The result will be in the MQM framework form.")]
     public async Task<ChatResponse> GetLqaAnalysis([ActionParameter] ModelIdentifier modelIdentifier,
-        [ActionParameter] GetTranslationIssuesRequest input)
+        [ActionParameter] GetTranslationIssuesRequest input, [ActionParameter] GlossaryRequest glossary)
     {
         var model = modelIdentifier.ModelId ?? "gpt-4";
 
@@ -346,15 +375,25 @@ public class ChatActions : BaseActions
                            "7. Design and markup – errors related to the physical design or presentation of a translation product, including character, paragraph, and UI element formatting and markup, integration of text with graphical elements, and overall page or window layout. " +
                            "Provide a quality rating for each dimension from 0 (completely bad) to 10 (perfect). You are an expert linguist and your task is to perform a Language Quality Assessment on input sentences. " +
                            "Try to propose a fixed translation that would have no LQA errors. " +
-                           "Formatting: use line spacing between each category. The category name should be bold."
-            ;
+                           "Formatting: use line spacing between each category. The category name should be bold.";
 
+        if (glossary.Glossary != null)
+            systemPrompt += " Use the provided glossary entries for the respective languages. If there are discrepancies " +
+                            "between the translation and glossary, note them in the 'Terminology' part of the report, " +
+                            "along with terminology problems not related to the glossary.";
+        
         if (input.AdditionalPrompt != null)
             systemPrompt = $"{systemPrompt} {input.AdditionalPrompt}";
 
         var userPrompt =
             $"{(input.SourceLanguage != null ? $"The {input.SourceLanguage} " : "")}\"{input.SourceText}\" was translated as \"{input.TargetText}\"{(input.TargetLanguage != null ? $" into {input.TargetLanguage}" : "")}.{(input.TargetAudience != null ? $" The target audience is {input.TargetAudience}" : "")}";
 
+        if (glossary.Glossary != null)
+        {
+            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary);
+            userPrompt += glossaryPromptPart;
+        }
+        
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
         request.AddJsonBody(new
         {
@@ -376,7 +415,7 @@ public class ChatActions : BaseActions
         Description =
             "Perform an LQA Analysis of the translation. The result will be in the MQM framework form. This action only returns the scores (between 1 and 10) of each dimension.")]
     public async Task<MqmAnalysis> GetLqaDimensionValues([ActionParameter] ModelIdentifier modelIdentifier,
-        [ActionParameter] GetTranslationIssuesRequest input)
+        [ActionParameter] GetTranslationIssuesRequest input, [ActionParameter] GlossaryRequest glossary)
     {
         var possibleModels = new List<string> { "gpt-4-1106-preview", "gpt-3.5-turbo-1106" };
         var model = modelIdentifier.ModelId ?? "gpt-4-1106-preview";
@@ -397,8 +436,12 @@ public class ChatActions : BaseActions
                            "Provide a quality rating for each dimension from 0 (completely bad) to 10 (perfect). You are an expert linguist and your task is to perform a Language Quality Assessment on input sentences. " +
                            "Try to propose a fixed translation that would have no LQA errors. " +
                            "The response should be in the following json format: " +
-                           "{\r\n  \"terminology\": 0,\r\n  \"accuracy\": 0,\r\n  \"linguistic_conventions\": 0,\r\n  \"style\": 0,\r\n  \"locale_conventions\": 0,\r\n  \"audience_appropriateness\": 0,\r\n  \"design_and_markup\": 0,\r\n  \"proposed_translation\": \"fixed translation\"\r\n}"
-            ;
+                           "{\r\n  \"terminology\": 0,\r\n  \"accuracy\": 0,\r\n  \"linguistic_conventions\": 0,\r\n  \"style\": 0,\r\n  \"locale_conventions\": 0,\r\n  \"audience_appropriateness\": 0,\r\n  \"design_and_markup\": 0,\r\n  \"proposed_translation\": \"fixed translation\"\r\n}";
+
+        if (glossary.Glossary != null)
+            systemPrompt += " Use the provided glossary entries for the respective languages. If there are " +
+                            "discrepancies between the translation and glossary, reduce the score in the " +
+                            "'Terminology' part of the report respectively.";
 
         if (input.AdditionalPrompt != null)
             systemPrompt = $"{systemPrompt} {input.AdditionalPrompt}";
@@ -406,6 +449,12 @@ public class ChatActions : BaseActions
         var userPrompt =
             $"{(input.SourceLanguage != null ? $"The {input.SourceLanguage} " : "")}\"{input.SourceText}\" was translated as \"{input.TargetText}\"{(input.TargetLanguage != null ? $" into {input.TargetLanguage}" : "")}.{(input.TargetAudience != null ? $" The target audience is {input.TargetAudience}" : "")}";
 
+        if (glossary.Glossary != null)
+        {
+            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary);
+            userPrompt += glossaryPromptPart;
+        }
+        
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
         request.AddJsonBody(new
         {
@@ -430,16 +479,27 @@ public class ChatActions : BaseActions
 
     [Action("Translate text", Description = "Localize the text provided")]
     public async Task<ChatResponse> LocalizeText([ActionParameter] ModelIdentifier modelIdentifier,
-        [ActionParameter] LocalizeTextRequest input)
+        [ActionParameter] LocalizeTextRequest input, [ActionParameter] GlossaryRequest glossary)
     {
         var model = modelIdentifier.ModelId ?? "gpt-4";
         var prompt = @$"
                     Original text: {input.Text}
-                    Locale: {input.Locale}
-                    Localized text:
+                    Locale: {input.Locale} 
+
+                    Respond with localized text.                  
                     ";
+
+        if (glossary.Glossary != null)
+        {
+            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary);
+            prompt += "\nEnhance the localized text by incorporating relevant terms from our glossary where applicable. " +
+                      "Ensure that the localized text aligns with the glossary entries for the respective languages. " +
+                      "If a term has variations or synonyms, consider them and choose the most appropriate " +
+                      $"translation to maintain consistency and precision. {glossaryPromptPart}";
+        }
+
         var tikToken = await TikToken.GetEncodingAsync("cl100k_base");
-        var maximumTokensNumber = tikToken.Encode(input.Text).Count + 100;
+        var maximumTokensNumber = tikToken.Encode(prompt + input.Text).Count + 100;
 
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
         request.AddJsonBody(new
@@ -498,6 +558,32 @@ public class ChatActions : BaseActions
         {
             Message = response.Choices.First().Message.Content
         };
+    }
+
+    private async Task<string> GetGlossaryPromptPart(FileReference glossary)
+    {
+        var glossaryStream = await FileManagementClient.DownloadAsync(glossary);
+        var blackbirdGlossary = await glossaryStream.ConvertFromTBX();
+
+        var glossaryPromptPart = new StringBuilder();
+        glossaryPromptPart.AppendLine();
+        glossaryPromptPart.AppendLine();
+        glossaryPromptPart.AppendLine("Glossary entries (each entry includes terms in different language. Each " +
+                                      "language may have a few synonymous variations which are separated by ;;):");
+
+        foreach (var entry in blackbirdGlossary.ConceptEntries)
+        {
+            glossaryPromptPart.AppendLine();
+            glossaryPromptPart.AppendLine("\tEntry:");
+                
+            foreach (var section in entry.LanguageSections)
+            {
+                glossaryPromptPart.AppendLine(
+                    $"\t\t{section.LanguageCode}: {string.Join(";; ", section.Terms.Select(term => term.Term))}");
+            }
+        }
+
+        return glossaryPromptPart.ToString();
     }
 
     #endregion
