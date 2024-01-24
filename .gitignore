@@ -355,3 +355,4 @@ healthchecksdb
 *.dmg
 *.env
 /ConsoleApp1
+/ConsoleApp2

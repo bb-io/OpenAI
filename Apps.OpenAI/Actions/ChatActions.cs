@@ -22,6 +22,9 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RestSharp;
 using TiktokenSharp;
+using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
+using DocumentFormat.OpenXml.Spreadsheet;
+using System.Net.Mime;
 
 namespace Apps.OpenAI.Actions;
 
@@ -475,6 +478,60 @@ public class ChatActions : BaseActions
             throw new Exception(
                 "Something went wrong parsing the output from OpenAI, most likely due to a hallucination!");
         }
+    }
+
+    [Action("Extract glossary", Description = "Extract glossary terms from a given text. Use in combination with other glossary actions")]
+    public async Task<GlossaryResponse> ExtractGlossary([ActionParameter] ModelIdentifier modelIdentifier, [ActionParameter] ExtractGlossaryRequest input)
+    {
+        var possibleModels = new List<string> { "gpt-4-1106-preview", "gpt-3.5-turbo-1106" };
+        var model = modelIdentifier.ModelId ?? "gpt-4-1106-preview";
+
+        if (!possibleModels.Contains(model))
+            throw new Exception("This model is not supported. Please use one of the following: " +
+                                string.Join(", ", possibleModels));
+
+        var systemPrompt = "Extract and list all the subject matter terminologies and proper nouns from the text inputted by the user. Extract words and phrases, instead of sentences. For each term also provide a short description. Return a JSON of the following structure: {\"result\": [{\"term\": \"\", \"description\": \"\"}]}.";
+
+        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
+        request.AddJsonBody(new
+        {
+            model,
+            Messages = new List<ChatMessageDto>
+                { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, input.Content) },
+            temperature = input.Temperature ?? 0.5,
+            response_format = new { type = "json_object" },
+        });
+
+        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+        List<ExtractedGlossaryItem> items = null;
+        try
+        {
+            items = JsonConvert.DeserializeObject<GlossaryItemWrapper>(response.Choices.First().Message.Content).Result;
+        }
+        catch
+        {
+            throw new Exception("Something went wrong parsing the output from OpenAI, most likely due to a hallucination!");
+        }
+
+        var conceptEntries = new List<GlossaryConceptEntry>();
+        int counter = 0;
+        foreach (var item in items)
+        {
+            var glossaryTermSection = new List<GlossaryTermSection> { new GlossaryTermSection(item.Term) { Notes = new List<string> { item.Description } } };
+            var languageSections = new List<GlossaryLanguageSection> { new GlossaryLanguageSection(input.Language, glossaryTermSection) };
+
+            conceptEntries.Add(new GlossaryConceptEntry(counter.ToString(), languageSections));
+            ++counter;
+        }
+        var blackbirdGlossary = new Glossary(conceptEntries);
+
+        var name = input.Name ?? "New glossary";
+        blackbirdGlossary.Title = name;
+        using var stream = blackbirdGlossary.ConvertToTBX();
+        return new GlossaryResponse() { Glossary = await FileManagementClient.UploadAsync(stream, MediaTypeNames.Application.Xml, $"{name}.tbx") };
+
+
+
     }
 
     [Action("Translate text", Description = "Localize the text provided")]
