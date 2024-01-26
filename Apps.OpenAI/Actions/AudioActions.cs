@@ -62,7 +62,8 @@ public class AudioActions : BaseActions
     }
 
     [Action("Create speech", Description = "Generates audio from the text input.")]
-    public async Task<CreateSpeechResponse> CreateSpeech([ActionParameter] ModelIdentifier modelIdentifier, 
+    public async Task<CreateSpeechResponse> CreateSpeech(
+        [ActionParameter] SpeechCreationModelIdentifier modelIdentifier, 
         [ActionParameter] CreateSpeechRequest input)
     {
         var model = modelIdentifier.ModelId ?? "tts-1-hd";
