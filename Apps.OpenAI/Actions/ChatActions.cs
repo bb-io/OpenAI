@@ -535,18 +535,20 @@ public class ChatActions : BaseActions
         var prompt = @$"
                     Original text: {input.Text}
                     Locale: {input.Locale} 
-
-                    Respond with localized text.                  
+                
                     ";
 
         if (glossary.Glossary != null)
         {
             var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary);
             prompt += "\nEnhance the localized text by incorporating relevant terms from our glossary where applicable. " +
-                      "Ensure that the localized text aligns with the glossary entries for the respective languages. " +
-                      "If a term has variations or synonyms, consider them and choose the most appropriate " +
-                      $"translation to maintain consistency and precision. {glossaryPromptPart}";
+                      "If you encounter terms from the glossary in the text, ensure that the localized text aligns " +
+                      "with the glossary entries for the respective languages. If a term has variations or synonyms, " +
+                      "consider them and choose the most appropriate translation from the glossary to maintain " +
+                      $"consistency and precision. {glossaryPromptPart}";
         }
+
+        prompt += "Localized text: ";
 
         var tikToken = await TikToken.GetEncodingAsync("cl100k_base");
         var maximumTokensNumber = tikToken.Encode(prompt + input.Text).Count + 100;
