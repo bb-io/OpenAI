@@ -23,7 +23,7 @@ public class ImageActions : BaseActions
         : base(invocationContext, fileManagementClient) { }
 
     [Action("Generate image", Description = "Generates an image based on a prompt")]
-    public async Task<ImageResponse> GenerateImage([ActionParameter] ModelIdentifier modelIdentifier, 
+    public async Task<ImageResponse> GenerateImage([ActionParameter] ImageGenerationModelIdentifier modelIdentifier, 
         [ActionParameter] ImageRequest input)
     {
         var model = modelIdentifier.ModelId ?? "dall-e-3";

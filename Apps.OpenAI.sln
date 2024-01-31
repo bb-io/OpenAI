@@ -5,8 +5,6 @@ VisualStudioVersion = 17.4.33205.214
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Apps.OpenAI", "Apps.OpenAI\Apps.OpenAI.csproj", "{D82582CD-7BD9-49A0-85C7-77EFF8E511BF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApp2", "ConsoleApp2\ConsoleApp2.csproj", "{23A15C81-2280-4E84-9EFC-CF0DE9B835B6}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,10 +15,6 @@ Global
 		{D82582CD-7BD9-49A0-85C7-77EFF8E511BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D82582CD-7BD9-49A0-85C7-77EFF8E511BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D82582CD-7BD9-49A0-85C7-77EFF8E511BF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{23A15C81-2280-4E84-9EFC-CF0DE9B835B6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{23A15C81-2280-4E84-9EFC-CF0DE9B835B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{23A15C81-2280-4E84-9EFC-CF0DE9B835B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{23A15C81-2280-4E84-9EFC-CF0DE9B835B6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

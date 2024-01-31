@@ -24,7 +24,8 @@ public class TextAnalysisActions : BaseActions
     [Action("Create embedding", Description = "Generate an embedding for a text provided. An embedding is a list of " +
                                               "floating point numbers that captures semantic information about the " +
                                               "text that it represents.")]
-    public async Task<CreateEmbeddingResponse> CreateEmbedding([ActionParameter] ModelIdentifier modelIdentifier, 
+    public async Task<CreateEmbeddingResponse> CreateEmbedding(
+        [ActionParameter] EmbeddingModelIdentifier modelIdentifier, 
         [ActionParameter] EmbeddingRequest input)
     {
         var model = modelIdentifier.ModelId ?? "text-embedding-ada-002";
