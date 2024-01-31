@@ -538,7 +538,11 @@ public class ChatActions : BaseActions
         [ActionParameter] LocalizeTextRequest input, [ActionParameter] GlossaryRequest glossary)
     {
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
-        var prompt = @$"
+        
+        var systemPrompt = "You are a text localizer. Localize the provided text for the specified locale while " +
+                           "preserving the original text structure. Respond with localized text.";
+        
+        var userPrompt = @$"
                     Original text: {input.Text}
                     Locale: {input.Locale} 
                 
@@ -547,24 +551,22 @@ public class ChatActions : BaseActions
         if (glossary.Glossary != null)
         {
             var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary);
-            prompt += "\nEnhance the localized text by incorporating relevant terms from our glossary where applicable. " +
-                      "If you encounter terms from the glossary in the text, ensure that the localized text aligns " +
-                      "with the glossary entries for the respective languages. If a term has variations or synonyms, " +
-                      "consider them and choose the most appropriate translation from the glossary to maintain " +
-                      $"consistency and precision. {glossaryPromptPart}";
+            userPrompt += "\nEnhance the localized text by incorporating relevant terms from our glossary where applicable. " +
+                          "If you encounter terms from the glossary in the text, ensure that the localized text aligns " +
+                          "with the glossary entries for the respective languages. If a term has variations or synonyms, " +
+                          "consider them and choose the most appropriate translation from the glossary to maintain " +
+                          $"consistency and precision. {glossaryPromptPart}";
         }
 
-        prompt += "Localized text: ";
-
-        var tikToken = await TikToken.GetEncodingAsync("cl100k_base");
-        var maximumTokensNumber = tikToken.Encode(prompt + input.Text).Count + 100;
+        userPrompt += "Localized text: ";
 
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
         request.AddJsonBody(new
         {
             model,
-            Messages = new List<ChatMessageDto> { new(MessageRoles.User, prompt) },
-            max_tokens = maximumTokensNumber,
+            Messages = new List<ChatMessageDto>
+                { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) },
+            max_tokens = input.MaximumTokens ?? 4096,
             temperature = 0.1f
         });
 
