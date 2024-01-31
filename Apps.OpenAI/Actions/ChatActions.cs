@@ -349,7 +349,7 @@ public class ChatActions : BaseActions
             model,
             Messages = new List<ChatMessageDto>
                 { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) },
-            max_tokens = input.MaximumTokens ?? 5000,
+            max_tokens = input.MaximumTokens ?? 4096,
             temperature = input.Temperature ?? 0.5
         });
 
