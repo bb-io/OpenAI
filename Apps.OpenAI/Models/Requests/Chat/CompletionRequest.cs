@@ -2,5 +2,5 @@
 
 public class CompletionRequest : BaseChatRequest
 {
-    public string Prompt { get; set; }
+    public string Text { get; set; }
 }
