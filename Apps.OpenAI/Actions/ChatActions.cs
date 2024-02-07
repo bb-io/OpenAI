@@ -37,37 +37,44 @@ public class ChatActions : BaseActions
 
     #region Chat actions
 
-    [Action("Generate completion", Description = "Completes the given prompt")]
-    public async Task<CompletionResponse> CreateCompletion([ActionParameter] CompletionModelIdentifier modelIdentifier,
+    [Action("Generate completion", Description = "Completes the given text")]
+    public async Task<CompletionResponse> CreateCompletion([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] CompletionRequest input)
     {
-        var model = modelIdentifier.ModelId ?? "gpt-3.5-turbo-instruct";
+        var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
 
-        var request = new OpenAIRequest("/completions", Method.Post, Creds);
+        var systemPrompt = "You are a text completer. Complete the text provided and respond with completion.";
+        
+        var userPrompt = @$"
+                    Input text: {input.Text}
+                    Completion:
+                    ";
+
+        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
         request.AddJsonBody(new
         {
             model,
-            prompt = input.Prompt,
-            logprobs = 1,
-            max_tokens = input.MaximumTokens ?? 100,
+            messages = new List<ChatMessageDto>
+                { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) },
+            max_tokens = input.MaximumTokens ?? 1000,
             top_p = input.TopP ?? 1,
             presence_penalty = input.PresencePenalty ?? 0,
             frequency_penalty = input.FrequencyPenalty ?? 0,
             temperature = input.Temperature ?? 1
         });
 
-        var response = await Client.ExecuteWithErrorHandling<CompletionDto>(request);
+        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
-            CompletionText = response.Choices.First().Text
+            CompletionText = response.Choices.First().Message.Content
         };
     }
 
     [Action("Create summary", Description = "Summarizes the input text")]
-    public async Task<SummaryResponse> CreateSummary([ActionParameter] CompletionModelIdentifier modelIdentifier,
+    public async Task<SummaryResponse> CreateSummary([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] SummaryRequest input)
     {
-        var model = modelIdentifier.ModelId ?? "gpt-3.5-turbo-instruct";
+        var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
 
         var prompt = @$"
                 Summarize the following text.
@@ -80,23 +87,22 @@ public class ChatActions : BaseActions
                 Summary:
             ";
 
-        var request = new OpenAIRequest("/completions", Method.Post, Creds);
+        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
         request.AddJsonBody(new
         {
             model,
-            prompt,
-            logprobs = 1,
-            max_tokens = input.MaximumTokens ?? 100,
+            messages = new List<ChatMessageDto> { new(MessageRoles.User, prompt) },
+            max_tokens = input.MaximumTokens ?? 500,
             top_p = input.TopP ?? 1,
             presence_penalty = input.PresencePenalty ?? 0,
             frequency_penalty = input.FrequencyPenalty ?? 0,
             temperature = input.Temperature ?? 1
         });
 
-        var response = await Client.ExecuteWithErrorHandling<CompletionDto>(request);
+        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
-            Summary = response.Choices.First().Text
+            Summary = response.Choices.First().Message.Content
         };
     }
 
@@ -532,7 +538,11 @@ public class ChatActions : BaseActions
         [ActionParameter] LocalizeTextRequest input, [ActionParameter] GlossaryRequest glossary)
     {
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
-        var prompt = @$"
+        
+        var systemPrompt = "You are a text localizer. Localize the provided text for the specified locale while " +
+                           "preserving the original text structure. Respond with localized text.";
+        
+        var userPrompt = @$"
                     Original text: {input.Text}
                     Locale: {input.Locale} 
                 
@@ -541,24 +551,22 @@ public class ChatActions : BaseActions
         if (glossary.Glossary != null)
         {
             var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary);
-            prompt += "\nEnhance the localized text by incorporating relevant terms from our glossary where applicable. " +
-                      "If you encounter terms from the glossary in the text, ensure that the localized text aligns " +
-                      "with the glossary entries for the respective languages. If a term has variations or synonyms, " +
-                      "consider them and choose the most appropriate translation from the glossary to maintain " +
-                      $"consistency and precision. {glossaryPromptPart}";
+            userPrompt += "\nEnhance the localized text by incorporating relevant terms from our glossary where applicable. " +
+                          "If you encounter terms from the glossary in the text, ensure that the localized text aligns " +
+                          "with the glossary entries for the respective languages. If a term has variations or synonyms, " +
+                          "consider them and choose the most appropriate translation from the glossary to maintain " +
+                          $"consistency and precision. {glossaryPromptPart}";
         }
 
-        prompt += "Localized text: ";
-
-        var tikToken = await TikToken.GetEncodingAsync("cl100k_base");
-        var maximumTokensNumber = tikToken.Encode(prompt + input.Text).Count + 100;
+        userPrompt += "Localized text: ";
 
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
         request.AddJsonBody(new
         {
             model,
-            Messages = new List<ChatMessageDto> { new(MessageRoles.User, prompt) },
-            max_tokens = maximumTokensNumber,
+            Messages = new List<ChatMessageDto>
+                { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) },
+            max_tokens = input.MaximumTokens ?? 4096,
             temperature = 0.1f
         });
 
