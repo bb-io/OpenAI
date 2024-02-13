@@ -17,12 +17,14 @@ Before you can connect you need to make sure that:
 - You have generated a new API key in the [API keys](https://platform.openai.com/account/api-keys) section, granting programmatic access to OpenAI models on a 'pay-as-you-go' basis. With this, you only pay for your actual usage, which [starts at $0,002 per 1,000 tokens](https://openai.com/pricing) for the fastest chat model. Note that the ChatGPT Plus subscription plan is not applicable for this; it only provides access to the limited web interface at chat.openai.com and doesn't include OpenAI API access. Ensure you copy the entire API key, displayed once upon creation, rather than an abbreviated version. The API key has the shape `sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`.
 - Your API account has a payment method and a positive balance, with a minimum of $5. You can set this up in the [Billing settings](https://platform.openai.com/account/billing/overview) section.
 
+**Note**: Blackbird by default uses the latest models in its actions. If your subscription does not support these models then you have to add the models you can use in every Blackbird action.
+
 ## Connecting
 
 1. Navigate to apps and search for OpenAI. If you cannot find OpenAI then click _Add App_ in the top right corner, select OpenAI and add the app to your Blackbird environment.
 2. Click _Add Connection_.
 3. Name your connection for future reference e.g. 'My OpenAI connection'.
-4. Fill in your Organization ID obtained earlier. 
+4. Fill in your Organization ID obtained earlier.
 5. Fill in your API key obtained earlier.
 6. Click _Connect_.
 
@@ -43,12 +45,12 @@ For more in-depth information about most actions consult the [OpenAI API referen
 
 Different actions support various models that are appropriate for the given task (e.g. gpt-4 model for **Chat** action). Action groups and the corresponding models recommended for them are shown in the table below.
 
-| Action group |                                                                                                                          Latest models                                                                                                                           |      Default model (when _Model ID_ input parameter is unspecified)      |                                                                                                                                                                                                                       Deprecated models                                                                                                                                                                                                                         |
-| :----------: |:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------:|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-|     Chat     | gpt-4-turbo-preview and dated model releases, gpt-4 and dated model releases, gpt-4-vision-preview, gpt-4-32k and dated model releases, gpt-3.5-turbo and dated model releases, gpt-3.5-turbo-16k and dated model releases, fine-tuned versions of gpt-3.5-turbo | gpt-4-turbo-preview; gpt-4-vision-preview for **Chat with image** action |                                                                                                                                                                                   gpt-3.5-turbo-0613, gpt-3.5-turbo-16k-0613, gpt-3.5-turbo-0301, gpt-4-0314, gpt-4-32k-0314                                                                                                                                                                                    |
-| Audiovisual  |                                                                      Only whisper-1 is supported for transcriptions and translations. tts-1 and tts-1-hd are supported for speech creation.                                                                      |                  tts-1-hd for **Create speech** action                   |                                                                                                                                                                                                                               -                                                                                                                                                                                                                                 |
-|    Images    |                                                                                                                        dall-e-2, dall-e-3                                                                                                                        |                                 dall-e-3                                 |                                                                                                                                                                                                                               -                                                                                                                                                                                                                                 |
-|  Embeddings  |                                                                                                                      text-embedding-ada-002                                                                                                                      |                          text-embedding-ada-002                          |text-similarity-ada-001, text-similarity-babbage-001, text-similarity-curie-001, text-similarity-davinci-001, text-search-ada-doc-001, text-search-ada-query-001, text-search-babbage-doc-001, text-search-babbage-query-001, text-search-curie-doc-001, text-search-curie-query-001, text-search-davinci-doc-001, text-search-davinci-query-001, code-search-ada-code-001, code-search-ada-text-001, code-search-babbage-code-001, code-search-babbage-text-001 |
+| Action group |                                                                                                                          Latest models                                                                                                                           |      Default model (when _Model ID_ input parameter is unspecified)      |                                                                                                                                                                                                                        Deprecated models                                                                                                                                                                                                                         |
+| :----------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|     Chat     | gpt-4-turbo-preview and dated model releases, gpt-4 and dated model releases, gpt-4-vision-preview, gpt-4-32k and dated model releases, gpt-3.5-turbo and dated model releases, gpt-3.5-turbo-16k and dated model releases, fine-tuned versions of gpt-3.5-turbo | gpt-4-turbo-preview; gpt-4-vision-preview for **Chat with image** action |                                                                                                                                                                                    gpt-3.5-turbo-0613, gpt-3.5-turbo-16k-0613, gpt-3.5-turbo-0301, gpt-4-0314, gpt-4-32k-0314                                                                                                                                                                                    |
+| Audiovisual  |                                                                      Only whisper-1 is supported for transcriptions and translations. tts-1 and tts-1-hd are supported for speech creation.                                                                      |                  tts-1-hd for **Create speech** action                   |                                                                                                                                                                                                                                -                                                                                                                                                                                                                                 |
+|    Images    |                                                                                                                        dall-e-2, dall-e-3                                                                                                                        |                                 dall-e-3                                 |                                                                                                                                                                                                                                -                                                                                                                                                                                                                                 |
+|  Embeddings  |                                                                                                                      text-embedding-ada-002                                                                                                                      |                          text-embedding-ada-002                          | text-similarity-ada-001, text-similarity-babbage-001, text-similarity-curie-001, text-similarity-davinci-001, text-search-ada-doc-001, text-search-ada-query-001, text-search-babbage-doc-001, text-search-babbage-query-001, text-search-curie-doc-001, text-search-curie-query-001, text-search-davinci-doc-001, text-search-davinci-query-001, code-search-ada-code-001, code-search-ada-text-001, code-search-babbage-code-001, code-search-babbage-text-001 |
 
 You can refer to the [Models](https://platform.openai.com/docs/models) documentation to find information about available models and the differences between them.
 
@@ -58,23 +60,23 @@ Do you have a cool use case that we can turn into an action? Let us know!
 
 ### Chat
 
-- **Chat** given a chat message, returns a response.
-- **Chat with system prompt** same as above but with an extra instructional system prompt parameter.
-- **Chat with image** provides response given a chat message and image.
-- **Generate edit** edits the provided text given an instruction.
-- **Chat with image** provides response given a chat message and image.
-- **Post-edit MT** (Pre-engineered) given a source segment and NMT translated target segment, responds with a post-edited version of the target segment taking into account typical NMT mistakes.
-- **Get translation issues** (Pre-engineered) given a source segment and NMT translated target segment, highlights potential translation issues. Can be used to prepopulate TMS segment comments.
-- **Get MQM report** (Pre-engineered) performs an LQA Analysis of the translation. The result will be in the MQM framework form. The dimensions are: terminology, accuracy, linguistic conventions, style, locale conventions, audience appropriateness, design and markup. The input consists of the source and translated text. Optionally one can add languages and a description of the target audience.
-- **Get MQM dimension values** (Pre-engineered) uses the same input and prompt as 'Get MQM report'. However, in this action the scores are returned as individual numbers so that they can be used in decisions. Also returns the proposed translation.
-- **Translate text** (Pre-engineered) given a text and a locale, tries to create a localized version of the text.
+- **Chat** given a chat message, returns a response. You can optionally add a system prompt and/or an image.
+
+### Localization (pre-engineered)
+
+- **Post-edit MT** given a source segment and NMT translated target segment, responds with a post-edited version of the target segment taking into account typical NMT mistakes.
+- **Get translation issues** given a source segment and NMT translated target segment, highlights potential translation issues. Can be used to prepopulate TMS segment comments.
+- **Get MQM report** performs an LQA Analysis of the translation. The result will be in the MQM framework form. The dimensions are: terminology, accuracy, linguistic conventions, style, locale conventions, audience appropriateness, design and markup. The input consists of the source and translated text. Optionally one can add languages and a description of the target audience.
+- **Get MQM dimension values** uses the same input and prompt as 'Get MQM report'. However, in this action the scores are returned as individual numbers so that they can be used in decisions. Also returns the proposed translation.
+- **Translate text** given a text and a locale, tries to create a localized version of the text.
 - **Get localizable content from image** retrieves localizable content from given image.
-- **Generate completion** generates a completion of the given text.
-- **Create summary** (Pre-engineered) given a text, generates a summary.
 
-### Edits
+### Content repurposing
 
-- **Generate edit** Given a text and an instruction, edits the given text.
+All actions can take: Target audience, locale, glossary, tone of voice and any additional prompts
+
+- **Repurpose content** repurposes content to a specific target audience.
+- **Summarize content** creates a summary of content.
 
 ### Audiovisual
 
@@ -98,7 +100,7 @@ This simple example how OpenAI can be used to communicate with the Blackbird Sla
 
 ## Missing features
 
-In the future we will add actions for:
+In the future we can add actions for:
 
 - Files
 - Moderation

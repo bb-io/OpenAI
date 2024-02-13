@@ -103,10 +103,10 @@ public class ChatActions : BaseActions
 
     #region Repurposing actions
 
-    [Action("Create content summary", Description = "Summarizes content for different target audiences, languages, tone of voices and platforms")]
+    [Action("Summarize content", Description = "Summarizes content for different target audiences, languages, tone of voices and platforms")]
     public async Task<RepurposeResponse> CreateSummary([ActionParameter] TextChatModelIdentifier modelIdentifier,
        [ActionParameter][Display("Original content")] string content, [ActionParameter] RepurposeRequest input, [ActionParameter] GlossaryRequest glossary) =>
-        await HandleRepurposeRequest("You are a text summarizer. Generate a summary of the message of the user", modelIdentifier, content, input, glossary);    
+        await HandleRepurposeRequest("You are a text summarizer. Generate a summary of the message of the user. Be very brief, concise and comprehensive", modelIdentifier, content, input, glossary);    
 
     [Action("Repurpose content", Description = "Repurpose content for different target audiences, languages, tone of voices and platforms")]
     public async Task<RepurposeResponse> RepurposeContent([ActionParameter] TextChatModelIdentifier modelIdentifier,
