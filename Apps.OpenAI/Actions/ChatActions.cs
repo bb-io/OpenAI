@@ -24,6 +24,7 @@ using RestSharp;
 using TiktokenSharp;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
 using System.Net.Mime;
+using System.Text.Json.Nodes;
 
 namespace Apps.OpenAI.Actions;
 
@@ -35,111 +36,7 @@ public class ChatActions : BaseActions
     {
     }
 
-    #region Chat actions
-
-    [Action("Generate completion", Description = "Completes the given text")]
-    public async Task<CompletionResponse> CreateCompletion([ActionParameter] TextChatModelIdentifier modelIdentifier,
-        [ActionParameter] CompletionRequest input)
-    {
-        var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
-
-        var systemPrompt = "You are a text completer. Complete the text provided and respond with completion.";
-        
-        var userPrompt = @$"
-                    Input text: {input.Text}
-                    Completion:
-                    ";
-
-        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
-        request.AddJsonBody(new
-        {
-            model,
-            messages = new List<ChatMessageDto>
-                { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) },
-            max_tokens = input.MaximumTokens ?? 1000,
-            top_p = input.TopP ?? 1,
-            presence_penalty = input.PresencePenalty ?? 0,
-            frequency_penalty = input.FrequencyPenalty ?? 0,
-            temperature = input.Temperature ?? 1
-        });
-
-        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
-        return new()
-        {
-            CompletionText = response.Choices.First().Message.Content
-        };
-    }
-
-    [Action("Create summary", Description = "Summarizes the input text")]
-    public async Task<SummaryResponse> CreateSummary([ActionParameter] TextChatModelIdentifier modelIdentifier,
-        [ActionParameter] SummaryRequest input)
-    {
-        var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
-
-        var prompt = @$"
-                Summarize the following text.
-
-                Text:
-                """"""
-                {input.Text}
-                """"""
-
-                Summary:
-            ";
-
-        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
-        request.AddJsonBody(new
-        {
-            model,
-            messages = new List<ChatMessageDto> { new(MessageRoles.User, prompt) },
-            max_tokens = input.MaximumTokens ?? 500,
-            top_p = input.TopP ?? 1,
-            presence_penalty = input.PresencePenalty ?? 0,
-            frequency_penalty = input.FrequencyPenalty ?? 0,
-            temperature = input.Temperature ?? 1
-        });
-
-        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
-        return new()
-        {
-            Summary = response.Choices.First().Message.Content
-        };
-    }
-
-    [Action("Generate edit", Description = "Edit the input text given an instruction prompt")]
-    public async Task<EditResponse> CreateEdit([ActionParameter] TextChatModelIdentifier modelIdentifier,
-        [ActionParameter] EditRequest input)
-    {
-        var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
-
-        var systemPrompt = "You are a text editor. Given provided input text, edit it following the instruction and " +
-                           "respond with the edited text.";
-
-        var userPrompt = @$"
-                    Input text: {input.InputText}
-                    Instruction: {input.Instruction}
-                    Edited text:
-                    ";
-
-        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
-        request.AddJsonBody(new
-        {
-            model,
-            messages = new List<ChatMessageDto>
-                { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) },
-            max_tokens = input.MaximumTokens,
-            top_p = input.TopP ?? 1,
-            presence_penalty = input.PresencePenalty ?? 0,
-            frequency_penalty = input.FrequencyPenalty ?? 0,
-            temperature = input.Temperature ?? 1
-        });
-
-        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
-        return new()
-        {
-            EditText = response.Choices.First().Message.Content
-        };
-    }
+    #region Default chat action without prompt
 
     [Action("Chat", Description = "Gives a response given a chat message")]
     public async Task<ChatResponse> ChatMessageRequest([ActionParameter] TextChatModelIdentifier modelIdentifier,
@@ -148,48 +45,18 @@ public class ChatActions : BaseActions
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
 
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
-        request.AddJsonBody(new
+
+        var jsonBody = new
         {
             model,
-            Messages = new List<ChatMessageDto> { new(MessageRoles.User, input.Message) },
+            Messages = await GenerateChatMessages(input),
             max_tokens = input.MaximumTokens,
             top_p = input.TopP ?? 1,
             presence_penalty = input.PresencePenalty ?? 0,
             frequency_penalty = input.FrequencyPenalty ?? 0,
             temperature = input.Temperature ?? 1
-        });
-
-        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
-        return new()
-        {
-            Message = response.Choices.First().Message.Content
         };
-    }
 
-    [Action("Chat with image", Description = "Gives a response given a chat message and image")]
-    public async Task<ChatResponse> ChatWithImage([ActionParameter] ChatWithImageRequest input)
-    {
-        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
-        var fileStream = await FileManagementClient.DownloadAsync(input.Image);
-        var fileBytes = await fileStream.GetByteData();
-        var jsonBody = new
-        {
-            model = "gpt-4-vision-preview",
-            messages = new List<ChatImageMessageDto>
-            {
-                new(MessageRoles.User, new List<ChatImageMessageContentDto>
-                {
-                    new ChatImageMessageTextContentDto("text", input.Message),
-                    new ChatImageMessageImageContentDto("image_url", new ImageUrlDto(
-                        $"data:{input.Image.ContentType};base64,{Convert.ToBase64String(fileBytes)}"))
-                })
-            },
-            max_tokens = input.MaximumTokens ?? 1000,
-            top_p = input.TopP ?? 1,
-            presence_penalty = input.PresencePenalty ?? 0,
-            frequency_penalty = input.FrequencyPenalty ?? 0,
-            temperature = input.Temperature ?? 1
-        };
         var jsonBodySerialized = JsonConvert.SerializeObject(jsonBody, new JsonSerializerSettings
         {
             ContractResolver = new CamelCasePropertyNamesContractResolver()
@@ -204,21 +71,78 @@ public class ChatActions : BaseActions
         };
     }
 
-    [Action("Chat with system prompt",
-        Description = "Gives a response given a chat message and a configurable system prompt")]
-    public async Task<ChatResponse> ChatWithSystemMessageRequest(
-        [ActionParameter] TextChatModelIdentifier modelIdentifier,
-        [ActionParameter] SystemChatRequest input)
+    private async Task<List<dynamic>> GenerateChatMessages(ChatRequest input)
+    {
+        var messages = new List<dynamic>();
+
+        if (input.SystemPrompt != null)
+            messages.Add(new ChatMessageDto(MessageRoles.System, input.SystemPrompt));
+
+        if (input.Image != null)
+        {
+            var fileStream = await FileManagementClient.DownloadAsync(input.Image);
+            var fileBytes = await fileStream.GetByteData();
+            if (input.SystemPrompt != null)
+                messages.Add(new ChatMessageDto(MessageRoles.System, input.SystemPrompt));
+            messages.Add(new ChatImageMessageDto(MessageRoles.User, new List<ChatImageMessageContentDto>
+                {
+                    new ChatImageMessageTextContentDto("text", input.Message),
+                    new ChatImageMessageImageContentDto("image_url", new ImageUrlDto(
+                        $"data:{input.Image.ContentType};base64,{Convert.ToBase64String(fileBytes)}"))
+                }));
+        }
+        else
+        {
+            messages.Add(new ChatMessageDto(MessageRoles.User, input.Message));
+        }
+
+        return messages;
+    }
+
+    #endregion
+
+    #region Repurposing actions
+
+    [Action("Summarize content", Description = "Summarizes content for different target audiences, languages, tone of voices and platforms")]
+    public async Task<RepurposeResponse> CreateSummary([ActionParameter] TextChatModelIdentifier modelIdentifier,
+       [ActionParameter][Display("Original content")] string content, [ActionParameter] RepurposeRequest input, [ActionParameter] GlossaryRequest glossary) =>
+        await HandleRepurposeRequest("You are a text summarizer. Generate a summary of the message of the user. Be very brief, concise and comprehensive", modelIdentifier, content, input, glossary);    
+
+    [Action("Repurpose content", Description = "Repurpose content for different target audiences, languages, tone of voices and platforms")]
+    public async Task<RepurposeResponse> RepurposeContent([ActionParameter] TextChatModelIdentifier modelIdentifier,
+    [ActionParameter][Display("Original content")] string content, [ActionParameter] RepurposeRequest input, [ActionParameter] GlossaryRequest glossary) =>
+        await HandleRepurposeRequest("Repurpose the content of the message of the user", modelIdentifier, content, input, glossary);
+
+    private async Task<RepurposeResponse> HandleRepurposeRequest(string initialPrompt, TextChatModelIdentifier modelIdentifier, string content, RepurposeRequest input, GlossaryRequest glossary)
     {
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
 
-        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
+        var prompt = @$"
+                {initialPrompt}. 
+                {input.AdditionalPrompt}. 
+                {(input.TargetAudience != null ? $"The target audience is {input.TargetAudience}" : string.Empty)}.
+                {input.ToneOfVOice}
+                {(input.Locale != null ? $"The response should be in {input.Locale}" : string.Empty)}
+
+            ";
+
+        if (glossary.Glossary != null)
+        {
+            prompt += " Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
+                            "Ensure that the translation aligns with the glossary entries for the respective languages. " +
+                            "If a term has variations or synonyms, consider them and choose the most appropriate " +
+                            "translation to maintain consistency and precision. ";
+
+            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary);
+            prompt += glossaryPromptPart;
+        }
+
+            var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
         request.AddJsonBody(new
         {
             model,
-            Messages = new List<ChatMessageDto>
-                { new(MessageRoles.System, input.SystemPrompt), new(MessageRoles.User, input.Message) },
-            max_tokens = input.MaximumTokens,
+            messages = new List<ChatMessageDto> { new(MessageRoles.System, prompt), new(MessageRoles.User, content) },
+            max_tokens = input.MaximumTokens ?? 500,
             top_p = input.TopP ?? 1,
             presence_penalty = input.PresencePenalty ?? 0,
             frequency_penalty = input.FrequencyPenalty ?? 0,
@@ -228,9 +152,9 @@ public class ChatActions : BaseActions
         var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
-            Message = response.Choices.First().Message.Content
+            Response = response.Choices.First().Message.Content
         };
-    }
+    }    
 
     [Action("Execute Blackbird prompt", Description = "Execute prompt generated by Blackbird's AI utilities")]
     public async Task<ChatResponse> ExecuteBlackbirdPrompt([ActionParameter] TextChatModelIdentifier modelIdentifier,

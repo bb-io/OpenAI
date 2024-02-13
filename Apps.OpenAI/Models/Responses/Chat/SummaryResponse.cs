@@ -1,6 +1,6 @@
 ﻿namespace Apps.OpenAI.Models.Responses.Chat;
 
-public class SummaryResponse
+public class RepurposeResponse
 {
-    public string Summary { get; set; }
+    public string Response { get; set; }
 }
