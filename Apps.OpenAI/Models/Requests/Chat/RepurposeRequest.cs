@@ -15,6 +15,7 @@ namespace Apps.OpenAI.Models.Requests.Chat
         public string? TargetAudience { get; set; }
 
         [Display("Tone of voice")]
+        [DataSource(typeof(ToneOfVoiceHandler))]
         public string? ToneOfVOice { get; set; }
 
         [Display("Locale")]
