@@ -413,10 +413,10 @@ public class ChatActions : BaseActions
     {
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
 
-        var systemPrompt = "Extract and list all the subject matter terminologies and proper nouns from the text " +
-                           "inputted by the user. Extract words and phrases, instead of sentences. For each term " +
-                           "also provide a short description. Return a JSON of the following structure: " +
-                           "{\"result\": [{\"term\": \"\", \"description\": \"\"}]}.";
+        var systemPrompt = $"Extract and list all the subject matter terminologies and proper nouns from the text " +
+                           $"inputted by the user. Extract words and phrases, instead of sentences. For each term, " +
+                           $"provide a terminology entry for the connected language codes: {string.Join(", ", input.Languages)}. Extract words and phrases, instead of sentences. " +
+                           $"Return a JSON of the following structure: {{\"result\": [{string.Join(", ", input.Languages.Select(x => $"{{\"{x}\": \"\"}}"))}]}}.";
 
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
         request.AddJsonBody(new
@@ -429,7 +429,7 @@ public class ChatActions : BaseActions
         });
 
         var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
-        List<ExtractedGlossaryItem> items = null;
+        List<Dictionary<string, string>> items = null;
         try
         {
             items = JsonConvert.DeserializeObject<GlossaryItemWrapper>(response.Choices.First().Message.Content).Result;
@@ -443,8 +443,7 @@ public class ChatActions : BaseActions
         int counter = 0;
         foreach (var item in items)
         {
-            var glossaryTermSection = new List<GlossaryTermSection> { new GlossaryTermSection(item.Term) { Notes = new List<string> { item.Description } } };
-            var languageSections = new List<GlossaryLanguageSection> { new GlossaryLanguageSection(input.Language, glossaryTermSection) };
+            var languageSections = item.Select(x => new GlossaryLanguageSection(x.Key, new List<GlossaryTermSection> { new GlossaryTermSection(x.Value) })).ToList();
 
             conceptEntries.Add(new GlossaryConceptEntry(counter.ToString(), languageSections));
             ++counter;
