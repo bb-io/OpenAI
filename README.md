@@ -78,6 +78,10 @@ All actions can take: Target audience, locale, glossary, tone of voice and any a
 - **Repurpose content** repurposes content to a specific target audience.
 - **Summarize content** creates a summary of content.
 
+### Glossary extraction
+
+- **Extract glossary** extracts a glossary (.tbx) from any (multilingual) content. You can use this in well in conjunction with other apps that take glossaries.
+
 ### Audiovisual
 
 - **Create transcription** transcribes the supported audiovisual file formats into a textual response.
