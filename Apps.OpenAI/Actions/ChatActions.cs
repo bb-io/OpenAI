@@ -416,7 +416,7 @@ public class ChatActions : BaseActions
         var systemPrompt = $"Extract and list all the subject matter terminologies and proper nouns from the text " +
                            $"inputted by the user. Extract words and phrases, instead of sentences. For each term, " +
                            $"provide a terminology entry for the connected language codes: {string.Join(", ", input.Languages)}. Extract words and phrases, instead of sentences. " +
-                           $"Return a JSON of the following structure: {{\"result\": [{string.Join(", ", input.Languages.Select(x => $"{{\"{x}\": \"\"}}"))}]}}.";
+                           $"Return a JSON of the following structure: {{\"result\": [{{{string.Join(", ", input.Languages.Select(x => $"\"{x}\": \"\""))}}}].";
 
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
         request.AddJsonBody(new
