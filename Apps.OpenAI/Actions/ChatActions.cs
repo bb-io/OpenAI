@@ -44,6 +44,8 @@ public class ChatActions : BaseActions
     {
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
 
+        if (input.Image != null) model = "gpt-4-visual-preview";
+
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
 
         var jsonBody = new
