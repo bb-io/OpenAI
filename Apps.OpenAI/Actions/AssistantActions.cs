@@ -22,6 +22,8 @@ using Apps.OpenAI.Models.Requests.Assistant;
 using Apps.OpenAI.Constants;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using DocumentFormat.OpenXml.Office2010.Excel;
+using Blackbird.Applications.Sdk.Common.Files;
+using System.IO;
 
 namespace Apps.OpenAI.Actions;
 
@@ -47,7 +49,7 @@ public class AssistantActions : BaseActions
         {
             Console.WriteLine(run.Status);
             await Task.Delay(1000);
-            run = await GetRun(run.Id);
+            run = await GetRun(run.ThreadId, run.Id);
         }
 
         var message = await GetThreadLastMessage(run.ThreadId);
@@ -60,14 +62,16 @@ public class AssistantActions : BaseActions
 
     private async Task<string> GetThreadLastMessage(string threadId)
     {
-        var request = new OpenAIRequest($"/threads/threads/{threadId}/messages", Method.Get, Creds, Beta);
-        var response = await Client.ExecuteWithErrorHandling(request);
-        return response.Content;
+        var request = new OpenAIRequest($"/threads/{threadId}/messages", Method.Get, Creds, Beta);
+        var response = await Client.ExecuteWithErrorHandling<DataDto<AssistantResponseDto>>(request);
+        if (response.Data.Count() < 2) throw new Exception("The assistant did not respond to the message.");
+        var lastMessage = response.Data.FirstOrDefault();
+        return lastMessage.Content.FirstOrDefault().Text.Value;
     }
 
-    private Task<RunDto> GetRun(string id)
+    private Task<RunDto> GetRun(string threadId, string runId)
     {
-        var request = new OpenAIRequest($"/threads/runs/{id}", Method.Get, Creds, Beta);
+        var request = new OpenAIRequest($"/threads/{threadId}/runs/{runId}", Method.Get, Creds, Beta);
         return Client.ExecuteWithErrorHandling<RunDto>(request);
     }
 
@@ -102,5 +106,27 @@ public class AssistantActions : BaseActions
         };
 
         return messages;
+    }
+
+    public async Task<FileDto> UploadFile(FileReference file, string purpose)
+    {
+        var request = new OpenAIRequest($"/files", Method.Post, Creds);
+        var fileStream = await FileManagementClient.DownloadAsync(file);
+        var fileBytes = await fileStream.GetByteData();
+        request.AddFile("file", fileBytes, file.Name);
+        request.AddParameter("purpose", purpose);
+        return await Client.ExecuteWithErrorHandling<FileDto>(request);
+    }
+
+    public async Task<FileReference> DownloadFile(string fileID)
+    {
+        var infoRequest = new OpenAIRequest($"/files/{fileID}", Method.Get, Creds);
+        var infoResponse = await Client.ExecuteWithErrorHandling<FileDto>(infoRequest);
+
+        var downloadRequest = new OpenAIRequest($"/files/{fileID}/content", Method.Get, Creds);
+        var downloadResponse = await Client.ExecuteWithErrorHandling(downloadRequest);
+
+        using var stream = new MemoryStream(downloadResponse.RawBytes);
+        return await FileManagementClient.UploadAsync(stream, MimeTypes.GetMimeType(infoResponse.Filename), infoResponse.Filename);
     }
 }

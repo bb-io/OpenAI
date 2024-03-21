@@ -17,7 +17,5 @@ namespace Apps.OpenAI.Models.Requests.Assistant
 
         [Display("Message")]
         public string Message { get; set; }
-
-        public string Model { get; set; }
     }
 }
