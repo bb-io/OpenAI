@@ -39,7 +39,7 @@ public class AssistantActions : BaseActions
     }
 
 
-    [Action("Message assistant", Description = "Send a chat message to a pre-configured assistant and get a response. It can optionally take up to 10 files as input. Read docs for more details.")]
+    [Action("Chat with assistant", Description = "Send a chat message to a pre-configured assistant and get a response. It can optionally take up to 10 files as input. Read docs for more details.")]
     public async Task<ChatResponse> ExecuteRun([ActionParameter] RunRequest input, [ActionParameter] TextChatModelIdentifier modelIdentifier)
     {
         var fileIds = new List<string>();

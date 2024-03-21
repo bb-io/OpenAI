@@ -17,7 +17,7 @@ namespace Apps.OpenAI.DataSourceHandlers
     {
         private const string Beta = "assistants=v1";
 
-        protected AssistantsDataSourceHandler(InvocationContext invocationContext) : base(invocationContext)
+        public AssistantsDataSourceHandler(InvocationContext invocationContext) : base(invocationContext)
         {
         }
 
@@ -30,7 +30,7 @@ namespace Apps.OpenAI.DataSourceHandlers
             var assistants = await client.ExecuteWithErrorHandling<DataDto<AssistantDto>>(request);
             var dictionary = assistants.Data
                 .Where(assistant => context.SearchString == null || assistant.Name.Contains(context.SearchString))
-                .ToDictionary(assistant => assistant.Id, assistant => assistant.Id);
+                .ToDictionary(assistant => assistant.Id, assistant => assistant.Name);
             return dictionary;
         }
     }
