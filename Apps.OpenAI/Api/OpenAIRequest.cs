@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Apps.OpenAI.Constants;
 using Blackbird.Applications.Sdk.Common.Authentication;
@@ -10,8 +11,11 @@ namespace Apps.OpenAI.Api;
 public class OpenAIRequest : BlackBirdRestRequest
 {
     public OpenAIRequest(string endpoint, Method method, 
-        IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders) 
-        : base(endpoint, method, authenticationCredentialsProviders) { }
+        IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders, string? beta = null) 
+        : base(endpoint, method, authenticationCredentialsProviders) 
+    {
+        if (beta != null) this.AddHeader("OpenAI-Beta", beta);
+    }
 
     protected override void AddAuth(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders)
     {

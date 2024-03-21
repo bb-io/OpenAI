@@ -25,6 +25,6 @@ public class OpenAIClient : BlackBirdRestClient
         if (response.StatusCode == HttpStatusCode.NotFound && error.Error.Type == "invalid_request_error")
             return new("Model chosen is not suitable for this task. Please choose a compatible model.");
         
-        return new(error.Error.Message);
+        return new(error?.Error?.Message ?? response.ErrorException.Message);
     }
 }
