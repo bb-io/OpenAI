@@ -56,7 +56,6 @@ public class AssistantActions : BaseActions
 
         while(InProgressStatusses.Contains(run.Status))
         {
-            Console.WriteLine(run.Status);
             await Task.Delay(1000);
             run = await GetRun(run.ThreadId, run.Id);
         }
