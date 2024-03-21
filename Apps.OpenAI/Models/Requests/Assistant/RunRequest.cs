@@ -1,6 +1,7 @@
 ﻿using Apps.OpenAI.DataSourceHandlers;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dynamic;
+using Blackbird.Applications.Sdk.Common.Files;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,6 +17,9 @@ namespace Apps.OpenAI.Models.Requests.Assistant
         public string AssistantId { get; set; }
 
         [Display("Message")]
-        public string Message { get; set; }
+        public string? Message { get; set; }
+
+        [Display("Files")]
+        public IEnumerable<FileReference>? Files { get; set; }
     }
 }

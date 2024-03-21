@@ -39,11 +39,20 @@ public class AssistantActions : BaseActions
     }
 
 
-    // [Action("Message assistant", Description = "Send a chat message to a pre-configured assistant and get a response")]
+    [Action("Message assistant", Description = "Send a chat message to a pre-configured assistant and get a response. It can optionally take up to 10 files as input. Read docs for more details.")]
     public async Task<ChatResponse> ExecuteRun([ActionParameter] RunRequest input, [ActionParameter] TextChatModelIdentifier modelIdentifier)
     {
+        var fileIds = new List<string>();
+        if (input.Files != null)
+        {
+            foreach (var file in input.Files)
+            {
+                var res = await UploadFile(file);
+                fileIds.Add(res.Id);
+            }
+        }
 
-        var run = await StartRun(input, modelIdentifier);
+        var run = await StartRun(input, modelIdentifier, fileIds);
 
         while(InProgressStatusses.Contains(run.Status))
         {
@@ -75,17 +84,15 @@ public class AssistantActions : BaseActions
         return Client.ExecuteWithErrorHandling<RunDto>(request);
     }
 
-    private Task<RunDto> StartRun(RunRequest input, TextChatModelIdentifier modelIdentifier)
+    private Task<RunDto> StartRun(RunRequest input, TextChatModelIdentifier modelIdentifier, List<string> fileIds)
     {
         var request = new OpenAIRequest("/threads/runs", Method.Post, Creds, Beta);
-
-        string model = null; // modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
 
         var jsonBody = new
         {
             assistant_id = input.AssistantId,
-            thread = new { messages = GenerateChatMessages(input.Message) },
-            model,
+            thread = new { messages = GenerateChatMessages(input.Message ?? string.Empty, fileIds) },
+            model = modelIdentifier.ModelId,
         };
 
         var jsonBodySerialized = JsonConvert.SerializeObject(jsonBody, new JsonSerializerSettings
@@ -98,27 +105,27 @@ public class AssistantActions : BaseActions
         return Client.ExecuteWithErrorHandling<RunDto>(request);
     }
 
-    private List<AssistantMessageDto> GenerateChatMessages(string content)
+    private List<AssistantMessageDto> GenerateChatMessages(string content, List<string> fileIds)
     {
         var messages = new List<AssistantMessageDto>
         {
-            new AssistantMessageDto { Role = "user", Content = content }
+            new AssistantMessageDto { Role = "user", Content = content, FileIds = fileIds }
         };
 
         return messages;
     }
 
-    public async Task<FileDto> UploadFile(FileReference file, string purpose)
+    private async Task<FileDto> UploadFile(FileReference file)
     {
         var request = new OpenAIRequest($"/files", Method.Post, Creds);
         var fileStream = await FileManagementClient.DownloadAsync(file);
         var fileBytes = await fileStream.GetByteData();
         request.AddFile("file", fileBytes, file.Name);
-        request.AddParameter("purpose", purpose);
+        request.AddParameter("purpose", "assistants");
         return await Client.ExecuteWithErrorHandling<FileDto>(request);
     }
 
-    public async Task<FileReference> DownloadFile(string fileID)
+    private async Task<FileReference> DownloadFile(string fileID)
     {
         var infoRequest = new OpenAIRequest($"/files/{fileID}", Method.Get, Creds);
         var infoResponse = await Client.ExecuteWithErrorHandling<FileDto>(infoRequest);

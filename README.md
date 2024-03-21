@@ -62,6 +62,10 @@ Do you have a cool use case that we can turn into an action? Let us know!
 
 - **Chat** given a chat message, returns a response. You can optionally add a system prompt and/or an image.
 
+### Assistant
+
+- **Message assistant** sends a message to a pre-configured assistant. It will execute the assistant and return its message. The assistant action can accept up to 10 files as input. **Note**: If you want to read the attached files make sure your assistant has _Retrieval_ enabled.
+
 ### Localization (pre-engineered)
 
 - **Post-edit MT** given a source segment and NMT translated target segment, responds with a post-edited version of the target segment taking into account typical NMT mistakes.
