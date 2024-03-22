@@ -561,6 +561,12 @@ public class ChatActions : BaseActions
         var translatedText = response.Choices.First().Message.Content.Trim();
         
         var translatedTexts = translatedText.Split(new [] { "\n---\n" }, StringSplitOptions.RemoveEmptyEntries);
+
+        return new TranslateXliffResponse()
+        {
+            LogString = translatedTexts
+        };
+        
         if (translatedTexts.Length != translationUnits.Count)
         {
             throw new InvalidOperationException("The number of translated texts does not match the number of source texts.");
