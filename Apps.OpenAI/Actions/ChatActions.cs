@@ -546,10 +546,13 @@ public class ChatActions : BaseActions
 
         var systemPrompt = "You are a text localizer. Localize the provided text for the specified locale while " +
                            "preserving the original text structure. Respond with localized text.";
-        var userPrompt = $"Translate the following texts from {sourceLanguage} to {targetLanguage}, separating each translation with '---'. " +
-                         $"Original texts:\n{aggregatedSourceTexts}\n\nTranslated texts:";
+        
+        string json = JsonConvert.SerializeObject(translationUnits.Values);
+        var userPrompt = $"Translate the following texts from {sourceLanguage} to {targetLanguage}, and return result in array format. " +
+                         $"Original texts (in array format): {json}";
         
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
+        
         request.AddJsonBody(new
         {
             model,
