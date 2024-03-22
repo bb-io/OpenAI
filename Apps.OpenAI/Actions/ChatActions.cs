@@ -544,8 +544,10 @@ public class ChatActions : BaseActions
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
         var aggregatedSourceTexts = string.Join("\n---\n", translationUnits.Values);
 
-        var systemPrompt = $"Translate the following texts from {sourceLanguage} to {targetLanguage}, separating each translation with '---'.";
-        var userPrompt = $"Original texts:\n{aggregatedSourceTexts}\n\nTranslated texts:";
+        var systemPrompt = "You are a text localizer. Localize the provided text for the specified locale while " +
+                           "preserving the original text structure. Respond with localized text.";
+        var userPrompt = $"Translate the following texts from {sourceLanguage} to {targetLanguage}, separating each translation with '---'. " +
+                         $"Original texts:\n{aggregatedSourceTexts}\n\nTranslated texts:";
         
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
         request.AddJsonBody(new
