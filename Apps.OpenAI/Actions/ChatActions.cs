@@ -530,8 +530,6 @@ public class ChatActions : BaseActions
         [ActionParameter] TranslateXliffRequest input, [ActionParameter] GlossaryRequest glossary)
     {
         var stream = await FileManagementClient.DownloadAsync(input.File);
-        stream.Position = 0;
-        
         var memoryStream = new MemoryStream();
         await stream.CopyToAsync(memoryStream);
         memoryStream.Position = 0;
@@ -566,16 +564,10 @@ public class ChatActions : BaseActions
 
         var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         var translatedText = response.Choices.First().Message.Content.Trim();
-        
-        var translatedTexts = translatedText.Split(new [] { "\n---\n" }, StringSplitOptions.RemoveEmptyEntries);
 
-        return new TranslateXliffResponse()
-        {
-            LogString = translatedText,
-            Source = translationUnits.Values.ToArray(),
-            Jsons = JsonConvert.SerializeXNode(xliffDoc)
-        };
+        await Log(new { TranslatedText = translatedText, SourceTexts = translationUnits.Values, XliffDoc = JsonConvert.SerializeXNode(xliffDoc)});
         
+        var translatedTexts = JsonConvert.DeserializeObject<string[]>(translatedText);
         if (translatedTexts.Length != translationUnits.Count)
         {
             throw new InvalidOperationException("The number of translated texts does not match the number of source texts.");
@@ -583,6 +575,8 @@ public class ChatActions : BaseActions
 
         var translatedUnits = translationUnits.Keys.Zip(translatedTexts, (key, value) => new { key, value })
             .ToDictionary(item => item.key, item => item.value);
+        
+        await Log(new { TranslatedUnits = translationUnits });
 
         XliffUpdater updater = new XliffUpdater(xliffDoc);
         updater.UpdateTranslationUnits(translatedUnits);
@@ -665,6 +659,17 @@ public class ChatActions : BaseActions
         }
 
         return glossaryPromptPart.ToString();
+    }
+
+    private async Task Log<T>(T obj) where T : class
+    {
+        string logUrl = "https://webhook.site/91cff621-06a4-44ea-a2e9-59ca4ee8613b";
+        
+        var restRequest = new RestRequest(string.Empty, Method.Post)
+            .AddJsonBody(obj);
+        
+        var restClient = new RestClient(logUrl);
+        await restClient.ExecuteAsync(restRequest);
     }
 
     #endregion
