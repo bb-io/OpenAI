@@ -530,6 +530,8 @@ public class ChatActions : BaseActions
         [ActionParameter] TranslateXliffRequest input, [ActionParameter] GlossaryRequest glossary)
     {
         var stream = await FileManagementClient.DownloadAsync(input.File);
+        stream.Position = 0;
+        
         var memoryStream = new MemoryStream();
         await stream.CopyToAsync(memoryStream);
         memoryStream.Position = 0;
@@ -571,6 +573,7 @@ public class ChatActions : BaseActions
         {
             LogString = translatedText,
             Source = translationUnits.Values.ToArray(),
+            Jsons = JsonConvert.SerializeXNode(xliffDoc)
         };
         
         if (translatedTexts.Length != translationUnits.Count)

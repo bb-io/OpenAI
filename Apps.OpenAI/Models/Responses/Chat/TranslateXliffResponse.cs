@@ -9,4 +9,6 @@ public class TranslateXliffResponse
     public string LogString { get; set; }
 
     public string[] Source { get; set; }
+
+    public string Jsons { get; set; }
 }
