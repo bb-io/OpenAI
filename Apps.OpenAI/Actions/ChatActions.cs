@@ -542,10 +542,17 @@ public class ChatActions : BaseActions
         Dictionary<string, string> translationUnits = xliffExtractor.ExtractTranslationUnits();
 
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
-        var aggregatedSourceTexts = string.Join("\n---\n", translationUnits.Values);
 
         var systemPrompt = "You are a text localizer. Localize the provided text for the specified locale while " +
                            "preserving the original text structure. Respond with localized text.";
+        
+        if(translationUnits.Count == 0)
+        {
+            return new TranslateXliffResponse
+            {
+                File = input.File
+            };
+        }
         
         string json = JsonConvert.SerializeObject(translationUnits.Values);
         var userPrompt = $"Translate the following texts from {sourceLanguage} to {targetLanguage}, and return result in array format. " +
@@ -564,8 +571,6 @@ public class ChatActions : BaseActions
 
         var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         var translatedText = response.Choices.First().Message.Content.Trim();
-
-        await Log(new { TranslatedText = translatedText, SourceTexts = translationUnits.Values, XliffDoc = JsonConvert.SerializeXNode(xliffDoc)});
         
         var translatedTexts = JsonConvert.DeserializeObject<string[]>(translatedText);
         if (translatedTexts.Length != translationUnits.Count)
@@ -576,8 +581,6 @@ public class ChatActions : BaseActions
         var translatedUnits = translationUnits.Keys.Zip(translatedTexts, (key, value) => new { key, value })
             .ToDictionary(item => item.key, item => item.value);
         
-        await Log(new { TranslatedUnits = translationUnits });
-
         XliffUpdater updater = new XliffUpdater(xliffDoc);
         updater.UpdateTranslationUnits(translatedUnits);
         XDocument updatedXliffDoc = updater.GetUpdatedXliffDocument();
@@ -659,17 +662,6 @@ public class ChatActions : BaseActions
         }
 
         return glossaryPromptPart.ToString();
-    }
-
-    private async Task Log<T>(T obj) where T : class
-    {
-        string logUrl = "https://webhook.site/91cff621-06a4-44ea-a2e9-59ca4ee8613b";
-        
-        var restRequest = new RestRequest(string.Empty, Method.Post)
-            .AddJsonBody(obj);
-        
-        var restClient = new RestClient(logUrl);
-        await restClient.ExecuteAsync(restRequest);
     }
 
     #endregion
