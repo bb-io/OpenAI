@@ -569,7 +569,8 @@ public class ChatActions : BaseActions
 
         return new TranslateXliffResponse()
         {
-            LogString = translatedTexts
+            LogString = translatedText,
+            Source = translationUnits.Values.ToArray(),
         };
         
         if (translatedTexts.Length != translationUnits.Count)
