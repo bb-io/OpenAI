@@ -564,9 +564,17 @@ public class ChatActions : BaseActions
         }
 
         string json = JsonConvert.SerializeObject(translationUnits.Values);
-        var userPrompt =
-            prompt ?? $"Translate the following texts from {sourceLanguage} to {targetLanguage}, and return result in array format. " +
-            $"Original texts (in array format): {json}";
+        var userPrompt = $"Process the following text and return result in array format. " +
+                         $"Original texts (in array format): {json}";
+    
+        if(string.IsNullOrEmpty(prompt))
+        {
+            userPrompt = $"Translate it from {sourceLanguage} to {targetLanguage}";
+        }
+        else
+        {
+            userPrompt += prompt;
+        }
 
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
 
