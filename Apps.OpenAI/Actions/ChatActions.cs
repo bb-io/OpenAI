@@ -548,7 +548,8 @@ public class ChatActions : BaseActions
         
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
         string systemPrompt = GetSystemPrompt(string.IsNullOrEmpty(prompt));
-        string userPrompt = GetUserPrompt(prompt, xliffExtractor);
+        string json = JsonConvert.SerializeObject(translationUnits.Values);
+        string userPrompt = GetUserPrompt(prompt, xliffExtractor, json);
 
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
         request.AddJsonBody(new
@@ -579,7 +580,7 @@ public class ChatActions : BaseActions
         updater.UpdateTranslationUnits(translatedUnits);
         XDocument updatedXliffDoc = updater.GetUpdatedXliffDocument();
 
-        string fileName = $"translated-{input.File.Name}";
+        string fileName = input.File.Name;
         string contentType = input.File.ContentType ?? "application/xml";
         var fileReference = await FileManagementClient.UploadAsync(updatedXliffDoc.ToStream(), contentType, fileName);
 
@@ -673,17 +674,20 @@ public class ChatActions : BaseActions
                "Prepare to process each text accordingly and provide the output as instructed.";
     }
     
-    private string GetUserPrompt(string prompt, XliffExtractor xliffExtractor)
+    string GetUserPrompt(string prompt, XliffExtractor xliffExtractor, string json)
     {
-        
         if (string.IsNullOrEmpty(prompt))
         {
             string sourceLanguage = xliffExtractor.ExtractSourceLanguage();
             string targetLanguage = xliffExtractor.ExtractTargetLanguage();
-            return $"Translate the following texts from {sourceLanguage} to {targetLanguage}. Ensure the output is in a serialized array of strings format.";
+            return
+                $"Translate the following texts from {sourceLanguage} to {targetLanguage}. Ensure the output is in a serialized array of strings format. " +
+                $"Original texts (in serialized array format): {json}";
         }
         
-        return $"Process the following texts as per the provided instructions. Ensure the output is in a serialized array of strings format. Custom Instructions: {prompt}";
+        return
+            $"Process the following texts as per the provided instructions. Ensure the output is in a serialized array of strings format. " +
+            $"Custom Instructions: {prompt} Original texts (in serialized array format): {json}";
     }
 
     #endregion
