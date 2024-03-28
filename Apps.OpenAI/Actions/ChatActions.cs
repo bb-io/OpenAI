@@ -566,7 +566,9 @@ public class ChatActions : BaseActions
 
         var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         var translatedText = response.Choices.First().Message.Content.Trim();
-
+        translatedText = translatedText.Replace("```", string.Empty);
+        translatedText = translatedText.Replace("json", string.Empty);
+        
         var translatedTexts = JsonConvert.DeserializeObject<string[]>(translatedText);
         if (translatedTexts.Length != xliffDocument.TranslationUnits.Count)
         {
