@@ -536,25 +536,8 @@ public class ChatActions : BaseActions
 
         var xliffDoc = XDocument.Load(memoryStream);
         var xliffExtractor = new XliffExtractor(xliffDoc);
-
-        string sourceLanguage = xliffExtractor.ExtractSourceLanguage();
-        string targetLanguage = xliffExtractor.ExtractTargetLanguage();
+        
         Dictionary<string, string> translationUnits = xliffExtractor.ExtractTranslationUnits();
-
-        var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
-
-        var systemPrompt = string.Empty;
-        if (string.IsNullOrEmpty(prompt))
-        {
-            systemPrompt = "You are a text localizer. Localize the provided text for the specified locale while " +
-                "preserving the original text structure. Respond with localized text.";
-        }
-        else
-        {
-            systemPrompt =
-                "You will receive a list of texts, based on request can you process each text and provide the ouput.";
-        }
-
         if (translationUnits.Count == 0)
         {
             return new TranslateXliffResponse
@@ -562,28 +545,18 @@ public class ChatActions : BaseActions
                 File = input.File
             };
         }
-
-        string json = JsonConvert.SerializeObject(translationUnits.Values);
-        var userPrompt = $"Process the following text and return result in array format. " +
-                         $"Original texts (in array format): {json}";
-    
-        if(string.IsNullOrEmpty(prompt))
-        {
-            userPrompt = $"Translate it from {sourceLanguage} to {targetLanguage}";
-        }
-        else
-        {
-            userPrompt += prompt;
-        }
+        
+        var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
+        string systemPrompt = GetSystemPrompt(string.IsNullOrEmpty(prompt));
+        string userPrompt = GetUserPrompt(prompt, xliffExtractor);
 
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
-
         request.AddJsonBody(new
         {
             model,
             messages = new List<ChatMessageDto>
             {
-                new ChatMessageDto(MessageRoles.System, systemPrompt), new ChatMessageDto(MessageRoles.User, userPrompt)
+                new (MessageRoles.System, systemPrompt), new ChatMessageDto(MessageRoles.User, userPrompt)
             },
             max_tokens = 4096,
             temperature = 0.1f
@@ -683,6 +656,34 @@ public class ChatActions : BaseActions
         }
 
         return glossaryPromptPart.ToString();
+    }
+
+    private string GetSystemPrompt(bool translator)
+    {
+        if (translator)
+        {
+            return "You are tasked with localizing the provided text. Consider cultural nuances, idiomatic expressions, " +
+                           "and locale-specific references to make the text feel natural in the target language. " +
+                           "Ensure the structure of the original text is preserved. Respond with the localized text.";
+        }
+        
+        
+        return "You will be given a list of texts. Each text needs to be processed according to specific instructions " +
+               "that will follow. The goal is to adapt, modify, or translate these texts as required by the provided instructions. " +
+               "Prepare to process each text accordingly and provide the output as instructed.";
+    }
+    
+    private string GetUserPrompt(string prompt, XliffExtractor xliffExtractor)
+    {
+        
+        if (string.IsNullOrEmpty(prompt))
+        {
+            string sourceLanguage = xliffExtractor.ExtractSourceLanguage();
+            string targetLanguage = xliffExtractor.ExtractTargetLanguage();
+            return $"Translate the following texts from {sourceLanguage} to {targetLanguage}. Ensure the output is in a serialized array of strings format.";
+        }
+        
+        return $"Process the following texts as per the provided instructions. Ensure the output is in a serialized array of strings format. Custom Instructions: {prompt}";
     }
 
     #endregion
