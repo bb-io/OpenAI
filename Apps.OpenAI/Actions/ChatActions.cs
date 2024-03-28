@@ -28,6 +28,8 @@ using System.Net.Mime;
 using System.Text.Json.Nodes;
 using System.Xml.Linq;
 using Apps.OpenAI.Utils.Xliff;
+using Blackbird.Xliff.Utils;
+using Blackbird.Xliff.Utils.Models;
 
 namespace Apps.OpenAI.Actions;
 
@@ -535,10 +537,9 @@ public class ChatActions : BaseActions
         memoryStream.Position = 0;
 
         var xliffDoc = XDocument.Load(memoryStream);
-        var xliffExtractor = new XliffExtractor(xliffDoc);
+        var xliffDocument = XliffDocument.FromXDocument(xliffDoc, new XliffConfig { RemoveWhitespaces = true, CopyAttributes = true});
         
-        Dictionary<string, string> translationUnits = xliffExtractor.ExtractTranslationUnits();
-        if (translationUnits.Count == 0)
+        if (xliffDocument.TranslationUnits.Count == 0)
         {
             return new TranslateXliffResponse
             {
@@ -548,8 +549,8 @@ public class ChatActions : BaseActions
         
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
         string systemPrompt = GetSystemPrompt(string.IsNullOrEmpty(prompt));
-        string json = JsonConvert.SerializeObject(translationUnits.Values);
-        string userPrompt = GetUserPrompt(prompt, xliffExtractor, json);
+        string json = JsonConvert.SerializeObject(xliffDocument.TranslationUnits.Select(x => x.Source).ToArray());
+        string userPrompt = GetUserPrompt(prompt, xliffDocument, json);
 
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
         request.AddJsonBody(new
@@ -567,23 +568,25 @@ public class ChatActions : BaseActions
         var translatedText = response.Choices.First().Message.Content.Trim();
 
         var translatedTexts = JsonConvert.DeserializeObject<string[]>(translatedText);
-        if (translatedTexts.Length != translationUnits.Count)
+        if (translatedTexts.Length != xliffDocument.TranslationUnits.Count)
         {
             throw new InvalidOperationException(
                 "The number of translated texts does not match the number of source texts.");
         }
+        
+        var updatedUnits = xliffDocument.TranslationUnits.Zip(translatedTexts, (unit, translation) =>
+        {
+            unit.Target = translation;
+            return unit;
+        }).ToList();
+        
+        var updatedDocument = xliffDocument.UpdateTranslationUnits(updatedUnits);
+        var outputMemoryStream = new MemoryStream();
+        updatedDocument.Save(outputMemoryStream);
+        outputMemoryStream.Position = 0;
 
-        var translatedUnits = translationUnits.Keys.Zip(translatedTexts, (key, value) => new { key, value })
-            .ToDictionary(item => item.key, item => item.value);
-
-        XliffUpdater updater = new XliffUpdater(xliffDoc);
-        updater.UpdateTranslationUnits(translatedUnits);
-        XDocument updatedXliffDoc = updater.GetUpdatedXliffDocument();
-
-        string fileName = input.File.Name;
         string contentType = input.File.ContentType ?? "application/xml";
-        var fileReference = await FileManagementClient.UploadAsync(updatedXliffDoc.ToStream(), contentType, fileName);
-
+        var fileReference = await FileManagementClient.UploadAsync(outputMemoryStream, contentType, input.File.Name);
         return new TranslateXliffResponse
         {
             File = fileReference
@@ -674,14 +677,12 @@ public class ChatActions : BaseActions
                "Prepare to process each text accordingly and provide the output as instructed.";
     }
     
-    string GetUserPrompt(string prompt, XliffExtractor xliffExtractor, string json)
+    string GetUserPrompt(string prompt, XliffDocument xliffDocument, string json)
     {
         if (string.IsNullOrEmpty(prompt))
         {
-            string sourceLanguage = xliffExtractor.ExtractSourceLanguage();
-            string targetLanguage = xliffExtractor.ExtractTargetLanguage();
             return
-                $"Translate the following texts from {sourceLanguage} to {targetLanguage}. Ensure the output is in a serialized array of strings format. " +
+                $"Translate the following texts from {xliffDocument.SourceLanguage} to {xliffDocument.TargetLanguage}. Ensure the output is in a serialized array of strings format. " +
                 $"Original texts (in serialized array format): {json}";
         }
         
