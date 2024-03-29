@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -25,13 +26,17 @@ using TiktokenSharp;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
 using System.Net.Mime;
 using System.Text.Json.Nodes;
+using System.Xml.Linq;
+using Apps.OpenAI.Utils.Xliff;
+using Blackbird.Xliff.Utils;
+using Blackbird.Xliff.Utils.Models;
 
 namespace Apps.OpenAI.Actions;
 
 [ActionList]
 public class ChatActions : BaseActions
 {
-    public ChatActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
+    public ChatActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
         : base(invocationContext, fileManagementClient)
     {
     }
@@ -87,11 +92,11 @@ public class ChatActions : BaseActions
             if (input.SystemPrompt != null)
                 messages.Add(new ChatMessageDto(MessageRoles.System, input.SystemPrompt));
             messages.Add(new ChatImageMessageDto(MessageRoles.User, new List<ChatImageMessageContentDto>
-                {
-                    new ChatImageMessageTextContentDto("text", input.Message),
-                    new ChatImageMessageImageContentDto("image_url", new ImageUrlDto(
-                        $"data:{input.Image.ContentType};base64,{Convert.ToBase64String(fileBytes)}"))
-                }));
+            {
+                new ChatImageMessageTextContentDto("text", input.Message),
+                new ChatImageMessageImageContentDto("image_url", new ImageUrlDto(
+                    $"data:{input.Image.ContentType};base64,{Convert.ToBase64String(fileBytes)}"))
+            }));
         }
         else
         {
@@ -105,17 +110,25 @@ public class ChatActions : BaseActions
 
     #region Repurposing actions
 
-    [Action("Summarize content", Description = "Summarizes content for different target audiences, languages, tone of voices and platforms")]
+    [Action("Summarize content",
+        Description = "Summarizes content for different target audiences, languages, tone of voices and platforms")]
     public async Task<RepurposeResponse> CreateSummary([ActionParameter] TextChatModelIdentifier modelIdentifier,
-       [ActionParameter][Display("Original content")] string content, [ActionParameter] RepurposeRequest input, [ActionParameter] GlossaryRequest glossary) =>
-        await HandleRepurposeRequest("You are a text summarizer. Generate a summary of the message of the user. Be very brief, concise and comprehensive", modelIdentifier, content, input, glossary);    
+        [ActionParameter] [Display("Original content")]
+        string content, [ActionParameter] RepurposeRequest input, [ActionParameter] GlossaryRequest glossary) =>
+        await HandleRepurposeRequest(
+            "You are a text summarizer. Generate a summary of the message of the user. Be very brief, concise and comprehensive",
+            modelIdentifier, content, input, glossary);
 
-    [Action("Repurpose content", Description = "Repurpose content for different target audiences, languages, tone of voices and platforms")]
+    [Action("Repurpose content",
+        Description = "Repurpose content for different target audiences, languages, tone of voices and platforms")]
     public async Task<RepurposeResponse> RepurposeContent([ActionParameter] TextChatModelIdentifier modelIdentifier,
-    [ActionParameter][Display("Original content")] string content, [ActionParameter] RepurposeRequest input, [ActionParameter] GlossaryRequest glossary) =>
-        await HandleRepurposeRequest("Repurpose the content of the message of the user", modelIdentifier, content, input, glossary);
+        [ActionParameter] [Display("Original content")]
+        string content, [ActionParameter] RepurposeRequest input, [ActionParameter] GlossaryRequest glossary) =>
+        await HandleRepurposeRequest("Repurpose the content of the message of the user", modelIdentifier, content,
+            input, glossary);
 
-    private async Task<RepurposeResponse> HandleRepurposeRequest(string initialPrompt, TextChatModelIdentifier modelIdentifier, string content, RepurposeRequest input, GlossaryRequest glossary)
+    private async Task<RepurposeResponse> HandleRepurposeRequest(string initialPrompt,
+        TextChatModelIdentifier modelIdentifier, string content, RepurposeRequest input, GlossaryRequest glossary)
     {
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
 
@@ -131,15 +144,15 @@ public class ChatActions : BaseActions
         if (glossary.Glossary != null)
         {
             prompt += " Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
-                            "Ensure that the translation aligns with the glossary entries for the respective languages. " +
-                            "If a term has variations or synonyms, consider them and choose the most appropriate " +
-                            "translation to maintain consistency and precision. ";
+                      "Ensure that the translation aligns with the glossary entries for the respective languages. " +
+                      "If a term has variations or synonyms, consider them and choose the most appropriate " +
+                      "translation to maintain consistency and precision. ";
 
             var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary);
             prompt += glossaryPromptPart;
         }
 
-            var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
+        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
         request.AddJsonBody(new
         {
             model,
@@ -156,7 +169,7 @@ public class ChatActions : BaseActions
         {
             Response = response.Choices.First().Message.Content
         };
-    }    
+    }
 
     [Action("Execute Blackbird prompt", Description = "Execute prompt generated by Blackbird's AI utilities")]
     public async Task<ChatResponse> ExecuteBlackbirdPrompt([ActionParameter] TextChatModelIdentifier modelIdentifier,
@@ -202,11 +215,12 @@ public class ChatActions : BaseActions
                            "respond with target text.";
 
         if (glossary.Glossary != null)
-            systemPrompt += " Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
-                            "Ensure that the translation aligns with the glossary entries for the respective languages. " +
-                            "If a term has variations or synonyms, consider them and choose the most appropriate " +
-                            "translation to maintain consistency and precision. If the translation already aligns " +
-                            "with the glossary, no edits are required.";
+            systemPrompt +=
+                " Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
+                "Ensure that the translation aligns with the glossary entries for the respective languages. " +
+                "If a term has variations or synonyms, consider them and choose the most appropriate " +
+                "translation to maintain consistency and precision. If the translation already aligns " +
+                "with the glossary, no edits are required.";
 
         if (input.AdditionalPrompt != null)
             systemPrompt = $"{systemPrompt} {input.AdditionalPrompt}";
@@ -254,9 +268,10 @@ public class ChatActions : BaseActions
             "including them in the issues description. Respond with the issues description.";
 
         if (glossary.Glossary != null)
-            systemPrompt += " Ensure that the translation aligns with the glossary entries provided for the respective " +
-                            "languages, and note any discrepancies, ambiguities, or incorrect usage of terms. Include " +
-                            "these observations in the issues description.";
+            systemPrompt +=
+                " Ensure that the translation aligns with the glossary entries provided for the respective " +
+                "languages, and note any discrepancies, ambiguities, or incorrect usage of terms. Include " +
+                "these observations in the issues description.";
 
         if (input.AdditionalPrompt != null)
             systemPrompt = $"{systemPrompt} {input.AdditionalPrompt}";
@@ -268,7 +283,7 @@ public class ChatActions : BaseActions
             Target text: 
             {input.TargetText}
         ";
-        
+
         if (glossary.Glossary != null)
         {
             var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary);
@@ -313,10 +328,11 @@ public class ChatActions : BaseActions
                            "Formatting: use line spacing between each category. The category name should be bold.";
 
         if (glossary.Glossary != null)
-            systemPrompt += " Use the provided glossary entries for the respective languages. If there are discrepancies " +
-                            "between the translation and glossary, note them in the 'Terminology' part of the report, " +
-                            "along with terminology problems not related to the glossary.";
-        
+            systemPrompt +=
+                " Use the provided glossary entries for the respective languages. If there are discrepancies " +
+                "between the translation and glossary, note them in the 'Terminology' part of the report, " +
+                "along with terminology problems not related to the glossary.";
+
         if (input.AdditionalPrompt != null)
             systemPrompt = $"{systemPrompt} {input.AdditionalPrompt}";
 
@@ -328,7 +344,7 @@ public class ChatActions : BaseActions
             var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary);
             userPrompt += glossaryPromptPart;
         }
-        
+
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
         request.AddJsonBody(new
         {
@@ -385,7 +401,7 @@ public class ChatActions : BaseActions
             var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary);
             userPrompt += glossaryPromptPart;
         }
-        
+
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
         request.AddJsonBody(new
         {
@@ -410,7 +426,7 @@ public class ChatActions : BaseActions
 
     [Action("Extract glossary", Description = "Extract glossary terms from a given text. Use in combination with " +
                                               "other glossary actions.")]
-    public async Task<GlossaryResponse> ExtractGlossary([ActionParameter] TextChatModelIdentifier modelIdentifier, 
+    public async Task<GlossaryResponse> ExtractGlossary([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] ExtractGlossaryRequest input)
     {
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
@@ -438,24 +454,32 @@ public class ChatActions : BaseActions
         }
         catch
         {
-            throw new Exception("Something went wrong parsing the output from OpenAI, most likely due to a hallucination!");
+            throw new Exception(
+                "Something went wrong parsing the output from OpenAI, most likely due to a hallucination!");
         }
 
         var conceptEntries = new List<GlossaryConceptEntry>();
         int counter = 0;
         foreach (var item in items)
         {
-            var languageSections = item.Select(x => new GlossaryLanguageSection(x.Key, new List<GlossaryTermSection> { new GlossaryTermSection(x.Value) })).ToList();
+            var languageSections = item.Select(x =>
+                    new GlossaryLanguageSection(x.Key,
+                        new List<GlossaryTermSection> { new GlossaryTermSection(x.Value) }))
+                .ToList();
 
             conceptEntries.Add(new GlossaryConceptEntry(counter.ToString(), languageSections));
             ++counter;
         }
+
         var blackbirdGlossary = new Glossary(conceptEntries);
 
         var name = input.Name ?? "New glossary";
         blackbirdGlossary.Title = name;
         using var stream = blackbirdGlossary.ConvertToTBX();
-        return new GlossaryResponse() { Glossary = await FileManagementClient.UploadAsync(stream, MediaTypeNames.Application.Xml, $"{name}.tbx") };
+        return new GlossaryResponse()
+        {
+            Glossary = await FileManagementClient.UploadAsync(stream, MediaTypeNames.Application.Xml, $"{name}.tbx")
+        };
     }
 
     [Action("Translate text", Description = "Localize the text provided.")]
@@ -463,10 +487,10 @@ public class ChatActions : BaseActions
         [ActionParameter] LocalizeTextRequest input, [ActionParameter] GlossaryRequest glossary)
     {
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
-        
+
         var systemPrompt = "You are a text localizer. Localize the provided text for the specified locale while " +
                            "preserving the original text structure. Respond with localized text.";
-        
+
         var userPrompt = @$"
                     Original text: {input.Text}
                     Locale: {input.Locale} 
@@ -476,11 +500,12 @@ public class ChatActions : BaseActions
         if (glossary.Glossary != null)
         {
             var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary);
-            userPrompt += "\nEnhance the localized text by incorporating relevant terms from our glossary where applicable. " +
-                          "If you encounter terms from the glossary in the text, ensure that the localized text aligns " +
-                          "with the glossary entries for the respective languages. If a term has variations or synonyms, " +
-                          "consider them and choose the most appropriate translation from the glossary to maintain " +
-                          $"consistency and precision. {glossaryPromptPart}";
+            userPrompt +=
+                "\nEnhance the localized text by incorporating relevant terms from our glossary where applicable. " +
+                "If you encounter terms from the glossary in the text, ensure that the localized text aligns " +
+                "with the glossary entries for the respective languages. If a term has variations or synonyms, " +
+                "consider them and choose the most appropriate translation from the glossary to maintain " +
+                $"consistency and precision. {glossaryPromptPart}";
         }
 
         userPrompt += "Localized text: ";
@@ -500,6 +525,40 @@ public class ChatActions : BaseActions
         {
             Message = response.Choices.First().Message.Content
         };
+    }
+
+    [Action("Process XLIFF file",
+        Description =
+            "Processes each translation unit in the XLIFF file according to the provided instructions (by default it just translates the source tags) and updates the target text for each unit. For now it supports only 1.2 version of XLIFF.")]
+    public async Task<TranslateXliffResponse> TranslateXliff([ActionParameter] TextChatModelIdentifier modelIdentifier,
+        [ActionParameter] TranslateXliffRequest input,
+        [ActionParameter,
+         Display("Prompt",
+             Description =
+                 "Specify the instruction to be applied to each source tag within a translation unit. For example, 'Translate text'")]
+        string? prompt)
+    {
+        var xliffDocument = await LoadAndParseXliffDocument(input.File);
+        if (xliffDocument.TranslationUnits.Count == 0)
+        {
+            return new TranslateXliffResponse { File = input.File };
+        }
+
+        var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
+        string systemPrompt = GetSystemPrompt(string.IsNullOrEmpty(prompt));
+        string json = JsonConvert.SerializeObject(xliffDocument.TranslationUnits.Select(x => x.Source).ToArray());
+        string userPrompt = GetUserPrompt(prompt, xliffDocument, json);
+
+        var translatedTexts = await GetTranslations(model, systemPrompt, userPrompt);
+        if (translatedTexts.Length != xliffDocument.TranslationUnits.Count)
+        {
+            throw new InvalidOperationException(
+                "The number of translated texts does not match the number of source texts.");
+        }
+
+        var updatedDocument = UpdateXliffDocumentWithTranslations(xliffDocument, translatedTexts);
+        var fileReference = await UploadUpdatedDocument(updatedDocument, input.File);
+        return new TranslateXliffResponse { File = fileReference };
     }
 
     [Action("Get localizable content from image", Description = "Retrieve localizable content from image.")]
@@ -560,7 +619,7 @@ public class ChatActions : BaseActions
         {
             glossaryPromptPart.AppendLine();
             glossaryPromptPart.AppendLine("\tEntry:");
-                
+
             foreach (var section in entry.LanguageSections)
             {
                 glossaryPromptPart.AppendLine(
@@ -572,4 +631,94 @@ public class ChatActions : BaseActions
     }
 
     #endregion
+
+    private async Task<XliffDocument> LoadAndParseXliffDocument(FileReference inputFile)
+    {
+        var stream = await FileManagementClient.DownloadAsync(inputFile);
+        var memoryStream = new MemoryStream();
+        await stream.CopyToAsync(memoryStream);
+        memoryStream.Position = 0;
+
+        var xliffDoc = XDocument.Load(memoryStream);
+        return XliffDocument.FromXDocument(xliffDoc,
+            new XliffConfig { RemoveWhitespaces = true, CopyAttributes = true });
+    }
+
+    private async Task<string[]> GetTranslations(string model, string systemPrompt, string userPrompt)
+    {
+        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
+        request.AddJsonBody(new
+        {
+            model,
+            messages = new List<ChatMessageDto>
+            {
+                new ChatMessageDto(MessageRoles.System, systemPrompt), new ChatMessageDto(MessageRoles.User, userPrompt)
+            },
+            max_tokens = 4096,
+            temperature = 0.1f
+        });
+
+        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+        var translatedText = response.Choices.First().Message.Content.Trim();
+        translatedText = translatedText.Replace("```", string.Empty).Replace("json", string.Empty);
+
+        try
+        {
+            return JsonConvert.DeserializeObject<string[]>(translatedText);
+        }
+        catch (Exception e)
+        {
+            throw new Exception(
+                $"Failed to parse the translated text. Exception message: {e.Message}; Exception type: {e.GetType()}");
+        }
+    }
+
+    private async Task<FileReference> UploadUpdatedDocument(XDocument xliffDocument, FileReference originalFile)
+    {
+        var outputMemoryStream = new MemoryStream();
+        xliffDocument.Save(outputMemoryStream);
+        outputMemoryStream.Position = 0;
+
+        string contentType = originalFile.ContentType ?? "application/xml";
+        return await FileManagementClient.UploadAsync(outputMemoryStream, contentType, originalFile.Name);
+    }
+
+    private XDocument UpdateXliffDocumentWithTranslations(XliffDocument xliffDocument, string[] translatedTexts)
+    {
+        var updatedUnits = xliffDocument.TranslationUnits.Zip(translatedTexts, (unit, translation) =>
+        {
+            unit.Target = translation;
+            return unit;
+        }).ToList();
+
+        return xliffDocument.UpdateTranslationUnits(updatedUnits);
+    }
+
+    private string GetSystemPrompt(bool translator)
+    {
+        if (translator)
+        {
+            return
+                "You are tasked with localizing the provided text. Consider cultural nuances, idiomatic expressions, " +
+                "and locale-specific references to make the text feel natural in the target language. " +
+                "Ensure the structure of the original text is preserved. Respond with the localized text.";
+        }
+
+
+        return
+            "You will be given a list of texts. Each text needs to be processed according to specific instructions " +
+            "that will follow. The goal is to adapt, modify, or translate these texts as required by the provided instructions. " +
+            "Prepare to process each text accordingly and provide the output as instructed.";
+    }
+
+    string GetUserPrompt(string prompt, XliffDocument xliffDocument, string json)
+    {
+        string instruction = string.IsNullOrEmpty(prompt)
+            ? $"Translate the following texts from {xliffDocument.SourceLanguage} to {xliffDocument.TargetLanguage}."
+            : $"Process the following texts as per the custom instructions: {prompt}. The source language is {xliffDocument.SourceLanguage} and the target language is {xliffDocument.TargetLanguage}. This information might be useful for the custom instructions.";
+
+        return
+            $"{instruction} Return the outputs as a serialized JSON array of strings without additional formatting. " +
+            $"Original texts (in serialized array format): {json}";
+    }
 }
