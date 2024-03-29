@@ -661,7 +661,14 @@ public class ChatActions : BaseActions
         var translatedText = response.Choices.First().Message.Content.Trim();
         translatedText = translatedText.Replace("```", string.Empty).Replace("json", string.Empty);
 
-        return JsonConvert.DeserializeObject<string[]>(translatedText);
+        try
+        {
+            return JsonConvert.DeserializeObject<string[]>(translatedText);
+        }
+        catch (Exception e)
+        {
+            throw new Exception($"Failed to parse the translated text. Exception message: {e.Message}; Exception type: {e.GetType()}");
+        }
     }
 
     private async Task<FileReference> UploadUpdatedDocument(XDocument xliffDocument, FileReference originalFile)
@@ -704,15 +711,12 @@ public class ChatActions : BaseActions
 
     string GetUserPrompt(string prompt, XliffDocument xliffDocument, string json)
     {
-        if (string.IsNullOrEmpty(prompt))
-        {
-            return
-                $"Translate the following texts from {xliffDocument.SourceLanguage} to {xliffDocument.TargetLanguage}. Ensure the output is in a serialized array of strings format. " +
-                $"Original texts (in serialized array format): {json}";
-        }
+        string instruction = string.IsNullOrEmpty(prompt) ?
+            $"Translate the following texts from {xliffDocument.SourceLanguage} to {xliffDocument.TargetLanguage}." :
+            $"Process the following texts as per the custom instructions: {prompt}.";
 
         return
-            $"Process the following texts as per the provided instructions. Ensure the output is in a serialized array of strings format. " +
-            $"Custom Instructions: {prompt} Original texts (in serialized array format): {json}";
+            $"{instruction} Return the outputs as a serialized JSON array of strings without additional formatting. " +
+            $"Original texts (in serialized array format): {json}";
     }
 }
