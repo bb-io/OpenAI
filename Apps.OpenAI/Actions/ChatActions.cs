@@ -534,8 +534,9 @@ public class ChatActions : BaseActions
         [ActionParameter] TranslateXliffRequest input,
         [ActionParameter,
          Display("Prompt",
-             Description = "Specify the instruction to be applied to each source tag within a translation unit. For example, 'Translate text'")]
-        string prompt)
+             Description =
+                 "Specify the instruction to be applied to each source tag within a translation unit. For example, 'Translate text'")]
+        string? prompt)
     {
         var xliffDocument = await LoadAndParseXliffDocument(input.File);
         if (xliffDocument.TranslationUnits.Count == 0)
@@ -667,7 +668,8 @@ public class ChatActions : BaseActions
         }
         catch (Exception e)
         {
-            throw new Exception($"Failed to parse the translated text. Exception message: {e.Message}; Exception type: {e.GetType()}");
+            throw new Exception(
+                $"Failed to parse the translated text. Exception message: {e.Message}; Exception type: {e.GetType()}");
         }
     }
 
@@ -711,9 +713,9 @@ public class ChatActions : BaseActions
 
     string GetUserPrompt(string prompt, XliffDocument xliffDocument, string json)
     {
-        string instruction = string.IsNullOrEmpty(prompt) ?
-            $"Translate the following texts from {xliffDocument.SourceLanguage} to {xliffDocument.TargetLanguage}." :
-            $"Process the following texts as per the custom instructions: {prompt}.";
+        string instruction = string.IsNullOrEmpty(prompt)
+            ? $"Translate the following texts from {xliffDocument.SourceLanguage} to {xliffDocument.TargetLanguage}."
+            : $"Process the following texts as per the custom instructions: {prompt}. The source language is {xliffDocument.SourceLanguage} and the target language is {xliffDocument.TargetLanguage}. This information might be useful for the custom instructions.";
 
         return
             $"{instruction} Return the outputs as a serialized JSON array of strings without additional formatting. " +
