@@ -527,9 +527,9 @@ public class ChatActions : BaseActions
         };
     }
 
-    [Action("Process xliff file",
+    [Action("Process XLIFF file",
         Description =
-            "Processes each translation unit in the XLIFF file according to the provided instructions and updates the target text for each unit.")]
+            "Processes each translation unit in the XLIFF file according to the provided instructions and updates the target text for each unit. For now it supports only 1.2 version of XLIFF.")]
     public async Task<TranslateXliffResponse> TranslateXliff([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] TranslateXliffRequest input,
         [ActionParameter,
