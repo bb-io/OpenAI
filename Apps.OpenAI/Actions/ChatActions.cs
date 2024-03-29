@@ -526,73 +526,31 @@ public class ChatActions : BaseActions
             Message = response.Choices.First().Message.Content
         };
     }
-
+    
     [Action("Process xliff file", Description = "Translate the content of an XLIFF file (added support for XLIFF 1,2)")]
     public async Task<TranslateXliffResponse> TranslateXliff([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] TranslateXliffRequest input, [ActionParameter, Display("Prompt")] string? prompt)
     {
-        var stream = await FileManagementClient.DownloadAsync(input.File);
-        var memoryStream = new MemoryStream();
-        await stream.CopyToAsync(memoryStream);
-        memoryStream.Position = 0;
-
-        var xliffDoc = XDocument.Load(memoryStream);
-        var xliffDocument = XliffDocument.FromXDocument(xliffDoc, new XliffConfig { RemoveWhitespaces = true, CopyAttributes = true});
-        
+        var xliffDocument = await LoadAndParseXliffDocument(input.File);
         if (xliffDocument.TranslationUnits.Count == 0)
         {
-            return new TranslateXliffResponse
-            {
-                File = input.File
-            };
+            return new TranslateXliffResponse { File = input.File };
         }
-        
+    
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
         string systemPrompt = GetSystemPrompt(string.IsNullOrEmpty(prompt));
         string json = JsonConvert.SerializeObject(xliffDocument.TranslationUnits.Select(x => x.Source).ToArray());
         string userPrompt = GetUserPrompt(prompt, xliffDocument, json);
 
-        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
-        request.AddJsonBody(new
-        {
-            model,
-            messages = new List<ChatMessageDto>
-            {
-                new (MessageRoles.System, systemPrompt), new ChatMessageDto(MessageRoles.User, userPrompt)
-            },
-            max_tokens = 4096,
-            temperature = 0.1f
-        });
-
-        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
-        var translatedText = response.Choices.First().Message.Content.Trim();
-        translatedText = translatedText.Replace("```", string.Empty);
-        translatedText = translatedText.Replace("json", string.Empty);
-        
-        var translatedTexts = JsonConvert.DeserializeObject<string[]>(translatedText);
+        var translatedTexts = await GetTranslations(model, systemPrompt, userPrompt);
         if (translatedTexts.Length != xliffDocument.TranslationUnits.Count)
         {
-            throw new InvalidOperationException(
-                "The number of translated texts does not match the number of source texts.");
+            throw new InvalidOperationException("The number of translated texts does not match the number of source texts.");
         }
-        
-        var updatedUnits = xliffDocument.TranslationUnits.Zip(translatedTexts, (unit, translation) =>
-        {
-            unit.Target = translation;
-            return unit;
-        }).ToList();
-        
-        var updatedDocument = xliffDocument.UpdateTranslationUnits(updatedUnits);
-        var outputMemoryStream = new MemoryStream();
-        updatedDocument.Save(outputMemoryStream);
-        outputMemoryStream.Position = 0;
 
-        string contentType = input.File.ContentType ?? "application/xml";
-        var fileReference = await FileManagementClient.UploadAsync(outputMemoryStream, contentType, input.File.Name);
-        return new TranslateXliffResponse
-        {
-            File = fileReference
-        };
+        var updatedDocument = UpdateXliffDocumentWithTranslations(xliffDocument, translatedTexts);
+        var fileReference = await UploadUpdatedDocument(updatedDocument, input.File);
+        return new TranslateXliffResponse { File = fileReference };
     }
 
     [Action("Get localizable content from image", Description = "Retrieve localizable content from image.")]
@@ -664,13 +622,68 @@ public class ChatActions : BaseActions
         return glossaryPromptPart.ToString();
     }
 
+    #endregion
+    
+    private async Task<XliffDocument> LoadAndParseXliffDocument(FileReference inputFile)
+    {
+        var stream = await FileManagementClient.DownloadAsync(inputFile);
+        var memoryStream = new MemoryStream();
+        await stream.CopyToAsync(memoryStream);
+        memoryStream.Position = 0;
+
+        var xliffDoc = XDocument.Load(memoryStream);
+        return XliffDocument.FromXDocument(xliffDoc, new XliffConfig { RemoveWhitespaces = true, CopyAttributes = true});
+    }
+
+    private async Task<string[]> GetTranslations(string model, string systemPrompt, string userPrompt)
+    {
+        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
+        request.AddJsonBody(new
+        {
+            model,
+            messages = new List<ChatMessageDto>
+            {
+                new ChatMessageDto(MessageRoles.System, systemPrompt), new ChatMessageDto(MessageRoles.User, userPrompt)
+            },
+            max_tokens = 4096,
+            temperature = 0.1f
+        });
+
+        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+        var translatedText = response.Choices.First().Message.Content.Trim();
+        translatedText = translatedText.Replace("```", string.Empty).Replace("json", string.Empty);
+
+        return JsonConvert.DeserializeObject<string[]>(translatedText);
+    }
+
+    private async Task<FileReference> UploadUpdatedDocument(XDocument xliffDocument, FileReference originalFile)
+    {
+        var outputMemoryStream = new MemoryStream();
+        xliffDocument.Save(outputMemoryStream);
+        outputMemoryStream.Position = 0;
+
+        string contentType = originalFile.ContentType ?? "application/xml";
+        return await FileManagementClient.UploadAsync(outputMemoryStream, contentType, originalFile.Name);
+    }
+
+    private XDocument UpdateXliffDocumentWithTranslations(XliffDocument xliffDocument, string[] translatedTexts)
+    {
+        var updatedUnits = xliffDocument.TranslationUnits.Zip(translatedTexts, (unit, translation) =>
+        {
+            unit.Target = translation;
+            return unit;
+        }).ToList();
+
+        return xliffDocument.UpdateTranslationUnits(updatedUnits);
+    }
+    
     private string GetSystemPrompt(bool translator)
     {
         if (translator)
         {
             return "You are tasked with localizing the provided text. Consider cultural nuances, idiomatic expressions, " +
-                           "and locale-specific references to make the text feel natural in the target language. " +
-                           "Ensure the structure of the original text is preserved. Respond with the localized text.";
+                   "and locale-specific references to make the text feel natural in the target language. " +
+                   "Ensure the structure of the original text is preserved. Respond with the localized text.";
         }
         
         
@@ -692,6 +705,4 @@ public class ChatActions : BaseActions
             $"Process the following texts as per the provided instructions. Ensure the output is in a serialized array of strings format. " +
             $"Custom Instructions: {prompt} Original texts (in serialized array format): {json}";
     }
-
-    #endregion
 }
