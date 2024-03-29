@@ -526,17 +526,23 @@ public class ChatActions : BaseActions
             Message = response.Choices.First().Message.Content
         };
     }
-    
-    [Action("Process xliff file", Description = "Translate the content of an XLIFF file (added support for XLIFF 1,2)")]
+
+    [Action("Process xliff file",
+        Description =
+            "Processes each translation unit in the XLIFF file according to the provided instructions and updates the target text for each unit.")]
     public async Task<TranslateXliffResponse> TranslateXliff([ActionParameter] TextChatModelIdentifier modelIdentifier,
-        [ActionParameter] TranslateXliffRequest input, [ActionParameter, Display("Prompt")] string prompt)
+        [ActionParameter] TranslateXliffRequest input,
+        [ActionParameter,
+         Display("Prompt",
+             Description = "Specify the instruction to be applied to each source tag within a translation unit. For example, 'Translate text'")]
+        string prompt)
     {
         var xliffDocument = await LoadAndParseXliffDocument(input.File);
         if (xliffDocument.TranslationUnits.Count == 0)
         {
             return new TranslateXliffResponse { File = input.File };
         }
-    
+
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
         string systemPrompt = GetSystemPrompt(string.IsNullOrEmpty(prompt));
         string json = JsonConvert.SerializeObject(xliffDocument.TranslationUnits.Select(x => x.Source).ToArray());
@@ -545,7 +551,8 @@ public class ChatActions : BaseActions
         var translatedTexts = await GetTranslations(model, systemPrompt, userPrompt);
         if (translatedTexts.Length != xliffDocument.TranslationUnits.Count)
         {
-            throw new InvalidOperationException("The number of translated texts does not match the number of source texts.");
+            throw new InvalidOperationException(
+                "The number of translated texts does not match the number of source texts.");
         }
 
         var updatedDocument = UpdateXliffDocumentWithTranslations(xliffDocument, translatedTexts);
@@ -623,7 +630,7 @@ public class ChatActions : BaseActions
     }
 
     #endregion
-    
+
     private async Task<XliffDocument> LoadAndParseXliffDocument(FileReference inputFile)
     {
         var stream = await FileManagementClient.DownloadAsync(inputFile);
@@ -632,7 +639,8 @@ public class ChatActions : BaseActions
         memoryStream.Position = 0;
 
         var xliffDoc = XDocument.Load(memoryStream);
-        return XliffDocument.FromXDocument(xliffDoc, new XliffConfig { RemoveWhitespaces = true, CopyAttributes = true});
+        return XliffDocument.FromXDocument(xliffDoc,
+            new XliffConfig { RemoveWhitespaces = true, CopyAttributes = true });
     }
 
     private async Task<string[]> GetTranslations(string model, string systemPrompt, string userPrompt)
@@ -676,22 +684,24 @@ public class ChatActions : BaseActions
 
         return xliffDocument.UpdateTranslationUnits(updatedUnits);
     }
-    
+
     private string GetSystemPrompt(bool translator)
     {
         if (translator)
         {
-            return "You are tasked with localizing the provided text. Consider cultural nuances, idiomatic expressions, " +
-                   "and locale-specific references to make the text feel natural in the target language. " +
-                   "Ensure the structure of the original text is preserved. Respond with the localized text.";
+            return
+                "You are tasked with localizing the provided text. Consider cultural nuances, idiomatic expressions, " +
+                "and locale-specific references to make the text feel natural in the target language. " +
+                "Ensure the structure of the original text is preserved. Respond with the localized text.";
         }
-        
-        
-        return "You will be given a list of texts. Each text needs to be processed according to specific instructions " +
-               "that will follow. The goal is to adapt, modify, or translate these texts as required by the provided instructions. " +
-               "Prepare to process each text accordingly and provide the output as instructed.";
+
+
+        return
+            "You will be given a list of texts. Each text needs to be processed according to specific instructions " +
+            "that will follow. The goal is to adapt, modify, or translate these texts as required by the provided instructions. " +
+            "Prepare to process each text accordingly and provide the output as instructed.";
     }
-    
+
     string GetUserPrompt(string prompt, XliffDocument xliffDocument, string json)
     {
         if (string.IsNullOrEmpty(prompt))
@@ -700,7 +710,7 @@ public class ChatActions : BaseActions
                 $"Translate the following texts from {xliffDocument.SourceLanguage} to {xliffDocument.TargetLanguage}. Ensure the output is in a serialized array of strings format. " +
                 $"Original texts (in serialized array format): {json}";
         }
-        
+
         return
             $"Process the following texts as per the provided instructions. Ensure the output is in a serialized array of strings format. " +
             $"Custom Instructions: {prompt} Original texts (in serialized array format): {json}";
