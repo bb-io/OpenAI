@@ -529,7 +529,7 @@ public class ChatActions : BaseActions
 
     [Action("Process XLIFF file",
         Description =
-            "Processes each translation unit in the XLIFF file according to the provided instructions and updates the target text for each unit. For now it supports only 1.2 version of XLIFF.")]
+            "Processes each translation unit in the XLIFF file according to the provided instructions (by default it just translates the source tags) and updates the target text for each unit. For now it supports only 1.2 version of XLIFF.")]
     public async Task<TranslateXliffResponse> TranslateXliff([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] TranslateXliffRequest input,
         [ActionParameter,
