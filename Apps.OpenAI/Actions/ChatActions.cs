@@ -529,7 +529,7 @@ public class ChatActions : BaseActions
     
     [Action("Process xliff file", Description = "Translate the content of an XLIFF file (added support for XLIFF 1,2)")]
     public async Task<TranslateXliffResponse> TranslateXliff([ActionParameter] TextChatModelIdentifier modelIdentifier,
-        [ActionParameter] TranslateXliffRequest input, [ActionParameter, Display("Prompt")] string? prompt)
+        [ActionParameter] TranslateXliffRequest input, [ActionParameter, Display("Prompt")] string prompt)
     {
         var xliffDocument = await LoadAndParseXliffDocument(input.File);
         if (xliffDocument.TranslationUnits.Count == 0)
