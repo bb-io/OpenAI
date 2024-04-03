@@ -73,6 +73,7 @@ Do you have a cool use case that we can turn into an action? Let us know!
 - **Get MQM report** performs an LQA Analysis of the translation. The result will be in the MQM framework form. The dimensions are: terminology, accuracy, linguistic conventions, style, locale conventions, audience appropriateness, design and markup. The input consists of the source and translated text. Optionally one can add languages and a description of the target audience.
 - **Get MQM dimension values** uses the same input and prompt as 'Get MQM report'. However, in this action the scores are returned as individual numbers so that they can be used in decisions. Also returns the proposed translation.
 - **Translate text** given a text and a locale, tries to create a localized version of the text.
+
 - **Get localizable content from image** retrieves localizable content from given image.
 
 ### Content repurposing
@@ -100,6 +101,20 @@ All actions can take: Target audience, locale, glossary, tone of voice and any a
 
 - **Create embedding** create a vectorized embedding of a text. Useful in combination with vector databases like Pinecone in order to store large sets of data.
 - **Tokenize text** turn a text into tokens. Uses Tiktoken under the hood.
+
+### XLIFF operations
+
+- **Process XLIFF file** given an XLIFF file, processes each translation unit according to provided instructions (default is to translate source tags) and updates the target text for each unit. Supports only version 1.2 of XLIFF currently.
+
+Here is an example bird for processing XLIFF files:
+
+![XLIFF1](image/README/XLIFF1.png)
+
+![XLIFF2](image/README/XLIFF2.png)
+
+![XLIFF3](image/README/XLIFF3.png)
+
+![XLIFF4](image/README/XLIFF4.png)
 
 ## Example
 
