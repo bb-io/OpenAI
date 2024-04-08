@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 
 namespace Apps.OpenAI.Models.Requests.Chat
 {
@@ -15,7 +16,7 @@ namespace Apps.OpenAI.Models.Requests.Chat
         public string? TargetAudience { get; set; }
 
         [Display("Tone of voice")]
-        [DataSource(typeof(ToneOfVoiceHandler))]
+        [StaticDataSource(typeof(ToneOfVoiceHandler))]
         public string? ToneOfVOice { get; set; }
 
         [Display("Locale")]
