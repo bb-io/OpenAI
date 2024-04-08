@@ -1,19 +1,12 @@
-﻿using Blackbird.Applications.Sdk.Common.Dynamic;
-using Blackbird.Applications.Sdk.Common.Invocation;
-using Blackbird.Applications.Sdk.Common;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Blackbird.Applications.Sdk.Utils.Sdk.DataSourceHandlers;
+﻿using System.Collections.Generic;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 
 namespace Apps.OpenAI.DataSourceHandlers
 {
-    public class ToneOfVoiceHandler : EnumDataHandler
+    public class ToneOfVoiceHandler : IStaticDataSourceHandler
     {
         // https://seowind.io/tone-of-voice-examples-ai/
-        protected override Dictionary<string, string> EnumValues => new Dictionary<string, string>
+        private static Dictionary<string, string> EnumValues => new()
         {
             { "The brand’s style is engaging and informative, aiming to educate and empower its audience. It utilizes a conversational voice, fostering a sense of community and approachability. Its tone is optimistic and encouraging, effectively mitigating potential intimidation and transforming it into enthusiasm. Embodying the essence of a nurturing guide, it supports aspirational undertakings with intricate knowledge. The brand communicates comprehensibly, ensuring clarity while pleasantly weaving colorful analogies and lighthearted humor.", "Knowledgeable Companion" },
             { "The brand’s style is engaging and informative, aiming to both educate and empower its audience. It utilizes a conversational voice, fostering a sense of community and approachability. Its tone is optimistic and encouraging, effectively mitigating any potential intimidation and transforming it into enthusiasm. Embodying the essence of a nurturing guide, it supports aspirational undertakings with intricate knowledge. The brand communicates in a comprehensible manner, ensuring clarity while pleasantly weaving colorful analogies and lighthearted humor throughout.", "Approachable Educator" },
@@ -25,6 +18,11 @@ namespace Apps.OpenAI.DataSourceHandlers
             { "The brand adopts a commanding and authoritative voice, exuding confidence and stability. The tone is assertive yet charismatic, showcasing a sense of responsibility and an abundance of resources. The style is formal, leaning towards sophistication, synonymous with high status and leadership. The writing is clear and persuasive, demonstrating the brand’s power and control without losing its sense of compassion and trustworthiness.", "Confident Commander" },
             { "A voice and tone exudes wisdom, knowledge, and insight. The style is typically straightforward, factual, and thoughtful, with a focus on sharing valuable information rather than persuasion. The language used is articulate, respectful, and authoritative, often providing advice or guidance. The emotional tone is calm, collected, and supportive, fostering a sense of trust and credibility. The brand communicates as a mentor, with a patient and understanding demeanor.", "Thoughtful Advisor" },
             { "The brand’s style is mischievous, dynamic, and unconventional, embracing a ‘gremlin-esque’ persona. The voice is sharp, witty, and rebellious, showcasing brash confidence and quick-paced commentary. The tone is playful yet audacious, teetering between irreverence and edginess. The communication style is engaging, employing clever wordplay, resonant metaphors, and amusing anecdotes. The brand embodies unapologetic boldness, inviting audiences into an enticing world of quirky, disorderly charm.", "Provocative Prankster" },
-        };       
+        };
+
+        public Dictionary<string, string> GetData()
+        {
+            return EnumValues;
+        }
     }
 }
