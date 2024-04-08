@@ -535,8 +535,8 @@ public class ChatActions : BaseActions
         [ActionParameter,
          Display("Prompt",
              Description =
-                 "Specify the instruction to be applied to each source tag within a translation unit. For example, 'Translate text'")]
-        string? prompt)
+                 "Specify the instruction to be applied to each source tag within a translation unit. For example, 'Translate text'")] string? prompt,
+        [ActionParameter, Display("Bucket size", Description = "Specify the number of source texts to be translated at once. Default value: 15")] int? bucketSize = 15)
     {
         var xliffDocument = await LoadAndParseXliffDocument(input.File);
         if (xliffDocument.TranslationUnits.Count == 0)
@@ -546,16 +546,10 @@ public class ChatActions : BaseActions
 
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
         string systemPrompt = GetSystemPrompt(string.IsNullOrEmpty(prompt));
-        string json = JsonConvert.SerializeObject(xliffDocument.TranslationUnits.Select(x => x.Source).ToArray());
-        string userPrompt = GetUserPrompt(prompt, xliffDocument, json);
+        var list = xliffDocument.TranslationUnits.Select(x => x.Source).ToList();
 
-        var translatedTexts = await GetTranslations(model, systemPrompt, userPrompt);
-        if (translatedTexts.Length != xliffDocument.TranslationUnits.Count)
-        {
-            throw new InvalidOperationException(
-                "The number of translated texts does not match the number of source texts.");
-        }
-
+        var translatedTexts = await GetTranslations(prompt, xliffDocument, model, systemPrompt, list, bucketSize ?? 15);
+        
         var updatedDocument = UpdateXliffDocumentWithTranslations(xliffDocument, translatedTexts);
         var fileReference = await UploadUpdatedDocument(updatedDocument, input.File);
         return new TranslateXliffResponse { File = fileReference };
@@ -644,33 +638,67 @@ public class ChatActions : BaseActions
             new XliffConfig { RemoveWhitespaces = true, CopyAttributes = true });
     }
 
-    private async Task<string[]> GetTranslations(string model, string systemPrompt, string userPrompt)
+    private async Task<string[]> GetTranslations(string prompt, XliffDocument xliffDocument, string model, string systemPrompt, List<string> sourceTexts, int bucketSize)
     {
-        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
-        request.AddJsonBody(new
+        List<string> allTranslatedTexts = new List<string>(); 
+
+        int numberOfBuckets = (int)Math.Ceiling(sourceTexts.Count / (double)bucketSize);
+        for (int i = 0; i < numberOfBuckets; i++)
         {
-            model,
-            messages = new List<ChatMessageDto>
+            var bucketIndexOffset = i * bucketSize;
+            var bucketSourceTexts = sourceTexts
+                .Skip(bucketIndexOffset)
+                .Take(bucketSize)
+                .Select((text, index) => "{ID:" + $"{bucketIndexOffset + index}" + "}" + $"{text}")
+                .ToList();
+
+            string json = JsonConvert.SerializeObject(bucketSourceTexts);
+
+            var userPrompt = GetUserPrompt(prompt, xliffDocument, json);
+
+            var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
+            request.AddJsonBody(new
             {
-                new ChatMessageDto(MessageRoles.System, systemPrompt), new ChatMessageDto(MessageRoles.User, userPrompt)
-            },
-            max_tokens = 4096,
-            temperature = 0.1f
-        });
+                model,
+                messages = new List<ChatMessageDto>
+                {
+                    new (MessageRoles.System, systemPrompt), 
+                    new (MessageRoles.User, userPrompt)
+                },
+                max_tokens = 4096,
+                temperature = 0.1f
+            });
 
-        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
-        var translatedText = response.Choices.First().Message.Content.Trim();
-        translatedText = translatedText.Replace("```", string.Empty).Replace("json", string.Empty);
+            var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+            var translatedText = response.Choices.First().Message.Content.Trim()
+                .Replace("```", string.Empty).Replace("json", string.Empty);
 
-        try
-        {
-            return JsonConvert.DeserializeObject<string[]>(translatedText);
+            try
+            {
+                var result = JsonConvert.DeserializeObject<string[]>(translatedText)
+                    .Select(t => 
+                    {
+                        int idEndIndex = t.IndexOf('}') + 1;
+                        return idEndIndex < t.Length ? t.Substring(idEndIndex) : string.Empty;
+                    })
+                    .Where(t => !string.IsNullOrEmpty(t))
+                    .ToArray();
+                
+                if (result.Length != bucketSourceTexts.Count)
+                {
+                    throw new InvalidOperationException(
+                        "The number of translated texts does not match the number of source texts.");
+                }
+                
+                allTranslatedTexts.AddRange(result);
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Failed to parse the translated text in bucket {i + 1}. Exception message: {e.Message}; Exception type: {e.GetType()}");
+            }
         }
-        catch (Exception e)
-        {
-            throw new Exception(
-                $"Failed to parse the translated text. Exception message: {e.Message}; Exception type: {e.GetType()}");
-        }
+
+        return allTranslatedTexts.ToArray();
     }
 
     private async Task<FileReference> UploadUpdatedDocument(XDocument xliffDocument, FileReference originalFile)
@@ -696,19 +724,30 @@ public class ChatActions : BaseActions
 
     private string GetSystemPrompt(bool translator)
     {
+        string prompt;
         if (translator)
         {
-            return
+            prompt =
                 "You are tasked with localizing the provided text. Consider cultural nuances, idiomatic expressions, " +
                 "and locale-specific references to make the text feel natural in the target language. " +
                 "Ensure the structure of the original text is preserved. Respond with the localized text.";
         }
+        else
+        {
+            prompt =
+                "You will be given a list of texts. Each text needs to be processed according to specific instructions " +
+                "that will follow. " +
+                "The goal is to adapt, modify, or translate these texts as required by the provided instructions. " +
+                "Prepare to process each text accordingly and provide the output as instructed.";
+        }
 
+        prompt +=
+            "Please note that each text is considered as an individual item for translation. Even if there are entries " +
+            "that are identical or similar, each one should be processed separately. This is crucial because the output " +
+            "should be an array with the same number of elements as the input. This array will be used programmatically, " +
+            "so maintaining the same element count is essential.";
 
-        return
-            "You will be given a list of texts. Each text needs to be processed according to specific instructions " +
-            "that will follow. The goal is to adapt, modify, or translate these texts as required by the provided instructions. " +
-            "Prepare to process each text accordingly and provide the output as instructed.";
+        return prompt;
     }
 
     string GetUserPrompt(string prompt, XliffDocument xliffDocument, string json)
@@ -716,9 +755,11 @@ public class ChatActions : BaseActions
         string instruction = string.IsNullOrEmpty(prompt)
             ? $"Translate the following texts from {xliffDocument.SourceLanguage} to {xliffDocument.TargetLanguage}."
             : $"Process the following texts as per the custom instructions: {prompt}. The source language is {xliffDocument.SourceLanguage} and the target language is {xliffDocument.TargetLanguage}. This information might be useful for the custom instructions.";
-
+        
         return
-            $"{instruction} Return the outputs as a serialized JSON array of strings without additional formatting. " +
+            $"Please provide a translation for each individual text, even if similar texts have been provided more than once. " +
+            $"{instruction} Return the outputs as a serialized JSON array of strings without additional formatting " +
+            $"(it is crucial because your response will be deserialized programmatically. Please ensure that your response is formatted correctly to avoid any deserialization issues). " +
             $"Original texts (in serialized array format): {json}";
     }
 }
