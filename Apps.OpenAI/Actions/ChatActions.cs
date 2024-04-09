@@ -536,8 +536,8 @@ public class ChatActions : BaseActions
          Display("Prompt",
              Description =
                  "Specify the instruction to be applied to each source tag within a translation unit. For example, 'Translate text'")] string? prompt,
-        [ActionParameter, Display("Bucket size", Description = "Specify the number of source texts to be translated at once. Default value: 15")] int? bucketSize = 15,
-        [ActionParameter] GlossaryRequest glossary)
+        [ActionParameter] GlossaryRequest glossary,
+        [ActionParameter, Display("Bucket size", Description = "Specify the number of source texts to be translated at once. Default value: 15")] int? bucketSize = 15)
     {
         var xliffDocument = await LoadAndParseXliffDocument(input.File);
         if (xliffDocument.TranslationUnits.Count == 0)
