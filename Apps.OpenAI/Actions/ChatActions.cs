@@ -22,14 +22,13 @@ using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RestSharp;
-using TiktokenSharp;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
 using System.Net.Mime;
-using System.Text.Json.Nodes;
 using System.Xml.Linq;
-using Apps.OpenAI.Utils.Xliff;
 using Blackbird.Xliff.Utils;
 using Blackbird.Xliff.Utils.Models;
+using System.Text.RegularExpressions;
+using MoreLinq;
 
 namespace Apps.OpenAI.Actions;
 
@@ -535,9 +534,13 @@ public class ChatActions : BaseActions
         [ActionParameter,
          Display("Prompt",
              Description =
-                 "Specify the instruction to be applied to each source tag within a translation unit. For example, 'Translate text'")] string? prompt,
+                 "Specify the instruction to be applied to each source tag within a translation unit. For example, 'Translate text'")]
+        string? prompt,
         [ActionParameter] GlossaryRequest glossary,
-        [ActionParameter, Display("Bucket size", Description = "Specify the number of source texts to be translated at once. Default value: 15")] int? bucketSize = 15)
+        [ActionParameter,
+         Display("Bucket size",
+             Description = "Specify the number of source texts to be translated at once. Default value: 15")]
+        int? bucketSize = 15)
     {
         var xliffDocument = await LoadAndParseXliffDocument(input.File);
         if (xliffDocument.TranslationUnits.Count == 0)
@@ -559,11 +562,131 @@ public class ChatActions : BaseActions
             glossaryPrompt += await GetGlossaryPromptPart(glossary.Glossary);
         }
 
-        var translatedTexts = await GetTranslations(prompt, xliffDocument, model, systemPrompt, list, bucketSize ?? 15, glossaryPrompt);
-        
+        var translatedTexts = await GetTranslations(prompt, xliffDocument, model, systemPrompt, list, bucketSize ?? 15,
+            glossaryPrompt);
+
         var updatedDocument = UpdateXliffDocumentWithTranslations(xliffDocument, translatedTexts);
         var fileReference = await UploadUpdatedDocument(updatedDocument, input.File);
         return new TranslateXliffResponse { File = fileReference };
+    }
+
+    [Action("Get Quality Scores for XLIFF file",
+        Description = "Gets segment and file level quality scores for XLIFF files")]
+    public async Task<ScoreXliffResponse> ScoreXLIFF([ActionParameter] TextChatModelIdentifier modelIdentifier,
+        [ActionParameter] ScoreXliffRequest input, [ActionParameter,
+                                                    Display("Prompt",
+                                                        Description =
+                                                            "Add any linguistic criteria for quality evaluation")]
+        string? prompt,
+        [ActionParameter,
+         Display("Bucket size",
+             Description = "Specify the number of translation units to be processed at once. Default value: 15")]
+        int? bucketSize = 15)
+    {
+        var xliffDocument = await LoadAndParseXliffDocument(input.File);
+        var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
+        string criteriaPrompt = string.IsNullOrEmpty(prompt)
+            ? "accuracy, fluency, consistency, style, grammar and spelling"
+            : prompt;
+        var results = new Dictionary<string, float>();
+        var batches = xliffDocument.TranslationUnits.Batch((int)bucketSize);
+        var src = input.SourceLanguage ?? xliffDocument.SourceLanguage;
+        var tgt = input.TargetLanguage ?? xliffDocument.TargetLanguage;
+        foreach (var batch in batches)
+        {
+            string userPrompt =
+                $"Your input is going to be a group of sentences in {src} and their translation into {tgt}. " +
+                "Only provide as output the ID of the sentence and the score number as a comma separated array of tuples. " +
+                $"Place the tuples in a same line and separate them using semicolons, example for two assessments: 2,7;32,5. The score number is a score from 1 to 10 assessing the quality of the translation, considering the following criteria: {criteriaPrompt}. Sentences: ";
+            foreach (var tu in batch)
+            {
+                userPrompt += $" {tu.Id} {tu.Source} {tu.Target}";
+            }
+
+            var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
+            request.AddJsonBody(new
+            {
+                model,
+                messages = new List<ChatMessageDto>
+                {
+                    new(MessageRoles.System,
+                        "You are a linguistic expert that should process the following texts accoring to the given instructions"),
+                    new(MessageRoles.User, userPrompt)
+                },
+                max_tokens = 4096,
+                temperature = 0.1f
+            });
+
+            var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+            var result = response.Choices.First().Message.Content;
+            foreach (var r in result.Split(";"))
+            {
+                var split = r.Split(",");
+                results.Add(split[0], float.Parse(split[1]));
+            }
+        }
+
+        var file = await FileManagementClient.DownloadAsync(input.File);
+        string fileContent;
+        Encoding encoding;
+        using (var inFileStream = new StreamReader(file, true))
+        {
+            encoding = inFileStream.CurrentEncoding;
+            fileContent = inFileStream.ReadToEnd();
+        }
+
+        foreach (var r in results)
+        {
+            fileContent = Regex.Replace(fileContent, @"(<trans-unit id=""" + r.Key + @""")",
+                @"${1} extradata=""" + r.Value + @"""");
+        }
+
+        if (input.Threshold != null && input.Condition != null && input.State != null)
+        {
+            var filteredTUs = new List<string>();
+            switch (input.Condition)
+            {
+                case ">":
+                    filteredTUs = results.Where(x => x.Value > input.Threshold).Select(x => x.Key).ToList();
+                    break;
+                case ">=":
+                    filteredTUs = results.Where(x => x.Value >= input.Threshold).Select(x => x.Key).ToList();
+                    break;
+                case "=":
+                    filteredTUs = results.Where(x => x.Value == input.Threshold).Select(x => x.Key).ToList();
+                    break;
+                case "<":
+                    filteredTUs = results.Where(x => x.Value < input.Threshold).Select(x => x.Key).ToList();
+                    break;
+                case "<=":
+                    filteredTUs = results.Where(x => x.Value <= input.Threshold).Select(x => x.Key).ToList();
+                    break;
+            }
+
+            fileContent = UpdateTargetState(fileContent, input.State, filteredTUs);
+        }
+
+        return new ScoreXliffResponse
+        {
+            AverageScore = results.Average(x => x.Value),
+            File = await FileManagementClient.UploadAsync(new MemoryStream(encoding.GetBytes(fileContent)),
+                MediaTypeNames.Text.Xml, input.File.Name)
+        };
+    }
+
+    private string UpdateTargetState(string fileContent, string state, List<string> filteredTUs)
+    {
+        var tus = Regex.Matches(fileContent, @"<trans-unit[\s\S]+?</trans-unit>").Select(x => x.Value);
+        foreach (var tu in tus.Where(x =>
+                     filteredTUs.Any(y => y == Regex.Match(x, @"<trans-unit id=""(\d+)""").Groups[1].Value)))
+        {
+            string transformedTU = Regex.IsMatch(tu, @"<target(.*?)state=""(.*?)""(.*?)>")
+                ? Regex.Replace(tu, @"<target(.*?state="")(.*?)("".*?)>", @"<target${1}" + state + "${3}>")
+                : Regex.Replace(tu, "<target", @"<target state=""" + state + @"""");
+            fileContent = Regex.Replace(fileContent, Regex.Escape(tu), transformedTU);
+        }
+
+        return fileContent;
     }
 
     [Action("Get localizable content from image", Description = "Retrieve localizable content from image.")]
@@ -649,9 +772,10 @@ public class ChatActions : BaseActions
             new XliffConfig { RemoveWhitespaces = true, CopyAttributes = true });
     }
 
-    private async Task<string[]> GetTranslations(string prompt, XliffDocument xliffDocument, string model, string systemPrompt, List<string> sourceTexts, int bucketSize, string? glossaryPrompt)
+    private async Task<string[]> GetTranslations(string prompt, XliffDocument xliffDocument, string model,
+        string systemPrompt, List<string> sourceTexts, int bucketSize, string? glossaryPrompt)
     {
-        List<string> allTranslatedTexts = new List<string>(); 
+        List<string> allTranslatedTexts = new List<string>();
 
         int numberOfBuckets = (int)Math.Ceiling(sourceTexts.Count / (double)bucketSize);
         for (int i = 0; i < numberOfBuckets; i++)
@@ -677,8 +801,8 @@ public class ChatActions : BaseActions
                 model,
                 messages = new List<ChatMessageDto>
                 {
-                    new (MessageRoles.System, systemPrompt), 
-                    new (MessageRoles.User, userPrompt)
+                    new(MessageRoles.System, systemPrompt),
+                    new(MessageRoles.User, userPrompt)
                 },
                 max_tokens = 4096,
                 temperature = 0.1f
@@ -691,25 +815,26 @@ public class ChatActions : BaseActions
             try
             {
                 var result = JsonConvert.DeserializeObject<string[]>(translatedText)
-                    .Select(t => 
+                    .Select(t =>
                     {
                         int idEndIndex = t.IndexOf('}') + 1;
                         return idEndIndex < t.Length ? t.Substring(idEndIndex) : string.Empty;
                     })
                     .Where(t => !string.IsNullOrEmpty(t))
                     .ToArray();
-                
+
                 if (result.Length != bucketSourceTexts.Count)
                 {
                     throw new InvalidOperationException(
                         "The number of translated texts does not match the number of source texts.");
                 }
-                
+
                 allTranslatedTexts.AddRange(result);
             }
             catch (Exception e)
             {
-                throw new Exception($"Failed to parse the translated text in bucket {i + 1}. Exception message: {e.Message}; Exception type: {e.GetType()}");
+                throw new Exception(
+                    $"Failed to parse the translated text in bucket {i + 1}. Exception message: {e.Message}; Exception type: {e.GetType()}");
             }
         }
 
@@ -770,7 +895,7 @@ public class ChatActions : BaseActions
         string instruction = string.IsNullOrEmpty(prompt)
             ? $"Translate the following texts from {xliffDocument.SourceLanguage} to {xliffDocument.TargetLanguage}."
             : $"Process the following texts as per the custom instructions: {prompt}. The source language is {xliffDocument.SourceLanguage} and the target language is {xliffDocument.TargetLanguage}. This information might be useful for the custom instructions.";
-        
+
         return
             $"Please provide a translation for each individual text, even if similar texts have been provided more than once. " +
             $"{instruction} Return the outputs as a serialized JSON array of strings without additional formatting " +

@@ -19,8 +19,10 @@ namespace Apps.OpenAI.Actions;
 [ActionList]
 public class AudioActions : BaseActions
 {
-    public AudioActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
-        : base(invocationContext, fileManagementClient) { }
+    public AudioActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
+        : base(invocationContext, fileManagementClient)
+    {
+    }
 
     [Action("Create English translation", Description = "Generates a translation into English given an audio or " +
                                                         "video file (mp3, mp4, mpeg, mpga, m4a, wav, or webm).")]
@@ -63,7 +65,7 @@ public class AudioActions : BaseActions
 
     [Action("Create speech", Description = "Generates audio from the text input.")]
     public async Task<CreateSpeechResponse> CreateSpeech(
-        [ActionParameter] SpeechCreationModelIdentifier modelIdentifier, 
+        [ActionParameter] SpeechCreationModelIdentifier modelIdentifier,
         [ActionParameter] CreateSpeechRequest input)
     {
         var model = modelIdentifier.ModelId ?? "tts-1-hd";
@@ -78,13 +80,13 @@ public class AudioActions : BaseActions
             response_format = responseFormat,
             speed = input.Speed ?? 1.0f
         });
-        
+
         var response = await Client.ExecuteWithErrorHandling(request);
-        
+
         using var stream = new MemoryStream(response.RawBytes);
-        var file = await FileManagementClient.UploadAsync(stream, response.ContentType, 
+        var file = await FileManagementClient.UploadAsync(stream, response.ContentType,
             $"{input.OutputAudioName ?? input.Voice}.{responseFormat}");
-        
+
         return new(file);
     }
 }

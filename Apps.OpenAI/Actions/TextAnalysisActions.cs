@@ -18,18 +18,20 @@ namespace Apps.OpenAI.Actions;
 [ActionList]
 public class TextAnalysisActions : BaseActions
 {
-    public TextAnalysisActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
-        : base(invocationContext, fileManagementClient) { }
+    public TextAnalysisActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
+        : base(invocationContext, fileManagementClient)
+    {
+    }
 
     [Action("Create embedding", Description = "Generate an embedding for a text provided. An embedding is a list of " +
                                               "floating point numbers that captures semantic information about the " +
                                               "text that it represents.")]
     public async Task<CreateEmbeddingResponse> CreateEmbedding(
-        [ActionParameter] EmbeddingModelIdentifier modelIdentifier, 
+        [ActionParameter] EmbeddingModelIdentifier modelIdentifier,
         [ActionParameter] EmbeddingRequest input)
     {
         var model = modelIdentifier.ModelId ?? "text-embedding-ada-002";
-        
+
         var request = new OpenAIRequest("/embeddings", Method.Post, Creds);
         request.AddJsonBody(new
         {

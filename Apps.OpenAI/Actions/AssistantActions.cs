@@ -2,7 +2,6 @@
 using Apps.OpenAI.Api;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Identifiers;
-using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Models.Responses.Chat;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Invocation;
@@ -14,14 +13,9 @@ using RestSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using Blackbird.Applications.Sdk.Common.Dynamic;
-using Apps.OpenAI.DataSourceHandlers;
 using Apps.OpenAI.Models.Requests.Assistant;
-using Apps.OpenAI.Constants;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
-using DocumentFormat.OpenXml.Office2010.Excel;
 using Blackbird.Applications.Sdk.Common.Files;
 using System.IO;
 
@@ -39,8 +33,11 @@ public class AssistantActions : BaseActions
     }
 
 
-    [Action("Chat with assistant", Description = "Send a chat message to a pre-configured assistant and get a response. It can optionally take up to 10 files as input. Read docs for more details.")]
-    public async Task<ChatResponse> ExecuteRun([ActionParameter] RunRequest input, [ActionParameter] TextChatModelIdentifier modelIdentifier)
+    [Action("Chat with assistant",
+        Description =
+            "Send a chat message to a pre-configured assistant and get a response. It can optionally take up to 10 files as input. Read docs for more details.")]
+    public async Task<ChatResponse> ExecuteRun([ActionParameter] RunRequest input,
+        [ActionParameter] TextChatModelIdentifier modelIdentifier)
     {
         var fileIds = new List<string>();
         if (input.Files != null)
@@ -54,7 +51,7 @@ public class AssistantActions : BaseActions
 
         var run = await StartRun(input, modelIdentifier, fileIds);
 
-        while(InProgressStatusses.Contains(run.Status))
+        while (InProgressStatusses.Contains(run.Status))
         {
             await Task.Delay(1000);
             run = await GetRun(run.ThreadId, run.Id);
@@ -133,6 +130,7 @@ public class AssistantActions : BaseActions
         var downloadResponse = await Client.ExecuteWithErrorHandling(downloadRequest);
 
         using var stream = new MemoryStream(downloadResponse.RawBytes);
-        return await FileManagementClient.UploadAsync(stream, MimeTypes.GetMimeType(infoResponse.Filename), infoResponse.Filename);
+        return await FileManagementClient.UploadAsync(stream, MimeTypes.GetMimeType(infoResponse.Filename),
+            infoResponse.Filename);
     }
 }

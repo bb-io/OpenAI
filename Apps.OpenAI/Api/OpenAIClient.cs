@@ -1,13 +1,7 @@
 ﻿using System;
 using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
 using Apps.OpenAI.Dtos;
-using Blackbird.Applications.Sdk.Common.Files;
-using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.Sdk.Utils.RestSharp;
-using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using DocumentFormat.OpenXml.Drawing;
 using Newtonsoft.Json;
 using RestSharp;
 
