@@ -118,6 +118,10 @@ All actions can take: Target audience, locale, glossary, tone of voice and any a
 	- Average Score: aggregated score of all segment level scores.
 	- Updated XLIFF file: segment level score added to extradata attribute & updated target state when instructed.
 
+As an example, the settings in the image below will result in all semegments with a score below or equal to 6 to have their target state updated to "needs-review-translation". 
+
+![OpenAIOptionalInput](image/README/OpenAIOptionalInput.png)
+
 
 - **Process XLIFF file** given an XLIFF file, processes each translation unit according to provided instructions (default is to translate source tags) and updates the target text for each unit. Supports only version 1.2 of XLIFF currently.
 
