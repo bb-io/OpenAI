@@ -104,6 +104,21 @@ All actions can take: Target audience, locale, glossary, tone of voice and any a
 
 ### XLIFF operations
 
+- **Get Quality Scores for XLIFF file** Gets segment and file level quality scores for XLIFF files. Supports only version 1.2 of XLIFF currently. Optionally, you can add Threshold, New Target State and Condition input parameters to the Blackbird action to change the target state value of segments meeting the desired criteria (all three must be filled).
+
+    Optional inputs:
+	- Prompt: Add your criteria for scoring each source-target pair. If none are provided, this is replaced by _"accuracy, fluency, consistency, style, grammar and spelling"_.
+	- Bucket size: Amount of translation units to process in the same request.
+	- Source and Target languages: By defualt, we get these values from the XLIFF header. You can provide different values, no specific format required. 
+	- Threshold: value between 0-10.
+	- Condition: Criteria to filter segments whose target state will be modified.
+	- New Target State: value to update target state to for filtered translation units.
+
+    Output:
+	- Average Score: aggregated score of all segment level scores.
+	- Updated XLIFF file: segment level score added to extradata attribute & updated target state when instructed.
+
+
 - **Process XLIFF file** given an XLIFF file, processes each translation unit according to provided instructions (default is to translate source tags) and updates the target text for each unit. Supports only version 1.2 of XLIFF currently.
 
 Here is an example bird for processing XLIFF files:
