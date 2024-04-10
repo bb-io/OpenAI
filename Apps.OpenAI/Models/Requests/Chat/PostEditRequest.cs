@@ -1,6 +1,4 @@
-﻿using Apps.OpenAI.DataSourceHandlers;
-using Blackbird.Applications.Sdk.Common;
-using Blackbird.Applications.Sdk.Common.Dynamic;
+﻿using Blackbird.Applications.Sdk.Common;
 
 namespace Apps.OpenAI.Models.Requests.Chat;
 
