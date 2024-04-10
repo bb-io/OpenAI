@@ -556,9 +556,7 @@ public class ChatActions : BaseActions
                               "Ensure that the translation aligns with the glossary entries for the respective languages. " +
                               "If a term has variations or synonyms, consider them and choose the most appropriate " +
                               "translation to maintain consistency and precision. ";
-
-            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary);
-            glossaryPrompt += glossaryPromptPart;
+            glossaryPrompt += await GetGlossaryPromptPart(glossary.Glossary);
         }
 
         var translatedTexts = await GetTranslations(prompt, xliffDocument, model, systemPrompt, list, bucketSize ?? 15, glossaryPrompt);
