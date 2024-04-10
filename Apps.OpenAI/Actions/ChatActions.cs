@@ -536,6 +536,7 @@ public class ChatActions : BaseActions
          Display("Prompt",
              Description =
                  "Specify the instruction to be applied to each source tag within a translation unit. For example, 'Translate text'")] string? prompt,
+        [ActionParameter] GlossaryRequest glossary,
         [ActionParameter, Display("Bucket size", Description = "Specify the number of source texts to be translated at once. Default value: 15")] int? bucketSize = 15)
     {
         var xliffDocument = await LoadAndParseXliffDocument(input.File);
@@ -548,7 +549,18 @@ public class ChatActions : BaseActions
         string systemPrompt = GetSystemPrompt(string.IsNullOrEmpty(prompt));
         var list = xliffDocument.TranslationUnits.Select(x => x.Source).ToList();
 
-        var translatedTexts = await GetTranslations(prompt, xliffDocument, model, systemPrompt, list, bucketSize ?? 15);
+        
+        string? glossaryPrompt = null;
+        if (glossary != null)
+        {
+            glossaryPrompt += "Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
+                              "Ensure that the translation aligns with the glossary entries for the respective languages. " +
+                              "If a term has variations or synonyms, consider them and choose the most appropriate " +
+                              "translation to maintain consistency and precision. ";
+            glossaryPrompt += await GetGlossaryPromptPart(glossary.Glossary);
+        }
+
+        var translatedTexts = await GetTranslations(prompt, xliffDocument, model, systemPrompt, list, bucketSize ?? 15, glossaryPrompt);
         
         var updatedDocument = UpdateXliffDocumentWithTranslations(xliffDocument, translatedTexts);
         var fileReference = await UploadUpdatedDocument(updatedDocument, input.File);
@@ -638,7 +650,7 @@ public class ChatActions : BaseActions
             new XliffConfig { RemoveWhitespaces = true, CopyAttributes = true });
     }
 
-    private async Task<string[]> GetTranslations(string prompt, XliffDocument xliffDocument, string model, string systemPrompt, List<string> sourceTexts, int bucketSize)
+    private async Task<string[]> GetTranslations(string prompt, XliffDocument xliffDocument, string model, string systemPrompt, List<string> sourceTexts, int bucketSize, string? glossaryPrompt)
     {
         List<string> allTranslatedTexts = new List<string>(); 
 
@@ -655,7 +667,11 @@ public class ChatActions : BaseActions
             string json = JsonConvert.SerializeObject(bucketSourceTexts);
 
             var userPrompt = GetUserPrompt(prompt, xliffDocument, json);
-
+            if (!string.IsNullOrEmpty(glossaryPrompt))
+            {
+                userPrompt += glossaryPrompt;
+            }
+            
             var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
             request.AddJsonBody(new
             {
