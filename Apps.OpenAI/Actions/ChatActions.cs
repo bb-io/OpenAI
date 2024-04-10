@@ -571,7 +571,7 @@ public class ChatActions : BaseActions
 
     [Action("Get Quality Scores for XLIFF file", Description = "Gets segment and file level quality scores for XLIFF files")]
     public async Task<ScoreXliffResponse> ScoreXLIFF([ActionParameter] TextChatModelIdentifier modelIdentifier,
-        ScoreXliffRequest input, [ActionParameter,
+        [ActionParameter]  ScoreXliffRequest input, [ActionParameter,
          Display("Prompt", Description =  "Add any linguistic criteria for quality evaluation")] string? prompt,
         [ActionParameter, Display("Bucket size", Description = "Specify the number of translation units to be processed at once. Default value: 15")] int? bucketSize = 15)
     {
