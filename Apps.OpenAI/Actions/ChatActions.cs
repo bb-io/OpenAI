@@ -554,7 +554,7 @@ public class ChatActions : BaseActions
 
 
         string? glossaryPrompt = null;
-        if (glossary != null)
+        if (glossary.Glossary != null)
         {
             glossaryPrompt +=
                 "Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
