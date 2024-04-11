@@ -553,7 +553,7 @@ public class ChatActions : BaseActions
         var list = xliffDocument.TranslationUnits.Select(x => x.Source).ToList();
         
         string? glossaryPrompt = null;
-        if (glossary != null)
+        if (glossary.Glossary != null)
         {
             glossaryPrompt += "Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
                               "Ensure that the translation aligns with the glossary entries for the respective languages. " +
