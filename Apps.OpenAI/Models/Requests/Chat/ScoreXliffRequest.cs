@@ -1,5 +1,6 @@
 ﻿using Apps.OpenAI.DataSourceHandlers;
 using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Files;
 
@@ -17,7 +18,7 @@ namespace Apps.OpenAI.Models.Requests.Chat
 
         public float? Threshold { get; set; }
 
-        [DataSource(typeof(ConditionDataSourceHandler))]
+        [StaticDataSource(typeof(ConditionDataSourceHandler))]
         public string? Condition { get; set; }
 
         [Display("New Target State")]
