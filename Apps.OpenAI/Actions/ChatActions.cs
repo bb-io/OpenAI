@@ -552,15 +552,13 @@ public class ChatActions : BaseActions
         string systemPrompt = GetSystemPrompt(string.IsNullOrEmpty(prompt));
         var list = xliffDocument.TranslationUnits.Select(x => x.Source).ToList();
 
-
         string? glossaryPrompt = null;
         if (glossary.Glossary != null)
         {
-            glossaryPrompt +=
-                "Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
-                "Ensure that the translation aligns with the glossary entries for the respective languages. " +
-                "If a term has variations or synonyms, consider them and choose the most appropriate " +
-                "translation to maintain consistency and precision. ";
+            glossaryPrompt += "Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
+                              "Ensure that the translation aligns with the glossary entries for the respective languages. " +
+                              "If a term has variations or synonyms, consider them and choose the most appropriate " +
+                              "translation to maintain consistency and precision. ";
             glossaryPrompt += await GetGlossaryPromptPart(glossary.Glossary);
         }
 
