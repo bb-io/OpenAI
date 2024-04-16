@@ -551,8 +551,8 @@ public class ChatActions : BaseActions
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
         string systemPrompt = GetSystemPrompt(string.IsNullOrEmpty(prompt));
         var list = xliffDocument.TranslationUnits.Select(x => x.Source).ToList();
-        
-        string glossaryPrompt = null;
+
+        string? glossaryPrompt = null;
         if (glossary.Glossary != null)
         {
             glossaryPrompt += "Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
