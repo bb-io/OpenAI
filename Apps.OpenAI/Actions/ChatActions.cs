@@ -210,9 +210,9 @@ public class ChatActions : BaseActions
     {
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
 
-        var systemPrompt = $"You are receiving a source text {(input.SourceLanguage != null ? $"written in {input.SourceLanguage} " : "")}" +
-                           $"that was translated by NMT into target text {(input.TargetLanguage != null ? $"written in {input.TargetLanguage}" : "")}. " +
-                           "Review the target text and respond with edits of the target text as necessary. If no edits required, respond with target text." +
+        var systemPrompt = $"You are receiving a source text{(input.SourceLanguage != null ? $" written in {input.SourceLanguage} " : "")}" +
+                           $"that was translated by NMT into target text{(input.TargetLanguage != null ? $" written in {input.TargetLanguage}" : "")}. " +
+                           "Review the target text and respond with edits of the target text as necessary. If no edits required, respond with target text. " +
                            $"{ (input.TargetAudience != null ? $"The target audience is {input.TargetAudience}" : string.Empty)}";
 
 
@@ -266,10 +266,10 @@ public class ChatActions : BaseActions
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
 
         var systemPrompt =
-            $"You are receiving a source text {(input.SourceLanguage != null ? $"written in {input.SourceLanguage} " : "")}" +
-            $"that was translated by NMT into target text {(input.TargetLanguage != null ? $"written in {input.TargetLanguage}" : "")}. " +
+            $"You are receiving a source text{(input.SourceLanguage != null ? $" written in {input.SourceLanguage} " : "")}" +
+            $"that was translated by NMT into target text{(input.TargetLanguage != null ? $" written in {input.TargetLanguage}" : "")}. " +
             "Evaluate the target text for grammatical errors, language structure issues, and overall linguistic coherence, " +
-            "including them in the issues description. Respond with the issues description." +
+            "including them in the issues description. Respond with the issues description. " +
             $"{(input.TargetAudience != null ? $"The target audience is {input.TargetAudience}" : string.Empty)}";
 
 
