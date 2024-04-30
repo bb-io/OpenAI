@@ -833,7 +833,6 @@ public class ChatActions : BaseActions
                         int idEndIndex = t.IndexOf('}') + 1;
                         return idEndIndex < t.Length ? t.Substring(idEndIndex) : string.Empty;
                     })
-                    .Where(t => !string.IsNullOrEmpty(t))
                     .ToArray();
 
                 if (result.Length != bucketSourceTexts.Count)
