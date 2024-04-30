@@ -1,5 +1,6 @@
 ﻿using Apps.OpenAI.DataSourceHandlers;
 using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.OpenAI.Models.Requests.Chat;
@@ -10,18 +11,18 @@ public class BaseChatRequest
     public int? MaximumTokens { get; set; }
 
     [Display("Temperature")]
-    [DataSource(typeof(TemperatureDataSourceHandler))]
+    [StaticDataSource(typeof(TemperatureDataSourceHandler))]
     public float? Temperature { get; set; }
 
     [Display("top_p")]
-    [DataSource(typeof(TopPDataSourceHandler))]
+    [StaticDataSource(typeof(TopPDataSourceHandler))]
     public float? TopP { get; set; }
 
     [Display("Presence penalty")]
-    [DataSource(typeof(PenaltyDataSourceHandler))]
+    [StaticDataSource(typeof(PenaltyDataSourceHandler))]
     public float? PresencePenalty { get; set; }
 
     [Display("Frequency penalty")]
-    [DataSource(typeof(PenaltyDataSourceHandler))]
+    [StaticDataSource(typeof(PenaltyDataSourceHandler))]
     public float? FrequencyPenalty { get; set; }
 }

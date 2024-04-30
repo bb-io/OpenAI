@@ -4,6 +4,12 @@ namespace Apps.OpenAI.Models.Responses.Chat;
 
 public class EditResponse
 {
-    [Display("Edited text")]
+    [Display("System prompt")]
+    public string SystemPrompt { get; set; }
+
+    [Display("User prompt")]
+    public string UserPrompt { get; set; }
+
+    [Display("Response")]
     public string EditText { get; set; }
 }

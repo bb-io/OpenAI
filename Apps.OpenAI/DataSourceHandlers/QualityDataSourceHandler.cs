@@ -1,29 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Blackbird.Applications.Sdk.Common;
-using Blackbird.Applications.Sdk.Common.Dynamic;
-using Blackbird.Applications.Sdk.Common.Invocation;
+﻿using System.Collections.Generic;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 
 namespace Apps.OpenAI.DataSourceHandlers;
 
-public class QualityDataSourceHandler : BaseInvocable, IDataSourceHandler
+public class QualityDataSourceHandler : IStaticDataSourceHandler
 {
-    public QualityDataSourceHandler(InvocationContext invocationContext) : base(invocationContext)
+    public Dictionary<string, string> GetData()
     {
-    }
-
-    public Dictionary<string, string> GetData(DataSourceContext context)
-    {
-        var qualities = new List<string>
+        return new Dictionary<string, string>()
         {
-            "hd",
-            "standard"
-        };
-
-        return qualities
-            .Where(quality => context.SearchString == null || quality.Contains(context.SearchString, 
-                StringComparison.OrdinalIgnoreCase))
-            .ToDictionary(quality => quality, quality => quality);
+            { "hd", "HD" },
+            { "standard", "Standard" }
+        };        
     }
 }

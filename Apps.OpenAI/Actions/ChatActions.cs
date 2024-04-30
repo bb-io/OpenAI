@@ -166,6 +166,7 @@ public class ChatActions : BaseActions
         var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
+            SystemPrompt = prompt,
             Response = response.Choices.First().Message.Content
         };
     }
@@ -249,6 +250,8 @@ public class ChatActions : BaseActions
         var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
+            UserPrompt = userPrompt,
+            SystemPrompt = systemPrompt,
             EditText = response.Choices.First().Message.Content
         };
     }
@@ -302,6 +305,8 @@ public class ChatActions : BaseActions
         var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
+            SystemPrompt = systemPrompt,
+            UserPrompt = userPrompt,
             Message = response.Choices.First().Message.Content
         };
     }
@@ -357,6 +362,8 @@ public class ChatActions : BaseActions
         var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
+            SystemPrompt = systemPrompt,
+            UserPrompt = userPrompt,
             Message = response.Choices.First().Message.Content
         };
     }
@@ -474,9 +481,11 @@ public class ChatActions : BaseActions
 
         var name = input.Name ?? "New glossary";
         blackbirdGlossary.Title = name;
-        using var stream = blackbirdGlossary.ConvertToTBX();
+        using var stream = blackbirdGlossary.ConvertToTbx();
         return new GlossaryResponse()
         {
+            UserPrompt = input.Content,
+            SystemPrompt = systemPrompt,
             Glossary = await FileManagementClient.UploadAsync(stream, MediaTypeNames.Application.Xml, $"{name}.tbx")
         };
     }
@@ -522,6 +531,8 @@ public class ChatActions : BaseActions
         var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
+            SystemPrompt = systemPrompt,
+            UserPrompt = userPrompt,
             Message = response.Choices.First().Message.Content
         };
     }
@@ -728,6 +739,8 @@ public class ChatActions : BaseActions
         var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
+            SystemPrompt = prompt,
+            UserPrompt = "",
             Message = response.Choices.First().Message.Content
         };
     }
@@ -735,7 +748,7 @@ public class ChatActions : BaseActions
     private async Task<string> GetGlossaryPromptPart(FileReference glossary)
     {
         var glossaryStream = await FileManagementClient.DownloadAsync(glossary);
-        var blackbirdGlossary = await glossaryStream.ConvertFromTBX();
+        var blackbirdGlossary = await glossaryStream.ConvertFromTbx();
 
         var glossaryPromptPart = new StringBuilder();
         glossaryPromptPart.AppendLine();

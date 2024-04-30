@@ -15,7 +15,7 @@ namespace Apps.OpenAI.Models.Requests.Chat
         public string? ToneOfVOice { get; set; }
 
         [Display("Locale")]
-        [DataSource(typeof(LocaleDataSourceHandler))]
+        [StaticDataSource(typeof(LocaleDataSourceHandler))]
         public string? Locale { get; set; }
 
         [Display("Additional prompt")]

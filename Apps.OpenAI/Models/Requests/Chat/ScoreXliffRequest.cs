@@ -22,7 +22,7 @@ namespace Apps.OpenAI.Models.Requests.Chat
         public string? Condition { get; set; }
 
         [Display("New Target State")]
-        [DataSource(typeof(XliffStateDataSourceHandler))]
+        [StaticDataSource(typeof(XliffStateDataSourceHandler))]
         public string? State { get; set; }
     }
 }
