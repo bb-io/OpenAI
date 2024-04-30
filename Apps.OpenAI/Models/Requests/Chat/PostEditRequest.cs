@@ -10,6 +10,15 @@ public class PostEditRequest
     [Display("Target text")]
     public string TargetText { get; set; }
 
+    [Display("Source langauge")]
+    public string? SourceLanguage { get; set; }
+
+    [Display("Target langauge")]
+    public string? TargetLanguage { get; set; }
+
+    [Display("Target audience")]
+    public string? TargetAudience { get; set; }
+
     [Display("Additional prompt")]
     public string? AdditionalPrompt { get; set; }
 }

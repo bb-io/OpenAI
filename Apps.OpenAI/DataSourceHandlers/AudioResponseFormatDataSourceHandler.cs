@@ -1,31 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Blackbird.Applications.Sdk.Common;
-using Blackbird.Applications.Sdk.Common.Dynamic;
-using Blackbird.Applications.Sdk.Common.Invocation;
+﻿using System.Collections.Generic;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 
 namespace Apps.OpenAI.DataSourceHandlers;
 
-public class AudioResponseFormatDataSourceHandler : BaseInvocable, IDataSourceHandler
+public class AudioResponseFormatDataSourceHandler : IStaticDataSourceHandler
 {
-    public AudioResponseFormatDataSourceHandler(InvocationContext invocationContext) : base(invocationContext)
+    public Dictionary<string, string> GetData()
     {
-    }
-
-    public Dictionary<string, string> GetData(DataSourceContext context)
-    {
-        var formats = new List<string>
+        return new()
         {
-            "mp3",
-            "opus",
-            "aac",
-            "flac"
+            { "mp3", "MP3" },
+            { "opus", "OPUS" },
+            { "aac", "AAC" },
+            { "flac", "FLAC" }
         };
-
-        return formats
-            .Where(format => context.SearchString == null || format.Contains(context.SearchString, 
-                StringComparison.OrdinalIgnoreCase))
-            .ToDictionary(format => format, format => format);
     }
 }

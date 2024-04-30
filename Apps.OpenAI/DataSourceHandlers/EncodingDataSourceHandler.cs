@@ -1,28 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Blackbird.Applications.Sdk.Common;
-using Blackbird.Applications.Sdk.Common.Dynamic;
-using Blackbird.Applications.Sdk.Common.Invocation;
+﻿using System.Collections.Generic;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 
 namespace Apps.OpenAI.DataSourceHandlers;
 
-public class EncodingDataSourceHandler : BaseInvocable, IDataSourceHandler
+public class EncodingDataSourceHandler : IStaticDataSourceHandler
 {
-    public EncodingDataSourceHandler(InvocationContext invocationContext) : base(invocationContext)
+    public Dictionary<string, string> GetData()
     {
-    }
-
-    public Dictionary<string, string> GetData(DataSourceContext context)
-    {
-        var encodings = new List<string>
+        return new Dictionary<string, string>()
         {
-            "cl100k_base",
-            "p50k_base"
+            { "cl100k_base", "cl100k base" },
+            { "p50k_base", "p50k base" }
         };
-
-        return encodings
-            .Where(e => context.SearchString == null || e.Contains(context.SearchString, StringComparison.OrdinalIgnoreCase))
-            .ToDictionary(e => e, e => e);
     }
 }

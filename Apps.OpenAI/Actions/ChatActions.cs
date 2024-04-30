@@ -166,6 +166,7 @@ public class ChatActions : BaseActions
         var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
+            SystemPrompt = prompt,
             Response = response.Choices.First().Message.Content
         };
     }
@@ -209,9 +210,11 @@ public class ChatActions : BaseActions
     {
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
 
-        var systemPrompt = "You are receiving a source text that was translated by NMT into target text. Review the " +
-                           "target text and respond with edits of the target text as necessary. If no edits required, " +
-                           "respond with target text.";
+        var systemPrompt = $"You are receiving a source text{(input.SourceLanguage != null ? $" written in {input.SourceLanguage} " : "")}" +
+                           $"that was translated by NMT into target text{(input.TargetLanguage != null ? $" written in {input.TargetLanguage}" : "")}. " +
+                           "Review the target text and respond with edits of the target text as necessary. If no edits required, respond with target text. " +
+                           $"{ (input.TargetAudience != null ? $"The target audience is {input.TargetAudience}" : string.Empty)}";
+
 
         if (glossary.Glossary != null)
             systemPrompt +=
@@ -249,6 +252,8 @@ public class ChatActions : BaseActions
         var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
+            UserPrompt = userPrompt,
+            SystemPrompt = systemPrompt,
             EditText = response.Choices.First().Message.Content
         };
     }
@@ -261,10 +266,12 @@ public class ChatActions : BaseActions
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
 
         var systemPrompt =
-            $"You are receiving a source text {(input.SourceLanguage != null ? $"written in {input.SourceLanguage} " : "")}" +
-            $"that was translated by NMT into target text {(input.TargetLanguage != null ? $"written in {input.TargetLanguage}" : "")}. " +
+            $"You are receiving a source text{(input.SourceLanguage != null ? $" written in {input.SourceLanguage} " : "")}" +
+            $"that was translated by NMT into target text{(input.TargetLanguage != null ? $" written in {input.TargetLanguage}" : "")}. " +
             "Evaluate the target text for grammatical errors, language structure issues, and overall linguistic coherence, " +
-            "including them in the issues description. Respond with the issues description.";
+            "including them in the issues description. Respond with the issues description. " +
+            $"{(input.TargetAudience != null ? $"The target audience is {input.TargetAudience}" : string.Empty)}";
+
 
         if (glossary.Glossary != null)
             systemPrompt +=
@@ -302,6 +309,8 @@ public class ChatActions : BaseActions
         var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
+            SystemPrompt = systemPrompt,
+            UserPrompt = userPrompt,
             Message = response.Choices.First().Message.Content
         };
     }
@@ -357,6 +366,8 @@ public class ChatActions : BaseActions
         var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
+            SystemPrompt = systemPrompt,
+            UserPrompt = userPrompt,
             Message = response.Choices.First().Message.Content
         };
     }
@@ -474,9 +485,11 @@ public class ChatActions : BaseActions
 
         var name = input.Name ?? "New glossary";
         blackbirdGlossary.Title = name;
-        using var stream = blackbirdGlossary.ConvertToTBX();
+        using var stream = blackbirdGlossary.ConvertToTbx();
         return new GlossaryResponse()
         {
+            UserPrompt = input.Content,
+            SystemPrompt = systemPrompt,
             Glossary = await FileManagementClient.UploadAsync(stream, MediaTypeNames.Application.Xml, $"{name}.tbx")
         };
     }
@@ -522,6 +535,8 @@ public class ChatActions : BaseActions
         var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
+            SystemPrompt = systemPrompt,
+            UserPrompt = userPrompt,
             Message = response.Choices.First().Message.Content
         };
     }
@@ -728,6 +743,8 @@ public class ChatActions : BaseActions
         var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
+            SystemPrompt = prompt,
+            UserPrompt = "",
             Message = response.Choices.First().Message.Content
         };
     }
@@ -735,7 +752,7 @@ public class ChatActions : BaseActions
     private async Task<string> GetGlossaryPromptPart(FileReference glossary)
     {
         var glossaryStream = await FileManagementClient.DownloadAsync(glossary);
-        var blackbirdGlossary = await glossaryStream.ConvertFromTBX();
+        var blackbirdGlossary = await glossaryStream.ConvertFromTbx();
 
         var glossaryPromptPart = new StringBuilder();
         glossaryPromptPart.AppendLine();
