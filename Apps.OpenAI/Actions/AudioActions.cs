@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
 using Apps.OpenAI.Api;
@@ -55,11 +57,33 @@ public class AudioActions : BaseActions
         request.AddParameter("response_format", "verbose_json");
         request.AddParameter("temperature", input.Temperature ?? 0);
         request.AddParameter("language", input.Language);
-
-        var response = await Client.ExecuteWithErrorHandling<TextDto>(request);
+        
+        // Add the timestamp_granularities parameter if it is set
+        if (input.TimestampGranularities != null && input.TimestampGranularities.Any())
+        {
+            foreach (var granularity in input.TimestampGranularities)
+            {
+                request.AddParameter("timestamp_granularities[]", granularity);
+            }
+        }
+        
+        var response = await Client.ExecuteWithErrorHandling<TranscriptionDto>(request);
         return new()
         {
-            Transcription = response.Text
+            Transcription = response.Text,
+            Words = response.Words?.Select(x => new WordResponse
+            {
+                Word = x.Word,
+                Start = x.Start,
+                End = x.End
+            }).ToList() ?? new List<WordResponse>(),
+            Segments = response.Segments?.Select(x => new SegmentResponse
+            {
+                Id = x.Id,
+                Text = x.Text,
+                Start = x.Start,
+                End = x.End
+            }).ToList() ?? new List<SegmentResponse>()
         };
     }
 
