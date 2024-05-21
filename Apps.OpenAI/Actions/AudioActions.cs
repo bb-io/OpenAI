@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
@@ -70,19 +71,19 @@ public class AudioActions : BaseActions
         return new()
         {
             Transcription = response.Text,
-            Words = response.Words.Select(x => new WordResponse
+            Words = response.Words?.Select(x => new WordResponse
             {
                 Word = x.Word,
                 Start = x.Start,
                 End = x.End
-            }).ToList(),
-            Segments = response.Segments.Select(x => new SegmentResponse
+            }).ToList() ?? new List<WordResponse>(),
+            Segments = response.Segments?.Select(x => new SegmentResponse
             {
                 Id = x.Id,
                 Text = x.Text,
                 Start = x.Start,
                 End = x.End
-            }).ToList()
+            }).ToList() ?? new List<SegmentResponse>()
         };
     }
 
