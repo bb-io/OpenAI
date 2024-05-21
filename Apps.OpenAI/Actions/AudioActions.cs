@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
 using Apps.OpenAI.Api;
@@ -55,6 +56,14 @@ public class AudioActions : BaseActions
         request.AddParameter("response_format", "verbose_json");
         request.AddParameter("temperature", input.Temperature ?? 0);
         request.AddParameter("language", input.Language);
+        
+        // Add the timestamp_granularities parameter if it is set
+        if (input.TimestampGranularities != null && input.TimestampGranularities.Any())
+        {
+            var granularities = string.Join(",", input.TimestampGranularities);
+            request.AddParameter("timestamp_granularities", granularities);
+        }
+        
 
         var response = await Client.ExecuteWithErrorHandling<TextDto>(request);
         return new()
