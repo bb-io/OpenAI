@@ -21,5 +21,5 @@ public class TranscriptionRequest
 
     [Display("Timestamp granularities")]
     [StaticDataSource(typeof(TimestampGranularitiesSourceHandler))]
-    public IEnumerable<string> TimestampGranularities { get; set; }
+    public IEnumerable<string>? TimestampGranularities { get; set; }
 }

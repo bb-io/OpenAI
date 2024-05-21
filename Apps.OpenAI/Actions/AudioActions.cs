@@ -60,15 +60,29 @@ public class AudioActions : BaseActions
         // Add the timestamp_granularities parameter if it is set
         if (input.TimestampGranularities != null && input.TimestampGranularities.Any())
         {
-            var granularities = string.Join(",", input.TimestampGranularities);
-            request.AddParameter("timestamp_granularities", granularities);
+            foreach (var granularity in input.TimestampGranularities)
+            {
+                request.AddParameter("timestamp_granularities[]", granularity);
+            }
         }
         
-
-        var response = await Client.ExecuteWithErrorHandling<TextDto>(request);
+        var response = await Client.ExecuteWithErrorHandling<TranscriptionDto>(request);
         return new()
         {
-            Transcription = response.Text
+            Transcription = response.Text,
+            Words = response.Words.Select(x => new WordResponse
+            {
+                Word = x.Word,
+                Start = x.Start,
+                End = x.End
+            }).ToList(),
+            Segments = response.Segments.Select(x => new SegmentResponse
+            {
+                Id = x.Id,
+                Text = x.Text,
+                Start = x.Start,
+                End = x.End
+            }).ToList()
         };
     }
 
