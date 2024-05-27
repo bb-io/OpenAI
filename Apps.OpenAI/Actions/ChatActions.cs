@@ -689,6 +689,74 @@ public class ChatActions : BaseActions
         };
     }
 
+    [Action("Post-edit XLIFF file",
+        Description = "Updates the targets of XLIFF 1.2 files")]
+    public async Task<TranslateXliffResponse> PostEditXLIFF([ActionParameter] TextChatModelIdentifier modelIdentifier,
+        [ActionParameter] PostEditXliffRequest input, [ActionParameter,
+                                                    Display("Prompt",
+                                                        Description =
+                                                            "Additional instructions")]
+        string? prompt, 
+        [ActionParameter] GlossaryRequest glossary,
+        [ActionParameter,
+         Display("Bucket size",
+             Description = "Specify the number of translation units to be processed at once. Default value: 10")]
+        int? bucketSize = 15)
+    {
+        var xliffDocument = await LoadAndParseXliffDocument(input.File);
+        var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
+        var results = new List<string>();
+        var batches = xliffDocument.TranslationUnits.Batch((int)bucketSize);
+        var src = input.SourceLanguage ?? xliffDocument.SourceLanguage;
+        var tgt = input.TargetLanguage ?? xliffDocument.TargetLanguage;
+
+        string? glossaryPrompt = null;
+        if (glossary.Glossary != null)
+        {
+            glossaryPrompt += "Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
+                              "Ensure that the translation aligns with the glossary entries for the respective languages. " +
+                              "If a term has variations or synonyms, consider them and choose the most appropriate " +
+                              "translation to maintain consistency and precision. ";
+            glossaryPrompt += await GetGlossaryPromptPart(glossary.Glossary);
+        }
+
+        foreach (var batch in batches)
+        {
+            string userPrompt =
+                $"Your input is going to be a group of sentences in {src} as source language and their translation into {tgt}. " +
+                "You need to review the target text and respond with edits of the target text as necessary. If no edits are required, respond with target text." +
+                "Your reply needs to include only the list of target texts (updated or unmodified) in the same order as received and encapsulated by curly brackets, separated by comma. Example: {target1},{target2},{target3}" +
+                $"{prompt}. + { glossaryPrompt ?? ""}"+
+                $"Sentences: ";
+            foreach (var tu in batch)
+            {
+                userPrompt += $"ID: {tu.Id} Source text: {tu.Source} Target Text:{tu.Target}";
+            }
+
+            var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
+            request.AddJsonBody(new
+            {
+                model,
+                messages = new List<ChatMessageDto>
+                {
+                    new(MessageRoles.System,
+                        "You are a linguistic expert that should process the following texts accoring to the given instructions"),
+                    new(MessageRoles.User, userPrompt)
+                },
+                max_tokens = 4096,
+                temperature = 0.1f
+            });
+
+            var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+            var result = response.Choices.First().Message.Content;
+            results.AddRange(Regex.Matches(result, "{(.*?)}[,$]").Select(x => x.Groups[1].Value));
+            
+        }
+        var updatedDocument = UpdateXliffDocumentWithTranslations(xliffDocument, results.ToArray());
+        var fileReference = await UploadUpdatedDocument(updatedDocument, input.File);
+        return new TranslateXliffResponse { File = fileReference };
+    }
+
     private string UpdateTargetState(string fileContent, string state, List<string> filteredTUs)
     {
         var tus = Regex.Matches(fileContent, @"<trans-unit[\s\S]+?</trans-unit>").Select(x => x.Value);
