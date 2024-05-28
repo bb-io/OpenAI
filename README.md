@@ -122,6 +122,13 @@ As an example, the settings in the image below will result in all semegments wit
 
 ![OpenAIOptionalInput](image/README/OpenAIOptionalInput.png)
 
+- **Post-edit XLIFF file** Updates the targets of XLIFF 1.2 files
+
+Optional inputs:
+	- Prompt: Add your linguistic criteria for postediting targets.
+	- Bucket size: Amount of translation units to process in the same request.
+	- Source and Target languages: By defualt, we get these values from the XLIFF header. You can provide different values, no specific format required.
+	- Glossary
 
 - **Process XLIFF file** given an XLIFF file, processes each translation unit according to provided instructions (default is to translate source tags) and updates the target text for each unit. Supports only version 1.2 of XLIFF currently.
 
