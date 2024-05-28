@@ -711,7 +711,7 @@ public class ChatActions : BaseActions
         var tgt = input.TargetLanguage ?? xliffDocument.TargetLanguage;
 
         string? glossaryPrompt = null;
-        if (glossary.Glossary != null)
+        if (glossary?.Glossary != null)
         {
             glossaryPrompt += "Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
                               "Ensure that the translation aligns with the glossary entries for the respective languages. " +
@@ -749,7 +749,7 @@ public class ChatActions : BaseActions
 
             var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
             var result = response.Choices.First().Message.Content;
-            results.AddRange(Regex.Matches(result, "{(.*?)}[,$]").Select(x => x.Groups[1].Value));
+            results.AddRange(Regex.Matches(result, "{(.*?)}(,|$)").Select(x => x.Groups[1].Value));
             
         }
         var updatedDocument = UpdateXliffDocumentWithTranslations(xliffDocument, results.ToArray());
