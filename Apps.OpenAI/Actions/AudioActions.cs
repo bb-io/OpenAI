@@ -19,13 +19,9 @@ using RestSharp;
 namespace Apps.OpenAI.Actions;
 
 [ActionList]
-public class AudioActions : BaseActions
+public class AudioActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
+    : BaseActions(invocationContext, fileManagementClient)
 {
-    public AudioActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
-        : base(invocationContext, fileManagementClient)
-    {
-    }
-
     [Action("Create English translation", Description = "Generates a translation into English given an audio or " +
                                                         "video file (mp3, mp4, mpeg, mpga, m4a, wav, or webm).")]
     public async Task<TranslationResponse> CreateTranslation([ActionParameter] TranslationRequest input)
@@ -58,7 +54,6 @@ public class AudioActions : BaseActions
         request.AddParameter("temperature", input.Temperature ?? 0);
         request.AddParameter("language", input.Language);
         
-        // Add the timestamp_granularities parameter if it is set
         if (input.TimestampGranularities != null && input.TimestampGranularities.Any())
         {
             foreach (var granularity in input.TimestampGranularities)
@@ -71,19 +66,8 @@ public class AudioActions : BaseActions
         return new()
         {
             Transcription = response.Text,
-            Words = response.Words?.Select(x => new WordResponse
-            {
-                Word = x.Word,
-                Start = x.Start,
-                End = x.End
-            }).ToList() ?? new List<WordResponse>(),
-            Segments = response.Segments?.Select(x => new SegmentResponse
-            {
-                Id = x.Id,
-                Text = x.Text,
-                Start = x.Start,
-                End = x.End
-            }).ToList() ?? new List<SegmentResponse>()
+            Words = response.Words?.Select(x => x.Word).ToList() ?? new List<string>(),
+            Segments = response.Segments?.Select(x => x.Text).ToList() ?? new List<string>()
         };
     }
 

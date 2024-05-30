@@ -33,13 +33,9 @@ using MoreLinq;
 namespace Apps.OpenAI.Actions;
 
 [ActionList]
-public class ChatActions : BaseActions
+public class ChatActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
+    : BaseActions(invocationContext, fileManagementClient)
 {
-    public ChatActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
-        : base(invocationContext, fileManagementClient)
-    {
-    }
-
     #region Default chat action without prompt
 
     [Action("Chat", Description = "Gives a response given a chat message")]
@@ -99,7 +95,21 @@ public class ChatActions : BaseActions
         }
         else
         {
-            messages.Add(new ChatMessageDto(MessageRoles.User, input.Message));
+            if(input.Parameters != null)
+            {            
+                var stringBuilder = new StringBuilder();
+                foreach (var message in input.Parameters)
+                {
+                    stringBuilder.AppendLine(message);
+                }
+
+                var prompt = $"{input.Message}; Parameters that you should use: {stringBuilder}";
+                messages.Add(new ChatMessageDto(MessageRoles.User, prompt));
+            }
+            else
+            {
+                messages.Add(new ChatMessageDto(MessageRoles.User, input.Message));
+            }
         }
 
         return messages;

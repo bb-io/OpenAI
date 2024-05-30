@@ -8,9 +8,9 @@ public class TranscriptionResponse
 {
     public string Transcription { get; set; }
 
-    public List<WordResponse> Words { get; set; }
+    public List<string> Words { get; set; }
     
-    public List<SegmentResponse> Segments { get; set; }
+    public List<string> Segments { get; set; }
 }
 
 public class WordResponse
