@@ -48,10 +48,11 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
 
+        var messages = await GenerateChatMessages(input);
         var jsonBody = new
         {
             model,
-            Messages = await GenerateChatMessages(input),
+            Messages = messages,
             max_tokens = input.MaximumTokens,
             top_p = input.TopP ?? 1,
             presence_penalty = input.PresencePenalty ?? 0,
@@ -69,7 +70,11 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
-            Message = response.Choices.First().Message.Content
+            Message = response.Choices.First().Message.Content,
+            SystemPrompt = messages.Where(x => x.GetType() == typeof(ChatMessageDto) && x.Role == MessageRoles.System)
+                .Select(x => x.Content).FirstOrDefault(),
+            UserPrompt = messages.Where(x => x.GetType() == typeof(ChatMessageDto) && x.Role == MessageRoles.User)
+                .Select(x => x.Content).FirstOrDefault()
         };
     }
 
