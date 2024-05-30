@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
@@ -72,9 +73,9 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         {
             Message = response.Choices.First().Message.Content,
             SystemPrompt = messages.Where(x => x.GetType() == typeof(ChatMessageDto) && x.Role == MessageRoles.System)
-                .Select(x => x.Content).FirstOrDefault(),
+                .Select(x => x.Content).FirstOrDefault() ?? string.Empty,
             UserPrompt = messages.Where(x => x.GetType() == typeof(ChatMessageDto) && x.Role == MessageRoles.User)
-                .Select(x => x.Content).FirstOrDefault()
+                .Select(x => x.Content).FirstOrDefault() ?? string.Empty
         };
     }
 
