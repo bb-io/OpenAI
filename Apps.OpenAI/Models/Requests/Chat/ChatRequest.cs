@@ -11,9 +11,9 @@ public class ChatRequest : BaseChatRequest
     
     public string Message { get; set; }
 
-    [Display("Parameters",
+    [Display("Texts",
         Description =
-            "Parameters that will be added to the user prompt along with the message. Useful if you want to add collection of messages to the prompt.")]
+            "Texts that will be added to the user prompt along with the message. Useful if you want to add collection of messages to the prompt.")]
     public IEnumerable<string>? Parameters { get; set; }
 
     public FileReference? Image { get; set; }
