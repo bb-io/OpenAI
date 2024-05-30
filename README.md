@@ -60,7 +60,7 @@ Do you have a cool use case that we can turn into an action? Let us know!
 
 ### Chat
 
-- **Chat** given a chat message, returns a response. You can optionally add a system prompt and/or an image.
+- **Chat** given a chat message, returns a response. You can optionally add a system prompt and/or an image. Also you can add collection of texts and it will be added to the prompt along with the message. Useful if you want to add collection of messages to the prompt.
 
 ### Assistant
 
@@ -156,6 +156,10 @@ In the future we can add actions for:
 - Fine-tuning
 
 Let us know if you're interested!
+
+## Actions limitations
+
+- For every action maximum allowed timeout are 300 seconds (5 minutes). If the action takes longer than 300 seconds, it will be terminated. Based ob our experience, even complex actions should take less than 5 minutes. But if you have a use case that requires more time, let us know.
 
 ## Feedback
 

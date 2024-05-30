@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
@@ -33,13 +34,9 @@ using MoreLinq;
 namespace Apps.OpenAI.Actions;
 
 [ActionList]
-public class ChatActions : BaseActions
+public class ChatActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
+    : BaseActions(invocationContext, fileManagementClient)
 {
-    public ChatActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
-        : base(invocationContext, fileManagementClient)
-    {
-    }
-
     #region Default chat action without prompt
 
     [Action("Chat", Description = "Gives a response given a chat message")]
@@ -52,10 +49,11 @@ public class ChatActions : BaseActions
 
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
 
+        var messages = await GenerateChatMessages(input);
         var jsonBody = new
         {
             model,
-            Messages = await GenerateChatMessages(input),
+            Messages = messages,
             max_tokens = input.MaximumTokens,
             top_p = input.TopP ?? 1,
             presence_penalty = input.PresencePenalty ?? 0,
@@ -73,7 +71,11 @@ public class ChatActions : BaseActions
         var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
-            Message = response.Choices.First().Message.Content
+            Message = response.Choices.First().Message.Content,
+            SystemPrompt = messages.Where(x => x.GetType() == typeof(ChatMessageDto) && x.Role == MessageRoles.System)
+                .Select(x => x.Content).FirstOrDefault() ?? string.Empty,
+            UserPrompt = messages.Where(x => x.GetType() == typeof(ChatMessageDto) && x.Role == MessageRoles.User)
+                .Select(x => x.Content).FirstOrDefault() ?? string.Empty
         };
     }
 
@@ -99,7 +101,21 @@ public class ChatActions : BaseActions
         }
         else
         {
-            messages.Add(new ChatMessageDto(MessageRoles.User, input.Message));
+            if(input.Parameters != null)
+            {            
+                var stringBuilder = new StringBuilder();
+                foreach (var message in input.Parameters)
+                {
+                    stringBuilder.AppendLine(message);
+                }
+
+                var prompt = $"{input.Message}; Parameters that you should use: {stringBuilder}";
+                messages.Add(new ChatMessageDto(MessageRoles.User, prompt));
+            }
+            else
+            {
+                messages.Add(new ChatMessageDto(MessageRoles.User, input.Message));
+            }
         }
 
         return messages;

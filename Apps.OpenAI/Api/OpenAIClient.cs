@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Net;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
 using Apps.OpenAI.Dtos;
 using Blackbird.Applications.Sdk.Utils.RestSharp;
 using Newtonsoft.Json;
@@ -13,7 +16,7 @@ public class OpenAIClient : BlackBirdRestClient
         new() { MissingMemberHandling = MissingMemberHandling.Ignore };
 
     public OpenAIClient() : base(new RestClientOptions
-        { ThrowOnAnyError = false, BaseUrl = new Uri("https://api.openai.com/v1"), MaxTimeout = TimeSpan.FromMinutes(10).Milliseconds }) { }
+        { ThrowOnAnyError = false, BaseUrl = new Uri("https://api.openai.com/v1"), MaxTimeout = (int)TimeSpan.FromMinutes(5).TotalMilliseconds }) { }
 
     protected override Exception ConfigureErrorException(RestResponse response)
     {
@@ -26,5 +29,10 @@ public class OpenAIClient : BlackBirdRestClient
             return new("Model chosen is not suitable for this task. Please choose a compatible model.");
         
         return new(error?.Error?.Message ?? response.ErrorException.Message);
+    }
+    
+    protected async Task<T> ExecuteLongTimeRequest<T>(RestRequest request) where T : class
+    {
+        throw new NotImplementedException();
     }
 }
