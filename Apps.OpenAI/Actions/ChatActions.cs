@@ -47,31 +47,45 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         if (input.Image != null) model = "gpt-4-vision-preview";
 
-        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
-
         var messages = await GenerateChatMessages(input);
-        var jsonBody = new
+        var completeMessage = string.Empty;
+
+        while (true)
         {
-            model,
-            Messages = messages,
-            max_tokens = input.MaximumTokens,
-            top_p = input.TopP ?? 1,
-            presence_penalty = input.PresencePenalty ?? 0,
-            frequency_penalty = input.FrequencyPenalty ?? 0,
-            temperature = input.Temperature ?? 1
-        };
+            var jsonBody = new
+            {
+                model,
+                Messages = messages,
+                max_tokens = input.MaximumTokens,
+                top_p = input.TopP ?? 1,
+                presence_penalty = input.PresencePenalty ?? 0,
+                frequency_penalty = input.FrequencyPenalty ?? 0,
+                temperature = input.Temperature ?? 1
+            };
 
-        var jsonBodySerialized = JsonConvert.SerializeObject(jsonBody, new JsonSerializerSettings
-        {
-            ContractResolver = new CamelCasePropertyNamesContractResolver()
-        });
+            var jsonBodySerialized = JsonConvert.SerializeObject(jsonBody, new JsonSerializerSettings
+            {
+                ContractResolver = new CamelCasePropertyNamesContractResolver()
+            });
 
-        request.AddJsonBody(jsonBodySerialized);
+            var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
+            request.AddJsonBody(jsonBodySerialized);
 
-        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+            var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+            completeMessage += response.Choices.First().Message.Content;
+
+            if (response.Choices.First().FinishReason != "length")
+            {
+                break;
+            }
+
+            messages.Add(new ChatMessageDto(MessageRoles.Assistant, response.Choices.First().Message.Content));
+            messages.Add(new ChatMessageDto(MessageRoles.User, "Continue your latest message, it was too long."));
+        }
+
         return new()
         {
-            Message = response.Choices.First().Message.Content,
+            Message = completeMessage,
             SystemPrompt = messages.Where(x => x.GetType() == typeof(ChatMessageDto) && x.Role == MessageRoles.System)
                 .Select(x => x.Content).FirstOrDefault() ?? string.Empty,
             UserPrompt = messages.Where(x => x.GetType() == typeof(ChatMessageDto) && x.Role == MessageRoles.User)
@@ -101,15 +115,15 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         }
         else
         {
-            if(input.Parameters != null)
-            {            
+            if (input.Parameters != null)
+            {
                 var stringBuilder = new StringBuilder();
                 foreach (var message in input.Parameters)
                 {
                     stringBuilder.AppendLine(message);
                 }
 
-                var prompt = $"{input.Message}; Parameters that you should use: {stringBuilder}";
+                var prompt = $"{input.Message}; Parameters that you should use (they can be in json format): {stringBuilder}";
                 messages.Add(new ChatMessageDto(MessageRoles.User, prompt));
             }
             else
@@ -226,10 +240,11 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     {
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
 
-        var systemPrompt = $"You are receiving a source text{(input.SourceLanguage != null ? $" written in {input.SourceLanguage} " : "")}" +
-                           $"that was translated by NMT into target text{(input.TargetLanguage != null ? $" written in {input.TargetLanguage}" : "")}. " +
-                           "Review the target text and respond with edits of the target text as necessary. If no edits required, respond with target text. " +
-                           $"{ (input.TargetAudience != null ? $"The target audience is {input.TargetAudience}" : string.Empty)}";
+        var systemPrompt =
+            $"You are receiving a source text{(input.SourceLanguage != null ? $" written in {input.SourceLanguage} " : "")}" +
+            $"that was translated by NMT into target text{(input.TargetLanguage != null ? $" written in {input.TargetLanguage}" : "")}. " +
+            "Review the target text and respond with edits of the target text as necessary. If no edits required, respond with target text. " +
+            $"{(input.TargetAudience != null ? $"The target audience is {input.TargetAudience}" : string.Empty)}";
 
 
         if (glossary.Glossary != null)
@@ -586,10 +601,11 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         string? glossaryPrompt = null;
         if (glossary.Glossary != null)
         {
-            glossaryPrompt += "Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
-                              "Ensure that the translation aligns with the glossary entries for the respective languages. " +
-                              "If a term has variations or synonyms, consider them and choose the most appropriate " +
-                              "translation to maintain consistency and precision. ";
+            glossaryPrompt +=
+                "Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
+                "Ensure that the translation aligns with the glossary entries for the respective languages. " +
+                "If a term has variations or synonyms, consider them and choose the most appropriate " +
+                "translation to maintain consistency and precision. ";
             glossaryPrompt += await GetGlossaryPromptPart(glossary.Glossary);
         }
 
@@ -709,10 +725,10 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         Description = "Updates the targets of XLIFF 1.2 files")]
     public async Task<TranslateXliffResponse> PostEditXLIFF([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] PostEditXliffRequest input, [ActionParameter,
-                                                    Display("Prompt",
-                                                        Description =
-                                                            "Additional instructions")]
-        string? prompt, 
+                                                       Display("Prompt",
+                                                           Description =
+                                                               "Additional instructions")]
+        string? prompt,
         [ActionParameter] GlossaryRequest glossary,
         [ActionParameter,
          Display("Bucket size",
@@ -729,10 +745,11 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         string? glossaryPrompt = null;
         if (glossary?.Glossary != null)
         {
-            glossaryPrompt += "Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
-                              "Ensure that the translation aligns with the glossary entries for the respective languages. " +
-                              "If a term has variations or synonyms, consider them and choose the most appropriate " +
-                              "translation to maintain consistency and precision. ";
+            glossaryPrompt +=
+                "Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
+                "Ensure that the translation aligns with the glossary entries for the respective languages. " +
+                "If a term has variations or synonyms, consider them and choose the most appropriate " +
+                "translation to maintain consistency and precision. ";
             glossaryPrompt += await GetGlossaryPromptPart(glossary.Glossary);
         }
 
@@ -742,7 +759,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 $"Your input is going to be a group of sentences in {src} as source language and their translation into {tgt}. " +
                 "You need to review the target text and respond with edits of the target text as necessary. If no edits are required, respond with target text." +
                 "Your reply needs to include only the list of target texts (updated or unmodified) in the same order as received and encapsulated by curly brackets, separated by comma. Example: {target1},{target2},{target3}" +
-                $"{prompt}. + { glossaryPrompt ?? ""}"+
+                $"{prompt}. + {glossaryPrompt ?? ""}" +
                 $"Sentences: ";
             foreach (var tu in batch)
             {
@@ -766,8 +783,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
             var result = response.Choices.First().Message.Content;
             results.AddRange(Regex.Matches(result, "{(.*?)}(,|$)").Select(x => x.Groups[1].Value));
-            
         }
+
         var updatedDocument = UpdateXliffDocumentWithTranslations(xliffDocument, results.ToArray());
         var fileReference = await UploadUpdatedDocument(updatedDocument, input.File);
         return new TranslateXliffResponse { File = fileReference };

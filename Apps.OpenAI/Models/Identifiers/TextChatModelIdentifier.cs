@@ -6,7 +6,7 @@ namespace Apps.OpenAI.Models.Identifiers;
 
 public class TextChatModelIdentifier
 {
-    [Display("Model ID")]
+    [Display("Model ID", Description = "Default model ID: gpt-4-turbo-preview")]
     [DataSource(typeof(TextChatModelDataSourceHandler))]
     public string? ModelId { get; set; }
 }

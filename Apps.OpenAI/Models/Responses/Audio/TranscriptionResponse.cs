@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using Apps.OpenAI.Dtos;
 using Blackbird.Applications.Sdk.Common;
 
 namespace Apps.OpenAI.Models.Responses.Audio;
@@ -8,29 +7,31 @@ public class TranscriptionResponse
 {
     public string Transcription { get; set; }
 
-    public List<string> Words { get; set; }
+    [Display("Words (serialized)")]
+    public string Words { get; set; }
     
-    public List<string> Segments { get; set; }
+    [Display("Segments (serialized)")]
+    public string Segments { get; set; }
 }
 
-public class WordResponse
+public record WordResponse(WordDto dto)
 {
-    public string Word { get; set; }
-    
-    public double Start { get; set; }
-    
-    public double End { get; set; }
+    public string Word { get; set; } = dto.Word;
+
+    public double Start { get; set; } = dto.Start;
+
+    public double End { get; set; } = dto.End;
 }
 
-public class SegmentResponse
+public record SegmentResponse(SegmentDto dto)
 {
     [Display("Segment ID")]
-    public int Id { get; set; }
-    
-    public string Text { get; set; }
-    
-    public double Start { get; set; }
-    
-    public double End { get; set; }
+    public int Id { get; set; } = dto.Id;
+
+    public string Text { get; set; } = dto.Text;
+
+    public double Start { get; set; } = dto.Start;
+
+    public double End { get; set; } = dto.End;
 }
 

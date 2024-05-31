@@ -14,6 +14,7 @@ using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
+using Newtonsoft.Json;
 using RestSharp;
 
 namespace Apps.OpenAI.Actions;
@@ -63,11 +64,14 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
         }
         
         var response = await Client.ExecuteWithErrorHandling<TranscriptionDto>(request);
+        var words = response.Words?.Select(x => new WordResponse(x)).ToList() ?? new List<WordResponse>();
+        var segments = response.Segments?.Select(x => new SegmentResponse(x)).ToList() ?? new List<SegmentResponse>();
+        
         return new()
         {
             Transcription = response.Text,
-            Words = response.Words?.Select(x => x.Word).ToList() ?? new List<string>(),
-            Segments = response.Segments?.Select(x => x.Text).ToList() ?? new List<string>()
+            Words = JsonConvert.SerializeObject(words),
+            Segments = JsonConvert.SerializeObject(segments)
         };
     }
 
