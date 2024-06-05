@@ -886,7 +886,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         var xliffDoc = XDocument.Load(memoryStream);
         return XliffDocument.FromXDocument(xliffDoc,
-            new XliffConfig { RemoveWhitespaces = true, CopyAttributes = true });
+            new XliffConfig { RemoveWhitespaces = true, CopyAttributes = true, IncludeInlineTags = true });
     }
 
     private async Task<string[]> GetTranslations(string prompt, XliffDocument xliffDocument, string model,
