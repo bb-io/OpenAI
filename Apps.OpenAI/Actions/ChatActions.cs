@@ -30,6 +30,7 @@ using Blackbird.Xliff.Utils;
 using Blackbird.Xliff.Utils.Models;
 using System.Text.RegularExpressions;
 using MoreLinq;
+using Apps.OpenAI.Utils.Xliff;
 
 namespace Apps.OpenAI.Actions;
 
@@ -959,9 +960,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
     private async Task<FileReference> UploadUpdatedDocument(XDocument xliffDocument, FileReference originalFile)
     {
-        var outputMemoryStream = new MemoryStream();
-        xliffDocument.Save(outputMemoryStream);
-        outputMemoryStream.Position = 0;
+        var outputMemoryStream = xliffDocument.ToStream();
 
         string contentType = originalFile.ContentType ?? "application/xml";
         return await FileManagementClient.UploadAsync(outputMemoryStream, contentType, originalFile.Name);
