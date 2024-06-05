@@ -30,6 +30,7 @@ using Blackbird.Xliff.Utils;
 using Blackbird.Xliff.Utils.Models;
 using System.Text.RegularExpressions;
 using MoreLinq;
+using Apps.OpenAI.Utils.Xliff;
 
 namespace Apps.OpenAI.Actions;
 
@@ -725,9 +726,9 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         Description = "Updates the targets of XLIFF 1.2 files")]
     public async Task<TranslateXliffResponse> PostEditXLIFF([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] PostEditXliffRequest input, [ActionParameter,
-                                                       Display("Prompt",
-                                                           Description =
-                                                               "Additional instructions")]
+                                                    Display("Prompt",
+                                                        Description =
+                                                            "Additional instructions")]
         string? prompt,
         [ActionParameter] GlossaryRequest glossary,
         [ActionParameter,
@@ -745,11 +746,10 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         string? glossaryPrompt = null;
         if (glossary?.Glossary != null)
         {
-            glossaryPrompt +=
-                "Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
-                "Ensure that the translation aligns with the glossary entries for the respective languages. " +
-                "If a term has variations or synonyms, consider them and choose the most appropriate " +
-                "translation to maintain consistency and precision. ";
+            glossaryPrompt += "Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
+                              "Ensure that the translation aligns with the glossary entries for the respective languages. " +
+                              "If a term has variations or synonyms, consider them and choose the most appropriate " +
+                              "translation to maintain consistency and precision. ";
             glossaryPrompt += await GetGlossaryPromptPart(glossary.Glossary);
         }
 
@@ -758,7 +758,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             string userPrompt =
                 $"Your input is going to be a group of sentences in {src} as source language and their translation into {tgt}. " +
                 "You need to review the target text and respond with edits of the target text as necessary. If no edits are required, respond with target text." +
-                "Your reply needs to include only the list of target texts (updated or unmodified) in the same order as received and encapsulated by curly brackets, separated by comma. Example: {target1},{target2},{target3}" +
+                "Your reply needs to include only the list of target texts (updated or unmodified) in the same order as received and encapsulated by curly brackets, separated by comma. Example: {target1},{target2},{target3}. If you encounter XML tags in the source text, these tags should also be present in the target text in a similar position, that is around the same words. If the tags are not present in the target, add them" +
                 $"{prompt}. + {glossaryPrompt ?? ""}" +
                 $"Sentences: ";
             foreach (var tu in batch)
@@ -783,8 +783,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
             var result = response.Choices.First().Message.Content;
             results.AddRange(Regex.Matches(result, "{(.*?)}(,|$)").Select(x => x.Groups[1].Value));
-        }
 
+        }
         var updatedDocument = UpdateXliffDocumentWithTranslations(xliffDocument, results.ToArray());
         var fileReference = await UploadUpdatedDocument(updatedDocument, input.File);
         return new TranslateXliffResponse { File = fileReference };
@@ -887,7 +887,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         var xliffDoc = XDocument.Load(memoryStream);
         return XliffDocument.FromXDocument(xliffDoc,
-            new XliffConfig { RemoveWhitespaces = true, CopyAttributes = true });
+            new XliffConfig { RemoveWhitespaces = true, CopyAttributes = true, IncludeInlineTags = true });
     }
 
     private async Task<string[]> GetTranslations(string prompt, XliffDocument xliffDocument, string model,
@@ -960,9 +960,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
     private async Task<FileReference> UploadUpdatedDocument(XDocument xliffDocument, FileReference originalFile)
     {
-        var outputMemoryStream = new MemoryStream();
-        xliffDocument.Save(outputMemoryStream);
-        outputMemoryStream.Position = 0;
+        var outputMemoryStream = xliffDocument.ToStream();
 
         string contentType = originalFile.ContentType ?? "application/xml";
         return await FileManagementClient.UploadAsync(outputMemoryStream, contentType, originalFile.Name);
