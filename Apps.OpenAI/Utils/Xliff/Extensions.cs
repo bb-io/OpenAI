@@ -10,12 +10,13 @@ public static class Extensions
     {
         var stringWriter = new StringWriter();
         xDoc.Save(stringWriter);
+        var encoding = stringWriter.Encoding;
 
         var content = stringWriter.ToString();
         content = content.Replace("&lt;", "<").Replace("&gt;", ">");
         content = content.Replace(" />", "/>");
 
-        var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(content));
+        var memoryStream = new MemoryStream(encoding.GetBytes(content));
         memoryStream.Position = 0;
 
         return memoryStream;
