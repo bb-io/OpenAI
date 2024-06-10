@@ -42,13 +42,14 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
     [Action("Chat", Description = "Gives a response given a chat message")]
     public async Task<ChatResponse> ChatMessageRequest([ActionParameter] TextChatModelIdentifier modelIdentifier,
-        [ActionParameter] ChatRequest input)
+        [ActionParameter] ChatRequest input,
+        [ActionParameter] GlossaryRequest glossary)
     {
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
 
         if (input.Image != null) model = "gpt-4-vision-preview";
 
-        var messages = await GenerateChatMessages(input);
+        var messages = await GenerateChatMessages(input, glossary);
         var completeMessage = string.Empty;
 
         while (true)
@@ -94,7 +95,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         };
     }
 
-    private async Task<List<dynamic>> GenerateChatMessages(ChatRequest input)
+    private async Task<List<dynamic>> GenerateChatMessages(ChatRequest input, GlossaryRequest? request)
     {
         var messages = new List<dynamic>();
 
@@ -131,6 +132,12 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             {
                 messages.Add(new ChatMessageDto(MessageRoles.User, input.Message));
             }
+        }
+        
+        if (request?.Glossary != null)
+        {
+            var glossaryPromptPart = await GetGlossaryPromptPart(request.Glossary);
+            messages.Add(new ChatMessageDto(MessageRoles.User, $"Glossary: {glossaryPromptPart}"));
         }
 
         return messages;
