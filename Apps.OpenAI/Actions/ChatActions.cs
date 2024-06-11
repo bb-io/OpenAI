@@ -965,7 +965,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         return allTranslatedTexts.ToArray();
     }
 
-    private async Task<FileReference> UploadUpdatedDocument(XDocument xliffDocument, FileReference originalFile)
+    private async Task<FileReference> UploadUpdatedDocument(XliffDocument xliffDocument, FileReference originalFile)
     {
         var outputMemoryStream = xliffDocument.ToStream();
 
@@ -973,7 +973,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         return await FileManagementClient.UploadAsync(outputMemoryStream, contentType, originalFile.Name);
     }
 
-    private XDocument UpdateXliffDocumentWithTranslations(XliffDocument xliffDocument, string[] translatedTexts)
+    private XliffDocument UpdateXliffDocumentWithTranslations(XliffDocument xliffDocument, string[] translatedTexts)
     {
         var updatedUnits = xliffDocument.TranslationUnits.Zip(translatedTexts, (unit, translation) =>
         {
@@ -981,7 +981,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             return unit;
         }).ToList();
 
-        return xliffDocument.UpdateTranslationUnits(updatedUnits);
+        var xDoc = xliffDocument.UpdateTranslationUnits(updatedUnits);
+        return XliffDocument.FromXDocument(xDoc, new XliffConfig { RemoveWhitespaces = true, CopyAttributes = true, IncludeInlineTags = true});
     }
 
     private string GetSystemPrompt(bool translator)
