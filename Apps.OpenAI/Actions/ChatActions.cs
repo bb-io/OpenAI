@@ -42,13 +42,14 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
     [Action("Chat", Description = "Gives a response given a chat message")]
     public async Task<ChatResponse> ChatMessageRequest([ActionParameter] TextChatModelIdentifier modelIdentifier,
-        [ActionParameter] ChatRequest input)
+        [ActionParameter] ChatRequest input,
+        [ActionParameter] GlossaryRequest glossary)
     {
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
 
         if (input.Image != null) model = "gpt-4-vision-preview";
 
-        var messages = await GenerateChatMessages(input);
+        var messages = await GenerateChatMessages(input, glossary);
         var completeMessage = string.Empty;
 
         while (true)
@@ -94,7 +95,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         };
     }
 
-    private async Task<List<dynamic>> GenerateChatMessages(ChatRequest input)
+    private async Task<List<dynamic>> GenerateChatMessages(ChatRequest input, GlossaryRequest? request)
     {
         var messages = new List<dynamic>();
 
@@ -131,6 +132,12 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             {
                 messages.Add(new ChatMessageDto(MessageRoles.User, input.Message));
             }
+        }
+        
+        if (request?.Glossary != null)
+        {
+            var glossaryPromptPart = await GetGlossaryPromptPart(request.Glossary);
+            messages.Add(new ChatMessageDto(MessageRoles.User, $"Glossary: {glossaryPromptPart}"));
         }
 
         return messages;
@@ -958,7 +965,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         return allTranslatedTexts.ToArray();
     }
 
-    private async Task<FileReference> UploadUpdatedDocument(XDocument xliffDocument, FileReference originalFile)
+    private async Task<FileReference> UploadUpdatedDocument(XliffDocument xliffDocument, FileReference originalFile)
     {
         var outputMemoryStream = xliffDocument.ToStream();
 
@@ -966,7 +973,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         return await FileManagementClient.UploadAsync(outputMemoryStream, contentType, originalFile.Name);
     }
 
-    private XDocument UpdateXliffDocumentWithTranslations(XliffDocument xliffDocument, string[] translatedTexts)
+    private XliffDocument UpdateXliffDocumentWithTranslations(XliffDocument xliffDocument, string[] translatedTexts)
     {
         var updatedUnits = xliffDocument.TranslationUnits.Zip(translatedTexts, (unit, translation) =>
         {
@@ -974,7 +981,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             return unit;
         }).ToList();
 
-        return xliffDocument.UpdateTranslationUnits(updatedUnits);
+        var xDoc = xliffDocument.UpdateTranslationUnits(updatedUnits);
+        return XliffDocument.FromXDocument(xDoc, new XliffConfig { RemoveWhitespaces = true, CopyAttributes = true, IncludeInlineTags = true});
     }
 
     private string GetSystemPrompt(bool translator)
