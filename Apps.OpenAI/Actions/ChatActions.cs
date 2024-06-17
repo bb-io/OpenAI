@@ -95,6 +95,26 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         };
     }
 
+    // This action may seem redundant but we feel that the optional system prompt in the action above may be too hidden.
+    [Action("Chat with system prompt", Description = "Gives a response given a chat message")]
+    public async Task<ChatResponse> ChatWithSystemMessageRequest([ActionParameter] TextChatModelIdentifier modelIdentifier,
+        [ActionParameter] ChatRequestWithSystem input,
+        [ActionParameter] GlossaryRequest glossary)
+    {
+        return await ChatMessageRequest(modelIdentifier, new ChatRequest
+        {
+            SystemPrompt = input.SystemPrompt,
+            Message = input.Message,
+            MaximumTokens = input.MaximumTokens,
+            FrequencyPenalty = input.FrequencyPenalty,
+            Image = input.Image,
+            Parameters = input.Parameters,
+            PresencePenalty = input.PresencePenalty,
+            Temperature = input.Temperature,
+            TopP = input.TopP
+        }, glossary);
+    }
+
     private async Task<List<dynamic>> GenerateChatMessages(ChatRequest input, GlossaryRequest? request)
     {
         var messages = new List<dynamic>();

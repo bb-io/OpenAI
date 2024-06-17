@@ -61,6 +61,7 @@ Do you have a cool use case that we can turn into an action? Let us know!
 ### Chat
 
 - **Chat** given a chat message, returns a response. You can optionally add a system prompt and/or an image. Also you can add collection of texts and it will be added to the prompt along with the message. Also you can optionally add Glossary as well. Useful if you want to add collection of messages to the prompt.
+- **Chat with system prompt** the same as above except that the system prompt is mandatory.
 
 ### Assistant
 
