@@ -8,5 +8,5 @@ public class EmbeddingModelIdentifier
 {
     [Display("Model ID")]
     [DataSource(typeof(EmbeddingModelDataSourceHandler))]
-    public string? ModelId { get; set; }
+    public string ModelId { get; set; }
 }

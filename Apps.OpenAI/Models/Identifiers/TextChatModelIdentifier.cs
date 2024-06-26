@@ -8,5 +8,5 @@ public class TextChatModelIdentifier
 {
     [Display("Model ID", Description = "Default model ID: gpt-4-turbo-preview")]
     [DataSource(typeof(TextChatModelDataSourceHandler))]
-    public string? ModelId { get; set; }
+    public string ModelId { get; set; }
 }
