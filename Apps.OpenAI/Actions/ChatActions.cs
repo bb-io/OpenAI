@@ -156,7 +156,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         
         if (request?.Glossary != null)
         {
-            var glossaryPromptPart = await GetGlossaryPromptPart(request.Glossary);
+            var glossaryPromptPart = await GetGlossaryPromptPart(request.Glossary, input.Message);
             messages.Add(new ChatMessageDto(MessageRoles.User, $"Glossary: {glossaryPromptPart}"));
         }
 
@@ -205,7 +205,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                       "If a term has variations or synonyms, consider them and choose the most appropriate " +
                       "translation to maintain consistency and precision. ";
 
-            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary);
+            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, content);
             prompt += glossaryPromptPart;
         }
 
@@ -296,7 +296,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         if (glossary.Glossary != null)
         {
-            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary);
+            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, input.SourceText);
             userPrompt += glossaryPromptPart;
         }
 
@@ -351,7 +351,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         if (glossary.Glossary != null)
         {
-            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary);
+            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, input.SourceText);
             userPrompt += glossaryPromptPart;
         }
 
@@ -408,7 +408,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         if (glossary.Glossary != null)
         {
-            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary);
+            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, input.SourceText);
             userPrompt += glossaryPromptPart;
         }
 
@@ -467,7 +467,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         if (glossary.Glossary != null)
         {
-            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary);
+            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, input.SourceText);
             userPrompt += glossaryPromptPart;
         }
 
@@ -570,7 +570,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         if (glossary.Glossary != null)
         {
-            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary);
+            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, input.Text);
             userPrompt +=
                 "\nEnhance the localized text by incorporating relevant terms from our glossary where applicable. " +
                 "If you encounter terms from the glossary in the text, ensure that the localized text aligns " +
@@ -626,19 +626,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         string systemPrompt = GetSystemPrompt(string.IsNullOrEmpty(prompt));
         var list = xliffDocument.TranslationUnits.Select(x => x.Source).ToList();
 
-        string? glossaryPrompt = null;
-        if (glossary.Glossary != null)
-        {
-            glossaryPrompt +=
-                "Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
-                "Ensure that the translation aligns with the glossary entries for the respective languages. " +
-                "If a term has variations or synonyms, consider them and choose the most appropriate " +
-                "translation to maintain consistency and precision. ";
-            glossaryPrompt += await GetGlossaryPromptPart(glossary.Glossary);
-        }
-
         var translatedTexts = await GetTranslations(prompt, xliffDocument, model, systemPrompt, list, bucketSize ?? 15,
-            glossaryPrompt);
+            glossary.Glossary);
 
         var updatedDocument = UpdateXliffDocumentWithTranslations(xliffDocument, translatedTexts);
         var fileReference = await UploadUpdatedDocument(updatedDocument, input.File);
@@ -770,27 +759,27 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         var src = input.SourceLanguage ?? xliffDocument.SourceLanguage;
         var tgt = input.TargetLanguage ?? xliffDocument.TargetLanguage;
 
-        string? glossaryPrompt = null;
-        if (glossary?.Glossary != null)
-        {
-            glossaryPrompt += "Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
-                              "Ensure that the translation aligns with the glossary entries for the respective languages. " +
-                              "If a term has variations or synonyms, consider them and choose the most appropriate " +
-                              "translation to maintain consistency and precision. ";
-            glossaryPrompt += await GetGlossaryPromptPart(glossary.Glossary);
-        }
-
         foreach (var batch in batches)
         {
+            string? glossaryPrompt = null;
+            if (glossary?.Glossary != null)
+            {
+                glossaryPrompt += "Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
+                                  "Ensure that the translation aligns with the glossary entries for the respective languages. " +
+                                  "If a term has variations or synonyms, consider them and choose the most appropriate " +
+                                  "translation to maintain consistency and precision. ";
+                glossaryPrompt += await GetGlossaryPromptPart(glossary.Glossary, string.Join(';',batch.Select(x => x.Source)));
+            }
+
             string userPrompt =
                 $"Your input is going to be a group of sentences in {src} as source language and their translation into {tgt}. " +
                 "You need to review the target text and respond with edits of the target text as necessary. If no edits are required, respond with target text." +
-                "Your reply needs to include only the list of target texts (updated or unmodified) in the same order as received and encapsulated by curly brackets, separated by comma. Example: {target1},{target2},{target3}. If you encounter XML tags in the source text, these tags should also be present in the target text in a similar position, that is around the same words. If the tags are not present in the target, add them" +
-                $"{prompt}. + {glossaryPrompt ?? ""}" +
+                "Your reply needs to include only the list of target texts (updated or unmodified) in the same order as received and encapsulated by curly brackets, separated by comma. Example: {target1},{target2},{target3}. If you encounter XML tags in the source text, these tags should also be present in the target text in a similar position, that is around the same words. If the tags are not present in the target, add them." +
+                $"{prompt ?? ""}. + {glossaryPrompt ?? ""}" +
                 $"Sentences: ";
             foreach (var tu in batch)
             {
-                userPrompt += $"ID: {tu.Id} Source text: {tu.Source} Target Text:{tu.Target}";
+                userPrompt += $"ID: {tu.Id} Source text: {tu.Source} Target Text: {tu.Target}";
             }
 
             var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
@@ -877,7 +866,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         };
     }
 
-    private async Task<string> GetGlossaryPromptPart(FileReference glossary)
+    private async Task<string> GetGlossaryPromptPart(FileReference glossary, string sourceContent)
     {
         var glossaryStream = await FileManagementClient.DownloadAsync(glossary);
         var blackbirdGlossary = await glossaryStream.ConvertFromTbx();
@@ -890,6 +879,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         foreach (var entry in blackbirdGlossary.ConceptEntries)
         {
+            var allTerms = entry.LanguageSections.SelectMany(x => x.Terms.Select(y => y.Term));
+            if (!allTerms.Any(sourceContent.Contains)) continue;
             glossaryPromptPart.AppendLine();
             glossaryPromptPart.AppendLine("\tEntry:");
 
@@ -918,7 +909,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     }
 
     private async Task<string[]> GetTranslations(string prompt, XliffDocument xliffDocument, string model,
-        string systemPrompt, List<string> sourceTexts, int bucketSize, string? glossaryPrompt)
+        string systemPrompt, List<string> sourceTexts, int bucketSize, FileReference? glossary)
     {
         List<string> allTranslatedTexts = new List<string>();
 
@@ -935,8 +926,15 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             string json = JsonConvert.SerializeObject(bucketSourceTexts);
 
             var userPrompt = GetUserPrompt(prompt, xliffDocument, json);
-            if (!string.IsNullOrEmpty(glossaryPrompt))
+
+            if (glossary != null)
             {
+                var glossaryPrompt =
+                    "Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
+                    "Ensure that the translation aligns with the glossary entries for the respective languages. " +
+                    "If a term has variations or synonyms, consider them and choose the most appropriate " +
+                    "translation to maintain consistency and precision. ";
+                glossaryPrompt += await GetGlossaryPromptPart(glossary, json);
                 userPrompt += glossaryPrompt;
             }
 
