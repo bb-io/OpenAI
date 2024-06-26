@@ -8,5 +8,5 @@ public class ImageGenerationModelIdentifier
 {
     [Display("Model ID")]
     [DataSource(typeof(ImageGenerationModelDataSourceHandler))]
-    public string? ModelId { get; set; }
+    public string ModelId { get; set; }
 }
