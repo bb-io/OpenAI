@@ -1,4 +1,5 @@
-﻿using Blackbird.Applications.Sdk.Common;
+﻿using Apps.OpenAI.Dtos;
+using Blackbird.Applications.Sdk.Common;
 using Newtonsoft.Json;
 
 namespace Apps.OpenAI.Models.Responses.Chat
@@ -36,5 +37,8 @@ namespace Apps.OpenAI.Models.Responses.Chat
         [Display("Proposed Translation")]
         [JsonProperty("proposed_translation")]
         public string ProposedTranslation { get; set; }
+
+        [Display("Usage")]
+        public UsageDto Usage { get; set; }
     }
 }
