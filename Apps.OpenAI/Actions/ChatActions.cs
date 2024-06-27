@@ -51,6 +51,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         var messages = await GenerateChatMessages(input, glossary);
         var completeMessage = string.Empty;
+        var usage = new UsageDto ();
 
         while (true)
         {
@@ -76,6 +77,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
             completeMessage += response.Choices.First().Message.Content;
 
+            usage += response.Usage;
+
             if (response.Choices.First().FinishReason != "length")
             {
                 break;
@@ -91,7 +94,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             SystemPrompt = messages.Where(x => x.GetType() == typeof(ChatMessageDto) && x.Role == MessageRoles.System)
                 .Select(x => x.Content).FirstOrDefault() ?? string.Empty,
             UserPrompt = messages.Where(x => x.GetType() == typeof(ChatMessageDto) && x.Role == MessageRoles.User)
-                .Select(x => x.Content).FirstOrDefault() ?? string.Empty
+                .Select(x => x.Content).FirstOrDefault() ?? string.Empty,
+            Usage = usage,
         };
     }
 
@@ -227,7 +231,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         return new()
         {
             SystemPrompt = prompt,
-            Response = response.Choices.First().Message.Content
+            Response = response.Choices.First().Message.Content,
+            Usage = response.Usage,
         };
     }
 
@@ -256,7 +261,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
-            Message = response.Choices.First().Message.Content
+            Message = response.Choices.First().Message.Content,
+            Usage = response.Usage,
         };
     }
 
@@ -315,7 +321,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         {
             UserPrompt = userPrompt,
             SystemPrompt = systemPrompt,
-            EditText = response.Choices.First().Message.Content
+            EditText = response.Choices.First().Message.Content,
+            Usage = response.Usage,
         };
     }
 
@@ -372,7 +379,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         {
             SystemPrompt = systemPrompt,
             UserPrompt = userPrompt,
-            Message = response.Choices.First().Message.Content
+            Message = response.Choices.First().Message.Content,
+            Usage = response.Usage,
         };
     }
 
@@ -429,7 +437,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         {
             SystemPrompt = systemPrompt,
             UserPrompt = userPrompt,
-            Message = response.Choices.First().Message.Content
+            Message = response.Choices.First().Message.Content,
+            Usage = response.Usage,
         };
     }
 
@@ -486,7 +495,9 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         try
         {
-            return JsonConvert.DeserializeObject<MqmAnalysis>(response.Choices.First().Message.Content);
+            var analysis = JsonConvert.DeserializeObject<MqmAnalysis>(response.Choices.First().Message.Content);
+            analysis.Usage = response.Usage;
+            return analysis;
         }
         catch
         {
@@ -551,7 +562,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         {
             UserPrompt = input.Content,
             SystemPrompt = systemPrompt,
-            Glossary = await FileManagementClient.UploadAsync(stream, MediaTypeNames.Application.Xml, $"{name}.tbx")
+            Glossary = await FileManagementClient.UploadAsync(stream, MediaTypeNames.Application.Xml, $"{name}.tbx"),
+            Usage = response.Usage,
         };
     }
 
@@ -601,7 +613,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         {
             SystemPrompt = systemPrompt,
             UserPrompt = userPrompt,
-            Message = response.Choices.First().Message.Content
+            Message = response.Choices.First().Message.Content,
+            Usage = response.Usage,
         };
     }
 
@@ -624,19 +637,19 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         var xliffDocument = await LoadAndParseXliffDocument(input.File);
         if (xliffDocument.TranslationUnits.Count == 0)
         {
-            return new TranslateXliffResponse { File = input.File };
+            return new TranslateXliffResponse { File = input.File, Usage = new UsageDto() };
         }
 
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
         string systemPrompt = GetSystemPrompt(string.IsNullOrEmpty(prompt));
         var list = xliffDocument.TranslationUnits.Select(x => x.Source).ToList();
 
-        var translatedTexts = await GetTranslations(prompt, xliffDocument, model, systemPrompt, list, bucketSize ?? 15,
+        var (translatedTexts, usage) = await GetTranslations(prompt, xliffDocument, model, systemPrompt, list, bucketSize ?? 15,
             glossary.Glossary);
 
         var updatedDocument = UpdateXliffDocumentWithTranslations(xliffDocument, translatedTexts);
         var fileReference = await UploadUpdatedDocument(updatedDocument, input.File);
-        return new TranslateXliffResponse { File = fileReference };
+        return new TranslateXliffResponse { File = fileReference, Usage = usage };
     }
 
     [Action("Get Quality Scores for XLIFF file",
@@ -661,6 +674,9 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         var batches = xliffDocument.TranslationUnits.Batch((int)bucketSize);
         var src = input.SourceLanguage ?? xliffDocument.SourceLanguage;
         var tgt = input.TargetLanguage ?? xliffDocument.TargetLanguage;
+
+        var usage = new UsageDto();
+
         foreach (var batch in batches)
         {
             string userPrompt =
@@ -687,6 +703,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             });
 
             var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+            usage += response.Usage;
             var result = response.Choices.First().Message.Content;
             foreach (var r in result.Split(";"))
             {
@@ -739,7 +756,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         {
             AverageScore = results.Average(x => x.Value),
             File = await FileManagementClient.UploadAsync(new MemoryStream(encoding.GetBytes(fileContent)),
-                MediaTypeNames.Text.Xml, input.File.Name)
+                MediaTypeNames.Text.Xml, input.File.Name),
+            Usage = usage,
         };
     }
 
@@ -763,6 +781,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         var batches = xliffDocument.TranslationUnits.Batch((int)bucketSize);
         var src = input.SourceLanguage ?? xliffDocument.SourceLanguage;
         var tgt = input.TargetLanguage ?? xliffDocument.TargetLanguage;
+        var usage = new UsageDto();
 
         foreach (var batch in batches)
         {
@@ -807,13 +826,14 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             });
 
             var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+            usage += response.Usage;
             var result = response.Choices.First().Message.Content;
             results.AddRange(Regex.Matches(result, "{(.*?)}(,|$)").Select(x => x.Groups[1].Value));
 
         }
         var updatedDocument = UpdateXliffDocumentWithTranslations(xliffDocument, results.ToArray());
         var fileReference = await UploadUpdatedDocument(updatedDocument, input.File);
-        return new TranslateXliffResponse { File = fileReference };
+        return new TranslateXliffResponse { File = fileReference, Usage = usage, };
     }
 
     private string UpdateTargetState(string fileContent, string state, List<string> filteredTUs)
@@ -872,7 +892,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         {
             SystemPrompt = prompt,
             UserPrompt = "",
-            Message = response.Choices.First().Message.Content
+            Message = response.Choices.First().Message.Content,
+            Usage = response.Usage,
         };
     }
 
@@ -921,12 +942,14 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             new XliffConfig { RemoveWhitespaces = true, CopyAttributes = true, IncludeInlineTags = true });
     }
 
-    private async Task<string[]> GetTranslations(string prompt, XliffDocument xliffDocument, string model,
+    private async Task<(string[], UsageDto)> GetTranslations(string prompt, XliffDocument xliffDocument, string model,
         string systemPrompt, List<string> sourceTexts, int bucketSize, FileReference? glossary)
     {
         List<string> allTranslatedTexts = new List<string>();
 
         int numberOfBuckets = (int)Math.Ceiling(sourceTexts.Count / (double)bucketSize);
+
+        var usageDto = new UsageDto();
         for (int i = 0; i < numberOfBuckets; i++)
         {
             var bucketIndexOffset = i * bucketSize;
@@ -970,6 +993,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             });
 
             var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+            usageDto += response.Usage;
             var translatedText = response.Choices.First().Message.Content.Trim()
                 .Replace("```", string.Empty).Replace("json", string.Empty);
 
@@ -998,7 +1022,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             }
         }
 
-        return allTranslatedTexts.ToArray();
+        return (allTranslatedTexts.ToArray(), usageDto);
     }
 
     private async Task<FileReference> UploadUpdatedDocument(XliffDocument xliffDocument, FileReference originalFile)
