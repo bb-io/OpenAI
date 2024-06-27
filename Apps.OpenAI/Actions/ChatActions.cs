@@ -631,8 +631,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         [ActionParameter] GlossaryRequest glossary,
         [ActionParameter,
          Display("Bucket size",
-             Description = "Specify the number of source texts to be translated at once. Default value: 15")]
-        int? bucketSize = 15)
+             Description = "Specify the number of source texts to be translated at once. Default value: 1500. (See our documentation for an explanation)")]
+        int? bucketSize = 1500)
     {
         var xliffDocument = await LoadAndParseXliffDocument(input.File);
         if (xliffDocument.TranslationUnits.Count == 0)
@@ -662,8 +662,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         string? prompt,
         [ActionParameter,
          Display("Bucket size",
-             Description = "Specify the number of translation units to be processed at once. Default value: 15")]
-        int? bucketSize = 15)
+             Description = "Specify the number of translation units to be processed at once. Default value: 1500. (See our documentation for an explanation)")]
+        int? bucketSize = 1500)
     {
         var xliffDocument = await LoadAndParseXliffDocument(input.File);
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
@@ -772,8 +772,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         [ActionParameter] GlossaryRequest glossary,
         [ActionParameter,
          Display("Bucket size",
-             Description = "Specify the number of translation units to be processed at once. Default value: 10")]
-        int? bucketSize = 15)
+             Description = "Specify the number of translation units to be processed at once. Default value: 1500. (See our documentation for an explanation)")]
+        int? bucketSize = 1500)
     {
         var xliffDocument = await LoadAndParseXliffDocument(input.File);
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
