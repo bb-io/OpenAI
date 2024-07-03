@@ -1,4 +1,5 @@
-﻿using Blackbird.Applications.Sdk.Common;
+﻿using Apps.OpenAI.Dtos;
+using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Files;
 
 namespace Apps.OpenAI.Models.Responses.Chat
@@ -9,5 +10,8 @@ namespace Apps.OpenAI.Models.Responses.Chat
 
         [Display("Average Score")]
         public float AverageScore { get; set; }
+
+        [Display("Usage")]
+        public UsageDto Usage { get; set; }
     }
 }

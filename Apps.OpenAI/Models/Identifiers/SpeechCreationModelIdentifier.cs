@@ -8,5 +8,5 @@ public class SpeechCreationModelIdentifier
 {
     [Display("Model ID")]
     [DataSource(typeof(SpeechCreationModelDataSourceHandler))]
-    public string? ModelId { get; set; }
+    public string ModelId { get; set; }
 }
