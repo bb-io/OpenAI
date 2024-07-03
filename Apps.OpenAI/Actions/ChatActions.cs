@@ -764,7 +764,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         {
             string userPrompt =
                 $"Your input is going to be a group of sentences in {src} as source language and their translation into {tgt}. " +
-                "You need to review the target text and respond with edits of the target text as necessary. If no edits are required, respond with target text." +
+                "You need to review the target text and respond with edits of the target text as necessary. If no edits are required, respond with target text. " +
+                "You must respond with the same number of post-edited texts as received. This is crucial because we programmatically match each source to your response." +
                 "Your reply needs to include only the list of target texts (updated or unmodified) in the same order as received and encapsulated by curly brackets, separated by comma. Example: {target1},{target2},{target3}. If you encounter XML tags in the source text, these tags should also be present in the target text in a similar position, that is around the same words. If the tags are not present in the target, add them" +
                 $"{prompt}. + {glossaryPrompt ?? ""}" +
                 $"Sentences: ";
@@ -789,8 +790,16 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
             var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
             var result = response.Choices.First().Message.Content;
-            results.AddRange(Regex.Matches(result, "{(.*?)}(,|$)").Select(x => x.Groups[1].Value));
-
+            
+            var matches = Regex.Matches(result, "{(.*?)}(,|$)").Select(x => x.Groups[1].Value).ToList();
+            if (matches.Count != batch.Length)
+            {
+                throw new Exception("The number of post-edited texts does not match the number of source texts. " +
+                                    "Probably there is a duplication or a missing text in translation unit. " +
+                                    "Try change model or bucket size (to lower values).");
+            }
+            
+            results.AddRange(matches);
         }
         var updatedDocument = UpdateXliffDocumentWithTranslations(xliffDocument, results.ToArray());
         var fileReference = await UploadUpdatedDocument(updatedDocument, input.File);
