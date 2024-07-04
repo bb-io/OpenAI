@@ -31,6 +31,7 @@ using Blackbird.Xliff.Utils.Models;
 using System.Text.RegularExpressions;
 using MoreLinq;
 using Apps.OpenAI.Utils.Xliff;
+using Blackbird.Xliff.Utils.Extensions;
 
 namespace Apps.OpenAI.Actions;
 
@@ -647,7 +648,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         var (translatedTexts, usage) = await GetTranslations(prompt, xliffDocument, model, systemPrompt, list, bucketSize ?? 15,
             glossary.Glossary);
 
-        var updatedDocument = UpdateXliffDocumentWithTranslations(xliffDocument, translatedTexts);
+        var updatedDocument = UpdateXliffDocumentWithTranslations(xliffDocument, translatedTexts, input.PostEditLockedSegments ?? false);
         var fileReference = await UploadUpdatedDocument(updatedDocument, input.File);
         return new TranslateXliffResponse { File = fileReference, Usage = usage };
     }
@@ -776,7 +777,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         int? bucketSize = 1500)
     {
         var xliffDocument = await LoadAndParseXliffDocument(input.File);
-        var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
+        var model = modelIdentifier.ModelId ?? "gpt-4o";
         var results = new List<string>();
         var batches = xliffDocument.TranslationUnits.Batch((int)bucketSize);
         var src = input.SourceLanguage ?? xliffDocument.SourceLanguage;
@@ -835,12 +836,12 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             {
                 throw new Exception("The number of post-edited texts does not match the number of source texts. " +
                                     "Probably there is a duplication or a missing text in translation unit. " +
-                                    "Try change model or bucket size (to lower values).");
+                                    "Try change model or bucket size (to lower values) or add retries to this action.");
             }
             
             results.AddRange(matches);
         }
-        var updatedDocument = UpdateXliffDocumentWithTranslations(xliffDocument, results.ToArray());
+        var updatedDocument = UpdateXliffDocumentWithTranslations(xliffDocument, results.ToArray(), input.PostEditLockedSegments ?? false);
         var fileReference = await UploadUpdatedDocument(updatedDocument, input.File);
         return new TranslateXliffResponse { File = fileReference, Usage = usage, };
     }
@@ -946,9 +947,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         await stream.CopyToAsync(memoryStream);
         memoryStream.Position = 0;
 
-        var xliffDoc = XDocument.Load(memoryStream);
-        return XliffDocument.FromXDocument(xliffDoc,
-            new XliffConfig { RemoveWhitespaces = true, CopyAttributes = true, IncludeInlineTags = true });
+        return memoryStream.ToXliffDocument(new XliffConfig
+            { RemoveWhitespaces = true, CopyAttributes = true, IncludeInlineTags = true });
     }
 
     private async Task<(string[], UsageDto)> GetTranslations(string prompt, XliffDocument xliffDocument, string model,
@@ -1042,16 +1042,29 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         return await FileManagementClient.UploadAsync(outputMemoryStream, contentType, originalFile.Name);
     }
 
-    private XliffDocument UpdateXliffDocumentWithTranslations(XliffDocument xliffDocument, string[] translatedTexts)
+    private XliffDocument UpdateXliffDocumentWithTranslations(XliffDocument xliffDocument, string[] translatedTexts, bool postEditLockedSegments)
     {
         var updatedUnits = xliffDocument.TranslationUnits.Zip(translatedTexts, (unit, translation) =>
         {
-            unit.Target = translation;
+            if (postEditLockedSegments == false && unit.Attributes is not null && unit.Attributes.Any(x => x.Key == "locked" && x.Value == "locked"))
+            {
+                unit.Target = unit.Target;
+            }
+            else
+            {
+                unit.Target = translation;
+            }
+            
             return unit;
+            
         }).ToList();
 
         var xDoc = xliffDocument.UpdateTranslationUnits(updatedUnits);
-        return XliffDocument.FromXDocument(xDoc, new XliffConfig { RemoveWhitespaces = true, CopyAttributes = true, IncludeInlineTags = true});
+        var stream = new MemoryStream();
+        xDoc.Save(stream);
+        stream.Position = 0;
+        
+        return stream.ToXliffDocument(new XliffConfig { RemoveWhitespaces = true, CopyAttributes = true, IncludeInlineTags = true });
     }
 
     private string GetSystemPrompt(bool translator)
