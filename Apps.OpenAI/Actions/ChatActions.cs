@@ -810,21 +810,13 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             }
 
             var maxId = batch.Max(x => int.Parse(x.Id));
-            string userPrompt =
-                $"Your input consists of a group of sentences in {src} as the source language and their translations into {tgt}. " +
-                "Review the target text and respond with edits to the target text as necessary. If no edits are required, respond with the target text. " +
-                "Your reply must include only the list of target texts (updated or unmodified) in the same order as received, each enclosed in curly brackets, and preceded by their respective IDs in the format [ID:X]{target}. " +
-                "Example: [ID:1]{target1},[ID:2]{target2},[ID:3]{target3}. If you encounter XML tags in the source text, these tags should also be present in the target text in the same position. If tags are missing in the target, add them. " +
-                "Important: Each translation unit consists of a source text and its corresponding target text. For EACH translation unit, you must return exactly one record. " +
-                "Respond with the same number of post-edited texts as received. This is crucial for programmatically matching each source to your response. " +
-                $"Note that the maximum ID sent to you is {maxId}. If you return an ID greater than this, it indicates a mistake because each translation unit should match exactly to each of your records. " +
-                $"{prompt ?? ""}. {glossaryPrompt ?? ""} " +
-                $"Sentences: \n";
-
-            foreach (var tu in batch)
-            {
-                userPrompt += $"ID: {tu.Id}; Source text: {tu.Source}; Target Text: {tu.Target}\n";
-            }
+            var userPrompt = 
+                $"Your input consists of sentences in {src} with their translations into {tgt}. " +
+                "Review and edit the target text as necessary. If no edits are needed, return the target text. " +
+                "Include only the target texts (updated or not) in the format [ID:X]{target}. " +
+                $"Example: [ID:1]{{target1}},[ID:2]{{target2}}. Max ID: {maxId}. " +
+                $"{prompt ?? ""} {glossaryPrompt ?? ""} Sentences: \n" +
+                string.Join("\n", batch.Select(tu => $"ID: {tu.Id}; Source: {tu.Source}; Target: {tu.Target}"));
 
             var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
             request.AddJsonBody(new
