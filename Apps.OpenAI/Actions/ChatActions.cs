@@ -648,7 +648,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         var (translatedTexts, usage) = await GetTranslations(prompt, xliffDocument, model, systemPrompt, list, bucketSize ?? 15,
             glossary.Glossary);
 
-        var updatedDocument = UpdateXliffDocumentWithTranslations(xliffDocument, translatedTexts, input.PostEditLockedSegments ?? false);
+        var updatedDocument = UpdateXliffDocumentWithTranslations(xliffDocument, translatedTexts, input.UpdateLockedSegments ?? false);
         var fileReference = await UploadUpdatedDocument(updatedDocument, input.File);
         return new TranslateXliffResponse { File = fileReference, Usage = usage };
     }
@@ -1042,11 +1042,11 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         return await FileManagementClient.UploadAsync(outputMemoryStream, contentType, originalFile.Name);
     }
 
-    private XliffDocument UpdateXliffDocumentWithTranslations(XliffDocument xliffDocument, string[] translatedTexts, bool postEditLockedSegments)
+    private XliffDocument UpdateXliffDocumentWithTranslations(XliffDocument xliffDocument, string[] translatedTexts, bool updateLockedSegments)
     {
         var updatedUnits = xliffDocument.TranslationUnits.Zip(translatedTexts, (unit, translation) =>
         {
-            if (postEditLockedSegments == false && unit.Attributes is not null && unit.Attributes.Any(x => x.Key == "locked" && x.Value == "locked"))
+            if (updateLockedSegments == false && unit.Attributes is not null && unit.Attributes.Any(x => x.Key == "locked" && x.Value == "locked"))
             {
                 unit.Target = unit.Target;
             }
