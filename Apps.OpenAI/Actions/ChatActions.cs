@@ -837,13 +837,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             var result = response.Choices.First().Message.Content;
 
             var idToTranslation = batch.ToDictionary(tu => tu.Id, tu => tu.Target);
-
             var matches = Regex.Matches(result, @"\[ID:(\d+)\]\{([^}]+)\}").Cast<Match>().ToList();
-
-            if (matches.Count != batch.Length)
-            {
-            }
-            
             foreach (var match in matches)
             {
                 var id = match.Groups[1].Value;
