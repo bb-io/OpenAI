@@ -1057,8 +1057,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     private async Task<FileReference> UploadUpdatedDocument(XliffDocument xliffDocument, FileReference originalFile)
     {
         var outputMemoryStream = originalFile.Name.EndsWith("mqxliff")
-            ? xliffDocument.ToStream(null, false, keepAmpersands: true)
-            : xliffDocument.ToStream(null, true, keepAmpersands: true);
+            ? xliffDocument.ToStream(null, false, keepSingleAmpersands: true)
+            : xliffDocument.ToStream(null, true, keepSingleAmpersands: true);
 
         string contentType = originalFile.ContentType ?? "application/xml";
         return await FileManagementClient.UploadAsync(outputMemoryStream, contentType, originalFile.Name);
