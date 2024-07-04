@@ -836,16 +836,31 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             usage += response.Usage;
             var result = response.Choices.First().Message.Content;
 
-            var matches = Regex.Matches(result, @"\[ID:\d+\]{([^}]+)}").Select(x => x.Groups[1].Value).ToList();
+            var idToTranslation = batch.ToDictionary(tu => tu.Id, tu => tu.Target);
+
+            var matches = Regex.Matches(result, @"\[ID:(\d+)\]\{([^}]+)\}").Cast<Match>().ToList();
+
             if (matches.Count != batch.Length)
             {
-                throw new Exception("OpenAI returned an inappropriate response. " +
-                                    "The number of post-edited texts does not match the number of source texts. " +
-                                    "Probably there is a duplication or a missing text in a translation unit. " +
-                                    "Try changing the model or bucket size (to lower values) or add retries to this action.");
+            }
+            
+            foreach (var match in matches)
+            {
+                var id = match.Groups[1].Value;
+                var translatedText = match.Groups[2].Value;
+                idToTranslation[id] = translatedText;
             }
 
-            results.AddRange(matches);
+            foreach (var id in batch.Select(tu => tu.Id))
+            {
+                if (!idToTranslation.ContainsKey(id))
+                {
+                    idToTranslation[id] = batch.First(tu => tu.Id == id).Target;
+                }
+            }
+
+            var sorted = idToTranslation.OrderBy(kvp => int.Parse(kvp.Key)).Select(kvp => kvp.Value).ToList();
+            results.AddRange(sorted);
         }
 
         var updatedDocument =
@@ -956,8 +971,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         await stream.CopyToAsync(memoryStream);
         memoryStream.Position = 0;
 
-        return memoryStream.ToXliffDocument(new XliffConfig
-            { RemoveWhitespaces = true, CopyAttributes = true, IncludeInlineTags = true });
+        return memoryStream.ToXliffDocument();
     }
 
     private async Task<(string[], UsageDto)> GetTranslations(string prompt, XliffDocument xliffDocument, string model,
