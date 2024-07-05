@@ -813,6 +813,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             var userPrompt = 
                 $"Your input consists of sentences in {src} with their translations into {tgt}. " +
                 "Review and edit the target text as necessary to ensure it is a correct and accurate translation of the source text. " +
+                "If you see HTML tags also include them in answer, don't cut them" +
                 "Include only the target texts (updated or not) in the format [ID:X]{target}. " +
                 $"Example: [ID:1]{{target1}},[ID:2]{{target2}}. Max ID: {maxId}. " +
                 $"{prompt ?? ""} {glossaryPrompt ?? ""} Sentences: \n" +
