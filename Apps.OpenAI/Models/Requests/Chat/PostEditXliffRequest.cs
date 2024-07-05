@@ -17,5 +17,8 @@ namespace Apps.OpenAI.Models.Requests.Chat
 
         [Display("Target language")]
         public string? TargetLanguage { get; set; }
+
+        [Display("Update locked segments", Description = "By default it set to false. If true, OpenAI will not change the segments that are locked in the XLIFF file.")]
+        public bool? PostEditLockedSegments { get; set; }
     }
 }

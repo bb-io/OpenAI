@@ -130,6 +130,7 @@ Optional inputs:
 	- Bucket size: Amount of translation units to process in the same request. (See dedicated section)
 	- Source and Target languages: By default, we get these values from the XLIFF header. You can provide different values, no specific format required.
 	- Glossary
+	- Update locked segments: If true, locked segments will be updated, otherwise they will be skipped. By default, this is set to false.
 
 - **Process XLIFF file** given an XLIFF file, processes each translation unit according to provided instructions (default is to translate source tags) and updates the target text for each unit. Supports only version 1.2 of XLIFF currently.
 

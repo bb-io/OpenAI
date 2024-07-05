@@ -31,6 +31,7 @@ using Blackbird.Xliff.Utils.Models;
 using System.Text.RegularExpressions;
 using MoreLinq;
 using Apps.OpenAI.Utils.Xliff;
+using Blackbird.Xliff.Utils.Extensions;
 
 namespace Apps.OpenAI.Actions;
 
@@ -51,7 +52,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         var messages = await GenerateChatMessages(input, glossary);
         var completeMessage = string.Empty;
-        var usage = new UsageDto ();
+        var usage = new UsageDto();
 
         while (true)
         {
@@ -101,7 +102,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
     // This action may seem redundant but we feel that the optional system prompt in the action above may be too hidden.
     [Action("Chat with system prompt", Description = "Gives a response given a chat message")]
-    public async Task<ChatResponse> ChatWithSystemMessageRequest([ActionParameter] TextChatModelIdentifier modelIdentifier,
+    public async Task<ChatResponse> ChatWithSystemMessageRequest(
+        [ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] ChatRequestWithSystem input,
         [ActionParameter] GlossaryRequest glossary)
     {
@@ -149,7 +151,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                     stringBuilder.AppendLine(message);
                 }
 
-                var prompt = $"{input.Message}; Parameters that you should use (they can be in json format): {stringBuilder}";
+                var prompt =
+                    $"{input.Message}; Parameters that you should use (they can be in json format): {stringBuilder}";
                 messages.Add(new ChatMessageDto(MessageRoles.User, prompt));
             }
             else
@@ -157,12 +160,12 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 messages.Add(new ChatMessageDto(MessageRoles.User, input.Message));
             }
         }
-        
+
         if (request?.Glossary != null)
         {
             var glossaryPromptPart = await GetGlossaryPromptPart(request.Glossary, input.Message);
-            if (glossaryPromptPart != null) messages.Add(new ChatMessageDto(MessageRoles.User, $"Glossary: {glossaryPromptPart}"));
-
+            if (glossaryPromptPart != null)
+                messages.Add(new ChatMessageDto(MessageRoles.User, $"Glossary: {glossaryPromptPart}"));
         }
 
         return messages;
@@ -205,14 +208,14 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         if (glossary.Glossary != null)
         {
-            var glossaryAddition = " Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
-                      "Ensure that the translation aligns with the glossary entries for the respective languages. " +
-                      "If a term has variations or synonyms, consider them and choose the most appropriate " +
-                      "translation to maintain consistency and precision. ";
+            var glossaryAddition =
+                " Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
+                "Ensure that the translation aligns with the glossary entries for the respective languages. " +
+                "If a term has variations or synonyms, consider them and choose the most appropriate " +
+                "translation to maintain consistency and precision. ";
 
             var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, content);
             if (glossaryPromptPart != null) prompt += (glossaryAddition + glossaryPromptPart);
-
         }
 
         var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
@@ -588,12 +591,12 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             if (glossaryPromptPart != null)
             {
                 userPrompt +=
-                "\nEnhance the localized text by incorporating relevant terms from our glossary where applicable. " +
-                "If you encounter terms from the glossary in the text, ensure that the localized text aligns " +
-                "with the glossary entries for the respective languages. If a term has variations or synonyms, " +
-                "consider them and choose the most appropriate translation from the glossary to maintain " +
-                $"consistency and precision. {glossaryPromptPart}";
-            }            
+                    "\nEnhance the localized text by incorporating relevant terms from our glossary where applicable. " +
+                    "If you encounter terms from the glossary in the text, ensure that the localized text aligns " +
+                    "with the glossary entries for the respective languages. If a term has variations or synonyms, " +
+                    "consider them and choose the most appropriate translation from the glossary to maintain " +
+                    $"consistency and precision. {glossaryPromptPart}";
+            }
         }
 
         userPrompt += "Localized text: ";
@@ -631,7 +634,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         [ActionParameter] GlossaryRequest glossary,
         [ActionParameter,
          Display("Bucket size",
-             Description = "Specify the number of source texts to be translated at once. Default value: 1500. (See our documentation for an explanation)")]
+             Description =
+                 "Specify the number of source texts to be translated at once. Default value: 1500. (See our documentation for an explanation)")]
         int? bucketSize = 1500)
     {
         var xliffDocument = await LoadAndParseXliffDocument(input.File);
@@ -640,14 +644,16 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             return new TranslateXliffResponse { File = input.File, Usage = new UsageDto() };
         }
 
-        var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
+        var model = modelIdentifier.ModelId ?? "gpt-4o-2024-05-13";
         string systemPrompt = GetSystemPrompt(string.IsNullOrEmpty(prompt));
         var list = xliffDocument.TranslationUnits.Select(x => x.Source).ToList();
 
-        var (translatedTexts, usage) = await GetTranslations(prompt, xliffDocument, model, systemPrompt, list, bucketSize ?? 15,
+        var (translatedTexts, usage) = await GetTranslations(prompt, xliffDocument, model, systemPrompt, list,
+            bucketSize ?? 15,
             glossary.Glossary);
 
-        var updatedDocument = UpdateXliffDocumentWithTranslations(xliffDocument, translatedTexts);
+        var updatedDocument =
+            UpdateXliffDocumentWithTranslations(xliffDocument, translatedTexts, input.UpdateLockedSegments ?? false);
         var fileReference = await UploadUpdatedDocument(updatedDocument, input.File);
         return new TranslateXliffResponse { File = fileReference, Usage = usage };
     }
@@ -662,7 +668,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         string? prompt,
         [ActionParameter,
          Display("Bucket size",
-             Description = "Specify the number of translation units to be processed at once. Default value: 1500. (See our documentation for an explanation)")]
+             Description =
+                 "Specify the number of translation units to be processed at once. Default value: 1500. (See our documentation for an explanation)")]
         int? bucketSize = 1500)
     {
         var xliffDocument = await LoadAndParseXliffDocument(input.File);
@@ -765,18 +772,19 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         Description = "Updates the targets of XLIFF 1.2 files")]
     public async Task<TranslateXliffResponse> PostEditXLIFF([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] PostEditXliffRequest input, [ActionParameter,
-                                                    Display("Prompt",
-                                                        Description =
-                                                            "Additional instructions")]
+                                                       Display("Prompt",
+                                                           Description =
+                                                               "Additional instructions")]
         string? prompt,
         [ActionParameter] GlossaryRequest glossary,
         [ActionParameter,
          Display("Bucket size",
-             Description = "Specify the number of translation units to be processed at once. Default value: 1500. (See our documentation for an explanation)")]
+             Description =
+                 "Specify the number of translation units to be processed at once. Default value: 1500. (See our documentation for an explanation)")]
         int? bucketSize = 1500)
     {
         var xliffDocument = await LoadAndParseXliffDocument(input.File);
-        var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
+        var model = modelIdentifier.ModelId ?? "gpt-4o";
         var results = new List<string>();
         var batches = xliffDocument.TranslationUnits.Batch((int)bucketSize);
         var src = input.SourceLanguage ?? xliffDocument.SourceLanguage;
@@ -788,28 +796,28 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             string? glossaryPrompt = null;
             if (glossary?.Glossary != null)
             {
-                var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, string.Join(';', batch.Select(x => x.Source)));
+                var glossaryPromptPart =
+                    await GetGlossaryPromptPart(glossary.Glossary, string.Join(';', batch.Select(x => x.Source)));
                 if (glossaryPromptPart != null)
                 {
-                    glossaryPrompt += "Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
-                                  "Ensure that the translation aligns with the glossary entries for the respective languages. " +
-                                  "If a term has variations or synonyms, consider them and choose the most appropriate " +
-                                  "translation to maintain consistency and precision. ";
+                    glossaryPrompt +=
+                        "Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
+                        "Ensure that the translation aligns with the glossary entries for the respective languages. " +
+                        "If a term has variations or synonyms, consider them and choose the most appropriate " +
+                        "translation to maintain consistency and precision. ";
                     glossaryPrompt += glossaryPromptPart;
                 }
-                
             }
 
-            string userPrompt =
-                $"Your input is going to be a group of sentences in {src} as source language and their translation into {tgt}. " +
-                "You need to review the target text and respond with edits of the target text as necessary. If no edits are required, respond with target text." +
-                "Your reply needs to include only the list of target texts (updated or unmodified) in the same order as received and encapsulated by curly brackets, separated by comma. Example: {target1},{target2},{target3}. If you encounter XML tags in the source text, these tags should also be present in the target text in a similar position, that is around the same words. If the tags are not present in the target, add them." +
-                $"{prompt ?? ""}. + {glossaryPrompt ?? ""}" +
-                $"Sentences: ";
-            foreach (var tu in batch)
-            {
-                userPrompt += $"ID: {tu.Id} Source text: {tu.Source} Target Text: {tu.Target}";
-            }
+            var maxId = batch.Max(x => int.Parse(x.Id));
+            var userPrompt = 
+                $"Your input consists of sentences in {src} with their translations into {tgt}. " +
+                "Review and edit the target text as necessary to ensure it is a correct and accurate translation of the source text. " +
+                "If you see HTML tags also include them in answer, don't cut them" +
+                "Include only the target texts (updated or not) in the format [ID:X]{target}. " +
+                $"Example: [ID:1]{{target1}},[ID:2]{{target2}}. Max ID: {maxId}. " +
+                $"{prompt ?? ""} {glossaryPrompt ?? ""} Sentences: \n" +
+                string.Join("\n", batch.Select(tu => $"ID: {tu.Id}; Source: {tu.Source}; Target: {tu.Target}"));
 
             var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
             request.AddJsonBody(new
@@ -818,7 +826,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 messages = new List<ChatMessageDto>
                 {
                     new(MessageRoles.System,
-                        "You are a linguistic expert that should process the following texts accoring to the given instructions"),
+                        "You are a linguistic expert that should process the following texts according to the given instructions"),
                     new(MessageRoles.User, userPrompt)
                 },
                 max_tokens = 4096,
@@ -828,10 +836,31 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
             usage += response.Usage;
             var result = response.Choices.First().Message.Content;
-            results.AddRange(Regex.Matches(result, "{(.*?)}(,|$)").Select(x => x.Groups[1].Value));
 
+            var idToTranslation = batch.ToDictionary(tu => tu.Id, tu => tu.Target);
+            var matches = Regex.Matches(result, @"\[ID:(\d+)\]\{([^}]+)\}").Cast<Match>().ToList();
+            foreach (var match in matches)
+            {
+                var id = match.Groups[1].Value;
+                var translatedText = match.Groups[2].Value;
+                idToTranslation[id] = translatedText;
+            }
+
+            foreach (var id in batch.Select(tu => tu.Id))
+            {
+                if (!idToTranslation.ContainsKey(id))
+                {
+                    idToTranslation[id] = batch.First(tu => tu.Id == id).Target;
+                }
+            }
+
+            var sorted = idToTranslation.OrderBy(kvp => int.Parse(kvp.Key)).Select(kvp => kvp.Value).ToList();
+            results.AddRange(sorted);
         }
-        var updatedDocument = UpdateXliffDocumentWithTranslations(xliffDocument, results.ToArray());
+
+        var updatedDocument =
+            UpdateXliffDocumentWithTranslations(xliffDocument, results.ToArray(),
+                input.PostEditLockedSegments ?? false);
         var fileReference = await UploadUpdatedDocument(updatedDocument, input.File);
         return new TranslateXliffResponse { File = fileReference, Usage = usage, };
     }
@@ -916,7 +945,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             entriesIncluded = true;
 
             glossaryPromptPart.AppendLine();
-            glossaryPromptPart.AppendLine("\tEntry:");            
+            glossaryPromptPart.AppendLine("\tEntry:");
 
             foreach (var section in entry.LanguageSections)
             {
@@ -937,9 +966,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         await stream.CopyToAsync(memoryStream);
         memoryStream.Position = 0;
 
-        var xliffDoc = XDocument.Load(memoryStream);
-        return XliffDocument.FromXDocument(xliffDoc,
-            new XliffConfig { RemoveWhitespaces = true, CopyAttributes = true, IncludeInlineTags = true });
+        return memoryStream.ToXliffDocument();
     }
 
     private async Task<(string[], UsageDto)> GetTranslations(string prompt, XliffDocument xliffDocument, string model,
@@ -976,7 +1003,6 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                     glossaryPrompt += glossaryPromptPart;
                     userPrompt += glossaryPrompt;
                 }
-
             }
 
             var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
@@ -993,6 +1019,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             });
 
             var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+
             usageDto += response.Usage;
             var translatedText = response.Choices.First().Message.Content.Trim()
                 .Replace("```", string.Empty).Replace("json", string.Empty);
@@ -1010,7 +1037,10 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 if (result.Length != bucketSourceTexts.Count)
                 {
                     throw new InvalidOperationException(
-                        "The number of translated texts does not match the number of source texts.");
+                        "OpenAI returned inappropriate response. " +
+                        "The number of translated texts does not match the number of source texts. " +
+                        "Probably there is a duplication or a missing text in translation unit. " +
+                        "Try change model or bucket size (to lower values) or add retries to this action.");
                 }
 
                 allTranslatedTexts.AddRange(result);
@@ -1027,22 +1057,39 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
     private async Task<FileReference> UploadUpdatedDocument(XliffDocument xliffDocument, FileReference originalFile)
     {
-        var outputMemoryStream = originalFile.Name.EndsWith("mxliff") ? xliffDocument.ToStream(null, false): xliffDocument.ToStream(null, true);
+        var outputMemoryStream = originalFile.Name.EndsWith("mqxliff")
+            ? xliffDocument.ToStream(null, false, keepSingleAmpersands: true)
+            : xliffDocument.ToStream(null, true, keepSingleAmpersands: true);
 
         string contentType = originalFile.ContentType ?? "application/xml";
         return await FileManagementClient.UploadAsync(outputMemoryStream, contentType, originalFile.Name);
     }
 
-    private XliffDocument UpdateXliffDocumentWithTranslations(XliffDocument xliffDocument, string[] translatedTexts)
+    private XliffDocument UpdateXliffDocumentWithTranslations(XliffDocument xliffDocument, string[] translatedTexts,
+        bool updateLockedSegments)
     {
         var updatedUnits = xliffDocument.TranslationUnits.Zip(translatedTexts, (unit, translation) =>
         {
-            unit.Target = translation;
+            if (updateLockedSegments == false && unit.Attributes is not null &&
+                unit.Attributes.Any(x => x.Key == "locked" && x.Value == "locked"))
+            {
+                unit.Target = unit.Target;
+            }
+            else
+            {
+                unit.Target = translation;
+            }
+
             return unit;
         }).ToList();
 
         var xDoc = xliffDocument.UpdateTranslationUnits(updatedUnits);
-        return XliffDocument.FromXDocument(xDoc, new XliffConfig { RemoveWhitespaces = true, CopyAttributes = true, IncludeInlineTags = true});
+        var stream = new MemoryStream();
+        xDoc.Save(stream);
+        stream.Position = 0;
+
+        return stream.ToXliffDocument(new XliffConfig
+            { RemoveWhitespaces = true, CopyAttributes = true, IncludeInlineTags = true });
     }
 
     private string GetSystemPrompt(bool translator)
