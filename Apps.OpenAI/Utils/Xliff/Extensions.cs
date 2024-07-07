@@ -69,7 +69,7 @@ public static class Extensions
     {
         string fileContent;
         Encoding encoding;
-        fileStream.Position = 0;
+        
         using (StreamReader inFileStream = new StreamReader(fileStream))
         {
             encoding = inFileStream.CurrentEncoding;

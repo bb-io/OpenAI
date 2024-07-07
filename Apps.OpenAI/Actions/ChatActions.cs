@@ -869,7 +869,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             xliffDocument.TranslationUnits.FirstOrDefault(x => x.Id == tu.Key).Target = tu.Value;
         }
 
-        var updatedFile = Utils.Xliff.Extensions.UpdateOriginalFile(fileStream, results);
+        var originalFile = await FileManagementClient.DownloadAsync(input.File);
+        var updatedFile = Utils.Xliff.Extensions.UpdateOriginalFile(originalFile, results);
 
         var finalFile = await FileManagementClient.UploadAsync(updatedFile, input.File.ContentType, input.File.Name);
             //UpdateXliffDocumentWithTranslations(xliffDocument, results.ToArray(),
