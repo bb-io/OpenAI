@@ -783,9 +783,12 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                  "Specify the number of translation units to be processed at once. Default value: 1500. (See our documentation for an explanation)")]
         int? bucketSize = 1500)
     {
-        var xliffDocument = await LoadAndParseXliffDocument(input.File);
+        var fileStream = await FileManagementClient.DownloadAsync(input.File);
+        var xliffDocument = Utils.Xliff.Extensions.ParseXLIFF(fileStream);
+
+        //var xliffDocument = await LoadAndParseXliffDocument(input.File);
         var model = modelIdentifier.ModelId ?? "gpt-4o";
-        var results = new List<string>();
+        var results = new Dictionary<string, string>();
         var batches = xliffDocument.TranslationUnits.Batch((int)bucketSize);
         var src = input.SourceLanguage ?? xliffDocument.SourceLanguage;
         var tgt = input.TargetLanguage ?? xliffDocument.TargetLanguage;
@@ -797,7 +800,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             if (glossary?.Glossary != null)
             {
                 var glossaryPromptPart =
-                    await GetGlossaryPromptPart(glossary.Glossary, string.Join(';', batch.Select(x => x.Source)));
+                    await GetGlossaryPromptPart(glossary.Glossary, string.Join(';', batch.Select(x => x.Source), batch.Select(x => x.Target)));
                 if (glossaryPromptPart != null)
                 {
                     glossaryPrompt +=
@@ -811,9 +814,9 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
             var maxId = batch.Max(x => int.Parse(x.Id));
             var userPrompt = 
-                $"Your input consists of sentences in {src} with their translations into {tgt}. " +
-                "Review and edit the target text as necessary to ensure it is a correct and accurate translation of the source text. " +
-                "If you see HTML tags also include them in answer, don't cut them" +
+                $"Your input consists of sentences in {src} language with their translations into {tgt}. " +
+                "Review and edit the translated target text as necessary to ensure it is a correct and accurate translation of the source text. " +
+                "If you see XML tags in the source also include them in the terget text, don't delete or modify them" +
                 "Include only the target texts (updated or not) in the format [ID:X]{target}. " +
                 $"Example: [ID:1]{{target1}},[ID:2]{{target2}}. Max ID: {maxId}. " +
                 $"{prompt ?? ""} {glossaryPrompt ?? ""} Sentences: \n" +
@@ -837,34 +840,44 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             usage += response.Usage;
             var result = response.Choices.First().Message.Content;
 
-            var idToTranslation = batch.ToDictionary(tu => tu.Id, tu => tu.Target);
-            var matches = Regex.Matches(result, @"\[ID:(\d+)\]\{([^}]+)\}").Cast<Match>().ToList();
+           // var idToTranslation = batch.ToDictionary(tu => tu.Id, tu => tu.Target);
+            var matches = Regex.Matches(result, @"\[ID:(\d+)\]\{([\s\S]+?)\}(?=,\[|$)").Cast<Match>().ToList();
             foreach (var match in matches)
             {
-                var id = match.Groups[1].Value;
-                var translatedText = match.Groups[2].Value;
-                idToTranslation[id] = translatedText;
+                if (match.Groups[2].Value.Contains("[ID:")) continue;else
+                results.Add(match.Groups[1].Value, match.Groups[2].Value);
+                //var id = match.Groups[1].Value;
+                //var translatedText = match.Groups[2].Value;
+                //idToTranslation[id] = translatedText;
             }
 
-            foreach (var id in batch.Select(tu => tu.Id))
-            {
-                if (!idToTranslation.ContainsKey(id))
-                {
-                    idToTranslation[id] = batch.First(tu => tu.Id == id).Target;
-                }
-            }
+            
+            //foreach (var id in batch.Select(tu => tu.Id))
+            //{
+            //    if (!idToTranslation.ContainsKey(id))
+            //    {
+            //        idToTranslation[id] = batch.First(tu => tu.Id == id).Target;
+            //    }
+            //}
 
-            var sorted = idToTranslation.OrderBy(kvp => int.Parse(kvp.Key)).Select(kvp => kvp.Value).ToList();
-            results.AddRange(sorted);
+            //var sorted = idToTranslation.OrderBy(kvp => int.Parse(kvp.Key)).Select(kvp => kvp.Value).ToList();
+            //results.AddRange(sorted);
         }
 
-        var updatedDocument =
-            UpdateXliffDocumentWithTranslations(xliffDocument, results.ToArray(),
-                input.PostEditLockedSegments ?? false);
-        var fileReference = await UploadUpdatedDocument(updatedDocument, input.File);
-        return new TranslateXliffResponse { File = fileReference, Usage = usage, };
-    }
+        foreach (var tu in results) 
+        {
+            xliffDocument.TranslationUnits.FirstOrDefault(x => x.Id == tu.Key).Target = tu.Value;
+        }
 
+        var originalFile = await FileManagementClient.DownloadAsync(input.File);
+        var updatedFile = Utils.Xliff.Extensions.UpdateOriginalFile(originalFile, results);
+
+        var finalFile = await FileManagementClient.UploadAsync(updatedFile, input.File.ContentType, input.File.Name);
+            //UpdateXliffDocumentWithTranslations(xliffDocument, results.ToArray(),
+            //    input.PostEditLockedSegments ?? false);
+       // var fileReference = await UploadUpdatedDocument(updatedDocument, input.File);
+        return new TranslateXliffResponse { File = finalFile, Usage = usage, };
+    }
     private string UpdateTargetState(string fileContent, string state, List<string> filteredTUs)
     {
         var tus = Regex.Matches(fileContent, @"<trans-unit[\s\S]+?</trans-unit>").Select(x => x.Value);
