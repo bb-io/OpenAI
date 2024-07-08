@@ -841,10 +841,12 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             var result = response.Choices.First().Message.Content;
 
            // var idToTranslation = batch.ToDictionary(tu => tu.Id, tu => tu.Target);
-            var matches = Regex.Matches(result, @"\[ID:(\d+)\]\{([\s\S]+?)\}(?=,\[|$)").Cast<Match>().ToList();
+            var matches = Regex.Matches(result, @"\[ID:(\d+)\]\{([\s\S]+?)\}(?=,\[|$|,?\n)").Cast<Match>().ToList();
             foreach (var match in matches)
             {
-                if (match.Groups[2].Value.Contains("[ID:")) continue;else
+                if (match.Groups[2].Value.Contains("[ID:")) 
+                    continue;
+                else
                 results.Add(match.Groups[1].Value, match.Groups[2].Value);
                 //var id = match.Groups[1].Value;
                 //var translatedText = match.Groups[2].Value;
@@ -864,10 +866,10 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             //results.AddRange(sorted);
         }
 
-        foreach (var tu in results) 
-        {
-            xliffDocument.TranslationUnits.FirstOrDefault(x => x.Id == tu.Key).Target = tu.Value;
-        }
+        //foreach (var tu in results) 
+        //{
+        //    xliffDocument.TranslationUnits.FirstOrDefault(x => x.Id == tu.Key).Target = tu.Value;
+        //}
 
         var originalFile = await FileManagementClient.DownloadAsync(input.File);
         var updatedFile = Utils.Xliff.Extensions.UpdateOriginalFile(originalFile, results);
