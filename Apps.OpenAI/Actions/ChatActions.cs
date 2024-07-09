@@ -812,7 +812,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 }
             }
 
-            var maxId = batch.Max(x => int.Parse(x.Id));
+            var maxId = batch.Max(x => (x.Id));
             var userPrompt = 
                 $"Your input consists of sentences in {src} language with their translations into {tgt}. " +
                 "Review and edit the translated target text as necessary to ensure it is a correct and accurate translation of the source text. " +
@@ -841,7 +841,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             var result = response.Choices.First().Message.Content;
 
            // var idToTranslation = batch.ToDictionary(tu => tu.Id, tu => tu.Target);
-            var matches = Regex.Matches(result, @"\[ID:(\d+)\]\{([\s\S]+?)\}(?=,\[|$|,?\n)").Cast<Match>().ToList();
+            var matches = Regex.Matches(result, @"\[ID:(.+?)\]\{([\s\S]+?)\}(?=,\[|$|,?\n)").Cast<Match>().ToList();
             foreach (var match in matches)
             {
                 if (match.Groups[2].Value.Contains("[ID:")) 
