@@ -800,7 +800,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             if (glossary?.Glossary != null)
             {
                 var glossaryPromptPart =
-                    await GetGlossaryPromptPart(glossary.Glossary, string.Join(';', batch.Select(x => x.Source), batch.Select(x => x.Target)));
+                    await GetGlossaryPromptPart(glossary.Glossary, string.Join(';', batch.Select(x => x.Source)) + ";" + string.Join(';', batch.Select(x => x.Target)));
                 if (glossaryPromptPart != null)
                 {
                     glossaryPrompt +=
@@ -812,11 +812,11 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 }
             }
 
-            var maxId = batch.Max(x => (x.Id));
+            var maxId = batch.Max(x => (int.Parse(x.Id)));
             var userPrompt = 
                 $"Your input consists of sentences in {src} language with their translations into {tgt}. " +
                 "Review and edit the translated target text as necessary to ensure it is a correct and accurate translation of the source text. " +
-                "If you see XML tags in the source also include them in the terget text, don't delete or modify them" +
+                "If you see XML tags in the source also include them in the target text, don't delete or modify them. " +
                 "Include only the target texts (updated or not) in the format [ID:X]{target}. " +
                 $"Example: [ID:1]{{target1}},[ID:2]{{target2}}. Max ID: {maxId}. " +
                 $"{prompt ?? ""} {glossaryPrompt ?? ""} Sentences: \n" +
@@ -832,7 +832,6 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                         "You are a linguistic expert that should process the following texts according to the given instructions"),
                     new(MessageRoles.User, userPrompt)
                 },
-                max_tokens = 4096,
                 temperature = 0.1f
             });
 
