@@ -812,13 +812,12 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 }
             }
 
-            var maxId = batch.Max(x => (int.Parse(x.Id)));
             var userPrompt = 
                 $"Your input consists of sentences in {src} language with their translations into {tgt}. " +
                 "Review and edit the translated target text as necessary to ensure it is a correct and accurate translation of the source text. " +
                 "If you see XML tags in the source also include them in the target text, don't delete or modify them. " +
                 "Include only the target texts (updated or not) in the format [ID:X]{target}. " +
-                $"Example: [ID:1]{{target1}},[ID:2]{{target2}}. Max ID: {maxId}. " +
+                $"Example: [ID:1]{{target1}},[ID:2]{{target2}}. " +
                 $"{prompt ?? ""} {glossaryPrompt ?? ""} Sentences: \n" +
                 string.Join("\n", batch.Select(tu => $"ID: {tu.Id}; Source: {tu.Source}; Target: {tu.Target}"));
 
@@ -869,16 +868,17 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         //{
         //    xliffDocument.TranslationUnits.FirstOrDefault(x => x.Id == tu.Key).Target = tu.Value;
         //}
-
+        var updatedResults = Utils.Xliff.Extensions.CheckTagIssues(xliffDocument.TranslationUnits,results);
         var originalFile = await FileManagementClient.DownloadAsync(input.File);
-        var updatedFile = Utils.Xliff.Extensions.UpdateOriginalFile(originalFile, results);
+        var updatedFile = Utils.Xliff.Extensions.UpdateOriginalFile(originalFile, updatedResults);
 
         var finalFile = await FileManagementClient.UploadAsync(updatedFile, input.File.ContentType, input.File.Name);
             //UpdateXliffDocumentWithTranslations(xliffDocument, results.ToArray(),
             //    input.PostEditLockedSegments ?? false);
        // var fileReference = await UploadUpdatedDocument(updatedDocument, input.File);
         return new TranslateXliffResponse { File = finalFile, Usage = usage, };
-    }
+    }    
+
     private string UpdateTargetState(string fileContent, string state, List<string> filteredTUs)
     {
         var tus = Regex.Matches(fileContent, @"<trans-unit[\s\S]+?</trans-unit>").Select(x => x.Value);
