@@ -166,7 +166,9 @@ Let us know if you're interested!
 
 ## Actions limitations
 
-- For every action maximum allowed timeout are 300 seconds (5 minutes). If the action takes longer than 300 seconds, it will be terminated. Based ob our experience, even complex actions should take less than 5 minutes. But if you have a use case that requires more time, let us know.
+- For every action maximum allowed timeout are 300 seconds (5 minutes). If the action takes longer than 300 seconds, it will be terminated. Based on our experience, even complex actions should take less than 5 minutes. But if you have a use case that requires more time, let us know.
+
+> OpenAI is sometimes prone to errors. If your Flight fails at an OpenAI step, please check https://status.openai.com/history first to see if there is a known incident or error communicated by OpenAI. If there are no known errors or incidents, please feel free to report it to Blackbird Support.
 
 ## Feedback
 
