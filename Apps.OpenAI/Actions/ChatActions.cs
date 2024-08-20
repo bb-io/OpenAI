@@ -638,7 +638,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                  "Specify the number of source texts to be translated at once. Default value: 1500. (See our documentation for an explanation)")]
         int? bucketSize = 1500)
     {
-        var xliffDocument = await LoadAndParseXliffDocument(input.File);
+        var fileStream = await FileManagementClient.DownloadAsync(input.File);
+        var xliffDocument = Utils.Xliff.Extensions.ParseXLIFF(fileStream);
         if (xliffDocument.TranslationUnits.Count == 0)
         {
             return new TranslateXliffResponse { File = input.File, Usage = new UsageDto() };
@@ -646,15 +647,15 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         var model = modelIdentifier.ModelId ?? "gpt-4o-2024-05-13";
         string systemPrompt = GetSystemPrompt(string.IsNullOrEmpty(prompt));
-        var list = xliffDocument.TranslationUnits.Select(x => x.Source).ToList();
 
-        var (translatedTexts, usage) = await GetTranslations(prompt, xliffDocument, model, systemPrompt, list,
-            bucketSize ?? 15,
+        var (translatedTexts, usage) = await GetTranslations(prompt, xliffDocument, model, systemPrompt,
+            bucketSize ?? 1500,
             glossary.Glossary);
 
-        var updatedDocument =
-            UpdateXliffDocumentWithTranslations(xliffDocument, translatedTexts, input.UpdateLockedSegments ?? false);
-        var fileReference = await UploadUpdatedDocument(updatedDocument, input.File);
+        var stream = await fileManagementClient.DownloadAsync(input.File);
+        var updatedFile = Blackbird.Xliff.Utils.Utils.XliffExtensions.UpdateOriginalFile(stream, translatedTexts);
+        string contentType = input.File.ContentType ?? "application/xml";
+        var fileReference = await fileManagementClient.UploadAsync(updatedFile, contentType, input.File.Name);
         return new TranslateXliffResponse { File = fileReference, Usage = usage };
     }
 
@@ -983,26 +984,18 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         return memoryStream.ToXliffDocument();
     }
 
-    private async Task<(string[], UsageDto)> GetTranslations(string prompt, XliffDocument xliffDocument, string model,
-        string systemPrompt, List<string> sourceTexts, int bucketSize, FileReference? glossary)
+    private async Task<(Dictionary<string, string>, UsageDto)> GetTranslations(string prompt, ParsedXliff xliff, string model,
+        string systemPrompt, int bucketSize, FileReference? glossary)
     {
-        List<string> allTranslatedTexts = new List<string>();
-
-        int numberOfBuckets = (int)Math.Ceiling(sourceTexts.Count / (double)bucketSize);
+        var results = new List<string>();
+        var batches = xliff.TranslationUnits.Batch(bucketSize);
 
         var usageDto = new UsageDto();
-        for (int i = 0; i < numberOfBuckets; i++)
+        foreach (var batch in batches)
         {
-            var bucketIndexOffset = i * bucketSize;
-            var bucketSourceTexts = sourceTexts
-                .Skip(bucketIndexOffset)
-                .Take(bucketSize)
-                .Select((text, index) => "{ID:" + $"{bucketIndexOffset + index}" + "}" + $"{text}")
-                .ToList();
-
-            string json = JsonConvert.SerializeObject(bucketSourceTexts);
-
-            var userPrompt = GetUserPrompt(prompt, xliffDocument, json);
+            string json = JsonConvert.SerializeObject(batch.Select(x => "{ID:" + x.Id + "}" + x.Source));
+            
+            var userPrompt = GetUserPrompt(prompt, xliff, json);
 
             if (glossary != null)
             {
@@ -1040,15 +1033,9 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
             try
             {
-                var result = JsonConvert.DeserializeObject<string[]>(translatedText)
-                    .Select(t =>
-                    {
-                        int idEndIndex = t.IndexOf('}') + 1;
-                        return idEndIndex < t.Length ? t.Substring(idEndIndex) : string.Empty;
-                    })
-                    .ToArray();
+                var result = JsonConvert.DeserializeObject<string[]>(translatedText.Substring(translatedText.IndexOf("[")));
 
-                if (result.Length != bucketSourceTexts.Count)
+                if (result.Length != batch.Count())
                 {
                     throw new InvalidOperationException(
                         "OpenAI returned inappropriate response. " +
@@ -1057,54 +1044,19 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                         "Try change model or bucket size (to lower values) or add retries to this action.");
                 }
 
-                allTranslatedTexts.AddRange(result);
+                results.AddRange(result);
             }
             catch (Exception e)
             {
                 throw new Exception(
-                    $"Failed to parse the translated text in bucket {i + 1}. Exception message: {e.Message}; Exception type: {e.GetType()}");
+                    $"Failed to parse the translated text. Exception message: {e.Message}; Exception type: {e.GetType()}");
             }
         }
 
-        return (allTranslatedTexts.ToArray(), usageDto);
+        return (results.ToDictionary(x => Regex.Match(x, "\\{ID:(.*?)\\}(.+)$").Groups[1].Value, y => Regex.Match(y, "\\{ID:(.*?)\\}(.+)$").Groups[2].Value), usageDto);
     }
 
-    private async Task<FileReference> UploadUpdatedDocument(XliffDocument xliffDocument, FileReference originalFile)
-    {
-        var outputMemoryStream = xliffDocument.ToStream(null, false, keepSingleAmpersands: true);
-
-        string contentType = originalFile.ContentType ?? "application/xml";
-        return await FileManagementClient.UploadAsync(outputMemoryStream, contentType, originalFile.Name);
-    }
-
-    private XliffDocument UpdateXliffDocumentWithTranslations(XliffDocument xliffDocument, string[] translatedTexts,
-        bool updateLockedSegments)
-    {
-        var updatedUnits = xliffDocument.TranslationUnits.Zip(translatedTexts, (unit, translation) =>
-        {
-            if (updateLockedSegments == false && unit.Attributes is not null &&
-                unit.Attributes.Any(x => x.Key == "locked" && x.Value == "locked"))
-            {
-                unit.Target = unit.Target;
-            }
-            else
-            {
-                unit.Target = translation;
-            }
-
-            return unit;
-        }).ToList();
-
-        var xDoc = xliffDocument.UpdateTranslationUnits(updatedUnits);
-        var stream = new MemoryStream();
-        xDoc.Save(stream);
-        stream.Position = 0;
-
-        return stream.ToXliffDocument(new XliffConfig
-            { RemoveWhitespaces = true, CopyAttributes = true, IncludeInlineTags = true });
-    }
-
-    private string GetSystemPrompt(bool translator)
+   private string GetSystemPrompt(bool translator)
     {
         string prompt;
         if (translator)
@@ -1132,7 +1084,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         return prompt;
     }
 
-    string GetUserPrompt(string prompt, XliffDocument xliffDocument, string json)
+    string GetUserPrompt(string prompt, ParsedXliff xliffDocument, string json)
     {
         string instruction = string.IsNullOrEmpty(prompt)
             ? $"Translate the following texts from {xliffDocument.SourceLanguage} to {xliffDocument.TargetLanguage}."

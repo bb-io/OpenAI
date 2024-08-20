@@ -62,7 +62,7 @@ public static class Extensions
     private static List<Tag> GetTags(string src)
     {
         var parsedTags = new List<Tag>();
-        var tags = Regex.Matches(src, "<(.*?) (.*?)>(.*?)<\\/\\1>");
+        var tags = Regex.Matches(src, "<(ept|bpt|ph) (.*?)>(.*?)<\\/\\1>");
         if (tags is null || tags.Count == 0 ) return parsedTags;
         var count = 0;
         foreach ( var tag in tags.Select(x => x.Value)) 
