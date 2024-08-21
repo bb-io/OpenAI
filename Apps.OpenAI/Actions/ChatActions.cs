@@ -787,7 +787,6 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         var fileStream = await FileManagementClient.DownloadAsync(input.File);
         var xliffDocument = Utils.Xliff.Extensions.ParseXLIFF(fileStream);
 
-        //var xliffDocument = await LoadAndParseXliffDocument(input.File);
         var model = modelIdentifier.ModelId ?? "gpt-4o";
         var results = new Dictionary<string, string>();
         var batches = xliffDocument.TranslationUnits.Batch((int)bucketSize);
@@ -839,44 +838,23 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             usage += response.Usage;
             var result = response.Choices.First().Message.Content;
 
-           // var idToTranslation = batch.ToDictionary(tu => tu.Id, tu => tu.Target);
-            var matches = Regex.Matches(result, @"\[ID:(.+?)\]\{([\s\S]+?)\}(?=,\[|$|,?\n)").Cast<Match>().ToList();
+            var matches = Regex.Matches(result, @"\[ID:(.+?)\]\{?([\s\S]+?)\}?(?=,\[ID|$|,?\n)").Cast<Match>().ToList();
             foreach (var match in matches)
             {
                 if (match.Groups[2].Value.Contains("[ID:")) 
                     continue;
                 else
                 results.Add(match.Groups[1].Value, match.Groups[2].Value);
-                //var id = match.Groups[1].Value;
-                //var translatedText = match.Groups[2].Value;
-                //idToTranslation[id] = translatedText;
             }
 
-            
-            //foreach (var id in batch.Select(tu => tu.Id))
-            //{
-            //    if (!idToTranslation.ContainsKey(id))
-            //    {
-            //        idToTranslation[id] = batch.First(tu => tu.Id == id).Target;
-            //    }
-            //}
-
-            //var sorted = idToTranslation.OrderBy(kvp => int.Parse(kvp.Key)).Select(kvp => kvp.Value).ToList();
-            //results.AddRange(sorted);
         }
 
-        //foreach (var tu in results) 
-        //{
-        //    xliffDocument.TranslationUnits.FirstOrDefault(x => x.Id == tu.Key).Target = tu.Value;
-        //}
         var updatedResults = Utils.Xliff.Extensions.CheckTagIssues(xliffDocument.TranslationUnits,results);
         var originalFile = await FileManagementClient.DownloadAsync(input.File);
         var updatedFile = Utils.Xliff.Extensions.UpdateOriginalFile(originalFile, updatedResults);
 
         var finalFile = await FileManagementClient.UploadAsync(updatedFile, input.File.ContentType, input.File.Name);
-            //UpdateXliffDocumentWithTranslations(xliffDocument, results.ToArray(),
-            //    input.PostEditLockedSegments ?? false);
-       // var fileReference = await UploadUpdatedDocument(updatedDocument, input.File);
+            
         return new TranslateXliffResponse { File = finalFile, Usage = usage, };
     }    
 
