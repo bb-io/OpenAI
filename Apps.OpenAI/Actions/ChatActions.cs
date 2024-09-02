@@ -874,7 +874,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     }
 
     [Action("Get localizable content from image", Description = "Retrieve localizable content from image.")]
-    public async Task<ChatResponse> GetLocalizableContentFromImage(
+    public async Task<ChatResponse> GetLocalizableContentFromImage([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] GetLocalizableContentFromImageRequest input)
     {
         var prompt = "Your objective is to conduct optical character recognition (OCR) to identify and extract any " +
@@ -886,7 +886,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         var fileBytes = await fileStream.GetByteData();
         var jsonBody = new
         {
-            model = "gpt-4-vision-preview",
+            model = modelIdentifier.ModelId,
             messages = new List<ChatImageMessageDto>
             {
                 new(MessageRoles.User, new List<ChatImageMessageContentDto>
