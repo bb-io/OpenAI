@@ -52,7 +52,7 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
                         new
                         {
                             role = "system",
-                            content = SystemPromptConstants.ProcessXliffFile
+                            content = SystemPromptConstants.ProcessXliffFileWithInstructions(request.Instructions ?? "Translate the text.")
                         },
                         new
                         {
