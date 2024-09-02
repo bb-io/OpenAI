@@ -9,6 +9,7 @@ using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Requests.Xliff;
 using Apps.OpenAI.Models.Responses.Batch;
+using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
@@ -26,7 +27,7 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
     [Action("(Async) Process XLIFF file",
         Description =
             "Asynchronously process each translation unit in the XLIFF file according to the provided instructions (by default it just translates the source tags) and updates the target text for each unit. For now it supports only 1.2 version of XLIFF.")]
-    public async Task<BatchResponse> ProcessXliffFileAsync(ProcessXliffFileRequest request)
+    public async Task<BatchResponse> ProcessXliffFileAsync([ActionParameter] ProcessXliffFileRequest request)
     {
         var fileStream = await FileManagementClient.DownloadAsync(request.File);
         var xliffDocument = fileStream.ToXliffDocument();
