@@ -30,7 +30,11 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
     public async Task<BatchResponse> ProcessXliffFileAsync([ActionParameter] ProcessXliffFileRequest request)
     {
         var fileStream = await FileManagementClient.DownloadAsync(request.File);
-        var xliffDocument = fileStream.ToXliffDocument();
+        var xliffMemoryStream = new MemoryStream();
+        await fileStream.CopyToAsync(xliffMemoryStream);
+        xliffMemoryStream.Position = 0;
+
+        var xliffDocument = xliffMemoryStream.ToXliffDocument();
         if (xliffDocument.TranslationUnits.Count == 0)
         {
             throw new InvalidOperationException("The XLIFF file does not contain any translation units.");
@@ -52,7 +56,9 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
                         new
                         {
                             role = "system",
-                            content = SystemPromptConstants.ProcessXliffFileWithInstructions(request.Instructions ?? "Translate the text.")
+                            content = SystemPromptConstants.ProcessXliffFileWithInstructions(
+                                request.Instructions ?? "Translate the text.", xliffDocument.SourceLanguage,
+                                xliffDocument.TargetLanguage)
                         },
                         new
                         {
