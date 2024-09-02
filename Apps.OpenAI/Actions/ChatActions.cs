@@ -874,7 +874,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     }
 
     [Action("Get localizable content from image", Description = "Retrieve localizable content from image.")]
-    public async Task<ChatResponse> GetLocalizableContentFromImage([ActionParameter] TextChatModelIdentifier modelIdentifier,
+    public async Task<ChatResponse> GetLocalizableContentFromImage([ActionParameter] ImageChatModelIdentifier modelIdentifier,
         [ActionParameter] GetLocalizableContentFromImageRequest input)
     {
         var prompt = "Your objective is to conduct optical character recognition (OCR) to identify and extract any " +
