@@ -74,20 +74,21 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
         }
 
         using var memoryStream = new MemoryStream();
-        await using var streamWriter = new StreamWriter(memoryStream, Encoding.UTF8);
+        await using var streamWriter = new StreamWriter(memoryStream, Encoding.Default);
         foreach (var requestObj in requests)
         {
-            string json = JsonConvert.SerializeObject(requestObj);
+            var json = JsonConvert.SerializeObject(requestObj);
             await streamWriter.WriteLineAsync(json);
         }
 
         await streamWriter.FlushAsync();
         memoryStream.Position = 0;
+
         var bytes = memoryStream.ToArray();
 
         var uploadFileRequest = new OpenAIRequest("/files", Method.Post, Creds)
-            .WithFile(bytes, request.File.Name, "file")
-            .AddParameter("purpose", "batch", ParameterType.RequestBody);
+            .AddFile("file", bytes, $"{Guid.NewGuid()}.jsonl", "application/jsonl")
+            .AddParameter("purpose", "batch");
         var file = await Client.ExecuteWithErrorHandling<FileDto>(uploadFileRequest);
 
         var createBatchRequest = new OpenAIRequest("/batches", Method.Post, Creds)
@@ -98,5 +99,53 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
                 completion_window = "24h",
             });
         return await Client.ExecuteWithErrorHandling<BatchResponse>(createBatchRequest);
+    }
+
+    [Action("Get results of the async process",
+        Description = "Get the results of the batch process.")]
+    public async Task<GetBatchResultResponse> GetBatchResultsAsync([ActionParameter] GetBatchResultRequest request)
+    {
+        var getBatchRequest = new OpenAIRequest($"/batches/{request.BatchId}", Method.Get, Creds);
+        var batch = await Client.ExecuteWithErrorHandling<BatchResponse>(getBatchRequest);
+        if (batch.Status != "completed")
+        {
+            throw new InvalidOperationException(
+                $"The batch process is not completed yet. Current status: {batch.Status}");
+        }
+
+        var fileContentResponse =
+            await Client.ExecuteWithErrorHandling(new OpenAIRequest($"/files/{batch.OutputFileId}/content", Method.Get,
+                Creds));
+        var batchRequests = new List<BatchRequestDto>();
+        using var reader = new StringReader(fileContentResponse.Content!);
+        while (await reader.ReadLineAsync() is { } line)
+        {
+            var batchRequest = JsonConvert.DeserializeObject<BatchRequestDto>(line);
+            batchRequests.Add(batchRequest);
+        }
+
+        var originalXliffFileStream = await FileManagementClient.DownloadAsync(request.OriginalXliff);
+        var originalXliffMemoryStream = new MemoryStream();
+        await originalXliffFileStream.CopyToAsync(originalXliffMemoryStream);
+        originalXliffMemoryStream.Position = 0;
+
+        var xliffDocument = originalXliffMemoryStream.ToXliffDocument();
+        foreach (var batchRequest in batchRequests)
+        {
+            var translationUnit = xliffDocument.TranslationUnits.Find(tu => tu.Id == batchRequest.CustomId);
+            if (translationUnit == null)
+            {
+                throw new InvalidOperationException(
+                    $"Translation unit with id {batchRequest.CustomId} not found in the XLIFF file.");
+            }
+
+            translationUnit.Target = batchRequest.Response.Body.Choices[0].Message.Content;
+        }
+
+        return new()
+        {
+            File = await FileManagementClient.UploadAsync(xliffDocument.ToStream(), request.OriginalXliff.ContentType,
+                request.OriginalXliff.Name)
+        };
     }
 }
