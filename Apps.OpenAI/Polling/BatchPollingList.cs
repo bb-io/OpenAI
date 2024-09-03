@@ -15,8 +15,8 @@ namespace Apps.OpenAI.Polling;
 public class BatchPollingList(InvocationContext invocationContext) : BaseActions(invocationContext, null!)
 {
     [PollingEvent("On batch finished", "Triggered when a batch status is set to completed")]
-    public async Task<PollingEventResponse<DateMemory, BatchResponse>> OnBatchFinished(
-        PollingEventRequest<DateMemory> request,
+    public async Task<PollingEventResponse<BatchMemory, BatchResponse>> OnBatchFinished(
+        PollingEventRequest<BatchMemory> request,
         [PollingEventParameter] BatchIdentifier identifier)
     {
         if (request.Memory is null)
@@ -26,20 +26,23 @@ public class BatchPollingList(InvocationContext invocationContext) : BaseActions
                 FlyBird = false,
                 Memory = new()
                 {
-                    LastPollingTime = DateTime.UtcNow
+                    LastPollingTime = DateTime.UtcNow,
+                    Triggered = false
                 }
             };
         }
         
         var getBatchRequest = new OpenAIRequest($"/batches/{identifier.BatchId}", Method.Get, Creds);
         var batch = await Client.ExecuteWithErrorHandling<BatchResponse>(getBatchRequest);
+        var triggered = batch.Status == "completed" && !request.Memory.Triggered;
         return new()
         {
-            FlyBird = batch.Status == "completed",
+            FlyBird = triggered,
             Result = batch,
             Memory = new()
             {
-                LastPollingTime = DateTime.UtcNow
+                LastPollingTime = DateTime.UtcNow,
+                Triggered = triggered
             }
         };
     }

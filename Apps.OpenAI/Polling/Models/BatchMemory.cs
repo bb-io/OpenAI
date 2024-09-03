@@ -2,7 +2,9 @@
 
 namespace Apps.OpenAI.Polling.Models;
 
-public class DateMemory
+public class BatchMemory
 {
     public DateTime? LastPollingTime { get; set; }
+
+    public bool Triggered { get; set; }
 }
