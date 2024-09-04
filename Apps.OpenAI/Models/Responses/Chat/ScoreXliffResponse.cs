@@ -8,7 +8,7 @@ namespace Apps.OpenAI.Models.Responses.Chat
     {
         public FileReference File { get; set; }
 
-        [Display("Average Score")]
+        [Display("Average score")]
         public float AverageScore { get; set; }
 
         [Display("Usage")]
