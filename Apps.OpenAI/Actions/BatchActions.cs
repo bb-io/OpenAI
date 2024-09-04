@@ -27,7 +27,7 @@ namespace Apps.OpenAI.Actions;
 public class BatchActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : BaseActions(invocationContext, fileManagementClient)
 {
-    [Action("(Async) Process XLIFF file",
+    [Action("(Batch) Process XLIFF file",
         Description =
             "Asynchronously process each translation unit in the XLIFF file according to the provided instructions (by default it just translates the source tags) and updates the target text for each unit. For now it supports only 1.2 version of XLIFF.")]
     public async Task<BatchResponse> ProcessXliffFileAsync([ActionParameter] ProcessXliffFileRequest request)
@@ -42,7 +42,7 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
         return await CreateAndUploadBatchAsync(requests);
     }
 
-    [Action("(Async) Post-edit XLIFF file",
+    [Action("(Batch) Post-edit XLIFF file",
         Description =
             "Asynchronously post-edit the target text of each translation unit in the XLIFF file according to the provided instructions and updates the target text for each unit. For now it supports only 1.2 version of XLIFF.")]
     public async Task<BatchResponse> PostEditXliffFileAsync([ActionParameter] ProcessXliffFileRequest request)
@@ -57,7 +57,7 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
         return await CreateAndUploadBatchAsync(requests);
     }
 
-    [Action("(Async) Get Quality Scores for XLIFF file",
+    [Action("(Batch) Get Quality Scores for XLIFF file",
         Description = "Asynchronously get quality scores for each translation unit in the XLIFF file.")]
     public async Task<BatchResponse> GetQualityScoresForXliffFileAsync(
         [ActionParameter] ProcessXliffFileRequest request)
@@ -71,7 +71,7 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
         return await CreateAndUploadBatchAsync(requests);
     }
 
-    [Action("Get results of the async process",
+    [Action("Get results of the batch process",
         Description = "Get the results of the batch process. This action is suitable only for processing and post-editing XLIFF file and should be called after the async process is completed.")]
     public async Task<GetBatchResultResponse> GetBatchResultsAsync([ActionParameter] GetBatchResultRequest request)
     {
