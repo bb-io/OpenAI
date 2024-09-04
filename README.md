@@ -161,6 +161,12 @@ To get the results of the batch processing, you can use the following actions:
 - **Get results of the async process** - Get the results of the batch process. This action is suitable only for processing and post-editing XLIFF file and should be called after the async process is completed.
 - **Get quality scores results** - Get the quality scores results of the batch process. This action is suitable only for getting quality scores for XLIFF file and should be called after the async process is completed.
 
+Note, that you should specify the correct original XLIFF file in `Original XLIFF` input. It will help us to construct the correct XLIFF file with updated target segments.
+
+### Limitations
+
+- The maximum number of translation units in the XLIFF file is `50 000` because a single batch may include up to 50,000 requests
+
 ### How to know if the batch process is completed? 
 
 You have 2 options here:
