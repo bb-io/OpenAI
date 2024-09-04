@@ -148,11 +148,32 @@ Here is an example bird for processing XLIFF files:
 
 XLIFF files can contain a lot of segments. Each action takes your segments and sends them to OpenAI for processing. It's possible that the amount of segments is so high that the prompt exceeds to model's context window or that the model takes longer than Blackbird actions are allowed to take. This is why we have introduced the bucket size parameter. You can tweak the bucket size parameter to determine how many segments to send to OpenAI at once. This will allow you to split the workload into different OpenAI calls. The trade-off is that the same context prompt needs to be send along with each request (which increases the tokens used). From experiments we have found that a bucket size of 1500 is sufficient for gpt-4o. That's why 1500 is the default bucket size, however other models may require different bucket sizes.
 
+## Batch processing
+
+You can use async (batch) actions to process large XLIFF files. The async action will return a `batch` object that you can use to check the status of the processing by using Batch ID.
+
+- **(Async) Process XLIFF file** - Asynchronously process each translation unit in the XLIFF file according to the provided instructions (by default it just translates the source tags) and updates the target text for each unit. For now it supports only 1.2 version of XLIFF.
+- **(Async) Post-edit XLIFF file** - Asynchronously post-edit the target text of each translation unit in the XLIFF file according to the provided instructions and updates the target text for each unit. For now it supports only 1.2 version of XLIFF.
+- **(Async) Get Quality Scores for XLIFF file** - Asynchronously get quality scores for each translation unit in the XLIFF file.
+
+To get the results of the batch processing, you can use the following actions:
+
+- **Get results of the async process** - Get the results of the batch process. This action is suitable only for processing and post-editing XLIFF file and should be called after the async process is completed.
+- **Get quality scores results** - Get the quality scores results of the batch process. This action is suitable only for getting quality scores for XLIFF file and should be called after the async process is completed.
+
+### How to know if the batch process is completed? 
+
+You have 2 options here:
+
+1. You can use the `On batch finished` event trigger to get notified when the batch process is completed. But note, that this is a polling trigger and it will check the status of the batch process based on the interval you set.
+2. Use the `Delay` operator to wait for a certain amount of time before checking the status of the batch process. This is a more straightforward way to check the status of the batch process.
+
+We recommend using the `On batch finished` event trigger as it is more efficient for checking the status of the batch process.
+
 ## Example
 
 ![1694620196801](image/README/1694620196801.png)
 This simple example how OpenAI can be used to communicate with the Blackbird Slack app. Whenever the app is mentioned, the message will be send to Chat to generate an answer. We then use Amazon Polly to turn the textual response into a spoken-word resopnse and return it in the same channel.
-
 
 ## Missing features
 

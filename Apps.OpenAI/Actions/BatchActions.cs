@@ -72,7 +72,7 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
     }
 
     [Action("Get results of the async process",
-        Description = "Get the results of the batch process.")]
+        Description = "Get the results of the batch process. This action is suitable only for processing and post-editing XLIFF file and should be called after the async process is completed.")]
     public async Task<GetBatchResultResponse> GetBatchResultsAsync([ActionParameter] GetBatchResultRequest request)
     {
         var batchRequests = await GetBatchRequestsAsync(request.BatchId);
@@ -97,7 +97,7 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
     }
 
     [Action("Get quality scores results",
-        Description = "Get the quality scores results of the batch process.")]
+        Description = "Get the quality scores results of the batch process. This action is suitable only for getting quality scores for XLIFF file and should be called after the async process is completed.")]
     public async Task<GetQualityScoreBatchResultResponse> GetQualityScoresResultsAsync(
         [ActionParameter] GetQualityScoreBatchResultRequest request)
     {
@@ -163,7 +163,7 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
         var requests = new List<object>();
         foreach (var translationUnit in xliffDocument.TranslationUnits)
         {
-            var content = $"Source: '{translationUnit.Source}'; Target: '{translationUnit.Target}'";
+            var content = $"Source: {translationUnit.Source}; Target: {translationUnit.Target}";
             if (request.Glossary != null)
             {
                 var glossaryPrompt = GlossaryConstants.GlossaryBeginning +
@@ -241,6 +241,12 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
         {
             throw new InvalidOperationException(
                 $"The batch process is not completed yet. Current status: {batch.Status}");
+        }
+        
+        if(batch.Status == "failed")
+        {
+            throw new InvalidOperationException(
+                $"The batch process failed. Errors: {batch.Errors}");
         }
 
         var fileContentResponse = await Client.ExecuteWithErrorHandling(
