@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
@@ -25,9 +24,7 @@ using Newtonsoft.Json.Serialization;
 using RestSharp;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
 using System.Net.Mime;
-using System.Xml.Linq;
 using Blackbird.Xliff.Utils;
-using Blackbird.Xliff.Utils.Models;
 using System.Text.RegularExpressions;
 using MoreLinq;
 using Apps.OpenAI.Utils.Xliff;
@@ -917,37 +914,6 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             Message = response.Choices.First().Message.Content,
             Usage = response.Usage,
         };
-    }
-
-    private async Task<string?> GetGlossaryPromptPart(FileReference glossary, string sourceContent)
-    {
-        var glossaryStream = await FileManagementClient.DownloadAsync(glossary);
-        var blackbirdGlossary = await glossaryStream.ConvertFromTbx();
-
-        var glossaryPromptPart = new StringBuilder();
-        glossaryPromptPart.AppendLine();
-        glossaryPromptPart.AppendLine();
-        glossaryPromptPart.AppendLine("Glossary entries (each entry includes terms in different language. Each " +
-                                      "language may have a few synonymous variations which are separated by ;;):");
-
-        var entriesIncluded = false;
-        foreach (var entry in blackbirdGlossary.ConceptEntries)
-        {
-            var allTerms = entry.LanguageSections.SelectMany(x => x.Terms.Select(y => y.Term));
-            if (!allTerms.Any(x => Regex.IsMatch(sourceContent, $@"\b{x}\b", RegexOptions.IgnoreCase))) continue;
-            entriesIncluded = true;
-
-            glossaryPromptPart.AppendLine();
-            glossaryPromptPart.AppendLine("\tEntry:");
-
-            foreach (var section in entry.LanguageSections)
-            {
-                glossaryPromptPart.AppendLine(
-                    $"\t\t{section.LanguageCode}: {string.Join(";; ", section.Terms.Select(term => term.Term))}");
-            }
-        }
-
-        return entriesIncluded ? glossaryPromptPart.ToString() : null;
     }
 
     #endregion

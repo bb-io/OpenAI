@@ -1,9 +1,4 @@
-﻿using Blackbird.Applications.Sdk.Common.Files;
-using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using Blackbird.Xliff.Utils.Models;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.Metrics;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
