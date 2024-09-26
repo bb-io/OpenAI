@@ -141,22 +141,6 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
 
     #region Helpers
 
-    private async Task<XliffDocument> DownloadXliffDocumentAsync(FileReference file)
-    {
-        var fileStream = await FileManagementClient.DownloadAsync(file);
-        var xliffMemoryStream = new MemoryStream();
-        await fileStream.CopyToAsync(xliffMemoryStream);
-        xliffMemoryStream.Position = 0;
-
-        var xliffDocument = xliffMemoryStream.ToXliffDocument();
-        if (xliffDocument.TranslationUnits.Count == 0)
-        {
-            throw new InvalidOperationException("The XLIFF file does not contain any translation units.");
-        }
-
-        return xliffDocument;
-    }
-
     private async Task<List<object>> CreateBatchRequests(XliffDocument xliffDocument, ProcessXliffFileRequest request,
         Func<TranslationUnit, string, string> promptGenerator)
     {
