@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using System;
+using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -8,6 +10,8 @@ using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Converters;
+using Blackbird.Xliff.Utils;
+using Blackbird.Xliff.Utils.Extensions;
 
 namespace Apps.OpenAI.Actions.Base;
 
@@ -52,5 +56,21 @@ public abstract class BaseActions : OpenAIInvocable
         }
 
         return entriesIncluded ? glossaryPromptPart.ToString() : null;
+    }
+    
+    protected async Task<XliffDocument> DownloadXliffDocumentAsync(FileReference file)
+    {
+        var fileStream = await FileManagementClient.DownloadAsync(file);
+        var xliffMemoryStream = new MemoryStream();
+        await fileStream.CopyToAsync(xliffMemoryStream);
+        xliffMemoryStream.Position = 0;
+
+        var xliffDocument = xliffMemoryStream.ToXliffDocument();
+        if (xliffDocument.TranslationUnits.Count == 0)
+        {
+            throw new InvalidOperationException("The XLIFF file does not contain any translation units.");
+        }
+
+        return xliffDocument;
     }
 }

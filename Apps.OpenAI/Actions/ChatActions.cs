@@ -635,24 +635,25 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                  "Specify the number of source texts to be translated at once. Default value: 1500. (See our documentation for an explanation)")]
         int? bucketSize = 1500)
     {
-        var fileStream = await FileManagementClient.DownloadAsync(input.File);
-        var xliffDocument = Utils.Xliff.Extensions.ParseXLIFF(fileStream);
-        if (xliffDocument.TranslationUnits.Count == 0)
-        {
-            return new TranslateXliffResponse { File = input.File, Usage = new UsageDto() };
-        }
+        var xliffDocument = await DownloadXliffDocumentAsync(input.File);
 
         var model = modelIdentifier.ModelId ?? "gpt-4o-2024-05-13";
-        string systemPrompt = GetSystemPrompt(string.IsNullOrEmpty(prompt));
+        var systemPrompt = GetSystemPrompt(string.IsNullOrEmpty(prompt));
 
         var (translatedTexts, usage) = await GetTranslations(prompt, xliffDocument, model, systemPrompt,
             bucketSize ?? 1500,
             glossary.Glossary);
-
-        var stream = await fileManagementClient.DownloadAsync(input.File);
-        var updatedFile = Blackbird.Xliff.Utils.Utils.XliffExtensions.UpdateOriginalFile(stream, translatedTexts);
-        string contentType = input.File.ContentType ?? "application/xml";
-        var fileReference = await fileManagementClient.UploadAsync(updatedFile, contentType, input.File.Name);
+        
+        translatedTexts.ForEach(x =>
+        {
+            var translationUnit = xliffDocument.TranslationUnits.FirstOrDefault(tu => tu.Id == x.Key);
+            if (translationUnit != null)
+            {
+                translationUnit.Target = x.Value;
+            }
+        });
+        
+        var fileReference = await fileManagementClient.UploadAsync(xliffDocument.ToStream(), input.File.ContentType ?? "application/xml", input.File.Name);
         return new TranslateXliffResponse { File = fileReference, Usage = usage };
     }
 
@@ -670,11 +671,12 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                  "Specify the number of translation units to be processed at once. Default value: 1500. (See our documentation for an explanation)")]
         int? bucketSize = 1500)
     {
-        var xliffDocument = await LoadAndParseXliffDocument(input.File);
+        var xliffDocument = await DownloadXliffDocumentAsync(input.File);
         var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
         string criteriaPrompt = string.IsNullOrEmpty(prompt)
             ? "accuracy, fluency, consistency, style, grammar and spelling"
             : prompt;
+        
         var results = new Dictionary<string, float>();
         var batches = xliffDocument.TranslationUnits.Batch((int)bucketSize);
         var src = input.SourceLanguage ?? xliffDocument.SourceLanguage;
@@ -716,6 +718,24 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 results.Add(split[0], float.Parse(split[1]));
             }
         }
+        
+        results.ForEach(x =>
+        {
+            var translationUnit = xliffDocument.TranslationUnits.FirstOrDefault(tu => tu.Id == x.Key);
+            if (translationUnit != null)
+            {
+                var attribute = translationUnit.Attributes.FirstOrDefault(x => x.Key == "extradata");
+                if (!string.IsNullOrEmpty(attribute.Key))
+                {
+                    translationUnit.Attributes.Remove(attribute.Key);
+                    translationUnit.Attributes.Add("extradata", x.Value.ToString());
+                }
+                else
+                {
+                    translationUnit.Attributes.Add("extradata", x.Value.ToString());
+                }
+            }
+        });
 
         var file = await FileManagementClient.DownloadAsync(input.File);
         string fileContent;
@@ -723,7 +743,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         using (var inFileStream = new StreamReader(file, true))
         {
             encoding = inFileStream.CurrentEncoding;
-            fileContent = inFileStream.ReadToEnd();
+            fileContent = await inFileStream.ReadToEndAsync();
         }
 
         foreach (var r in results)
@@ -781,8 +801,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                  "Specify the number of translation units to be processed at once. Default value: 1500. (See our documentation for an explanation)")]
         int? bucketSize = 1500)
     {
-        var fileStream = await FileManagementClient.DownloadAsync(input.File);
-        var xliffDocument = Utils.Xliff.Extensions.ParseXLIFF(fileStream);
+        var xliffDocument = await DownloadXliffDocumentAsync(input.File);
 
         var model = modelIdentifier.ModelId ?? "gpt-4o";
         var results = new Dictionary<string, string>();
@@ -838,20 +857,28 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             var matches = Regex.Matches(result, @"\[ID:(.+?)\]\{?([\s\S]+?)\}?(?=,\[ID|$|,?\n)").Cast<Match>().ToList();
             foreach (var match in matches)
             {
-                if (match.Groups[2].Value.Contains("[ID:")) 
+                if (match.Groups[2].Value.Contains("[ID:"))
+                {
                     continue;
+                }
                 else
-                results.Add(match.Groups[1].Value, match.Groups[2].Value);
+                {
+                    results.Add(match.Groups[1].Value, match.Groups[2].Value);
+                }
             }
-
         }
 
-        var updatedResults = Utils.Xliff.Extensions.CheckTagIssues(xliffDocument.TranslationUnits,results);
-        var originalFile = await FileManagementClient.DownloadAsync(input.File);
-        var updatedFile = Utils.Xliff.Extensions.UpdateOriginalFile(originalFile, updatedResults);
+        var updatedResults = Blackbird.Xliff.Utils.Utils.XliffExtensions.CheckTagIssues(xliffDocument.TranslationUnits,results);
+        updatedResults.ForEach(x =>
+        {
+            var translationUnit = xliffDocument.TranslationUnits.FirstOrDefault(tu => tu.Id == x.Key);
+            if (translationUnit != null)
+            {
+                translationUnit.Target = x.Value;
+            }
+        });
 
-        var finalFile = await FileManagementClient.UploadAsync(updatedFile, input.File.ContentType, input.File.Name);
-            
+        var finalFile = await FileManagementClient.UploadAsync(xliffDocument.ToStream(), input.File.ContentType, input.File.Name);
         return new TranslateXliffResponse { File = finalFile, Usage = usage, };
     }    
 
@@ -928,7 +955,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         return memoryStream.ToXliffDocument();
     }
 
-    private async Task<(Dictionary<string, string>, UsageDto)> GetTranslations(string prompt, ParsedXliff xliff, string model,
+    private async Task<(Dictionary<string, string>, UsageDto)> GetTranslations(string prompt, XliffDocument xliff, string model,
         string systemPrompt, int bucketSize, FileReference? glossary)
     {
         var results = new List<string>();
@@ -1028,7 +1055,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         return prompt;
     }
 
-    string GetUserPrompt(string prompt, ParsedXliff xliffDocument, string json)
+    string GetUserPrompt(string prompt, XliffDocument xliffDocument, string json)
     {
         string instruction = string.IsNullOrEmpty(prompt)
             ? $"Translate the following texts from {xliffDocument.SourceLanguage} to {xliffDocument.TargetLanguage}."
