@@ -29,6 +29,7 @@ using System.Text.RegularExpressions;
 using MoreLinq;
 using Apps.OpenAI.Utils.Xliff;
 using Blackbird.Xliff.Utils.Extensions;
+using Blackbird.Xliff.Utils.Models;
 
 namespace Apps.OpenAI.Actions;
 
@@ -653,7 +654,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             }
         });
         
-        var fileReference = await fileManagementClient.UploadAsync(xliffDocument.ToStream(), input.File.ContentType ?? "application/xml", input.File.Name);
+        var stream = xliffDocument.ToStream();
+        var fileReference = await fileManagementClient.UploadAsync(stream, input.File.ContentType, input.File.Name);
         return new TranslateXliffResponse { File = fileReference, Usage = usage };
     }
 
@@ -692,7 +694,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 $"Place the tuples in a same line and separate them using semicolons, example for two assessments: 2,7;32,5. The score number is a score from 1 to 10 assessing the quality of the translation, considering the following criteria: {criteriaPrompt}. Sentences: ";
             foreach (var tu in batch)
             {
-                userPrompt += $" {tu.Id} {tu.Source} {tu.Target}";
+                userPrompt += " {ID: " + tu.Id + "} " + tu.Source + " " + tu.Target + " ;";
             }
 
             var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
@@ -737,21 +739,6 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             }
         });
 
-        var file = await FileManagementClient.DownloadAsync(input.File);
-        string fileContent;
-        Encoding encoding;
-        using (var inFileStream = new StreamReader(file, true))
-        {
-            encoding = inFileStream.CurrentEncoding;
-            fileContent = await inFileStream.ReadToEndAsync();
-        }
-
-        foreach (var r in results)
-        {
-            fileContent = Regex.Replace(fileContent, @"(<trans-unit id=""" + r.Key + @""")",
-                @"${1} extradata=""" + r.Value + @"""");
-        }
-
         if (input.Threshold != null && input.Condition != null && input.State != null)
         {
             var filteredTUs = new List<string>();
@@ -773,15 +760,31 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                     filteredTUs = results.Where(x => x.Value <= input.Threshold).Select(x => x.Key).ToList();
                     break;
             }
-
-            fileContent = UpdateTargetState(fileContent, input.State, filteredTUs);
+            
+            filteredTUs.ForEach(x =>
+            {
+                var translationUnit = xliffDocument.TranslationUnits.FirstOrDefault(tu => tu.Id == x);
+                if (translationUnit != null)
+                {
+                    var stateAttribute = translationUnit.Attributes.FirstOrDefault(x => x.Key == "state");
+                    if (!string.IsNullOrEmpty(stateAttribute.Key))
+                    {
+                        translationUnit.Attributes.Remove(stateAttribute.Key);
+                        translationUnit.Attributes.Add("state", input.State);
+                    }
+                    else
+                    {
+                        translationUnit.Attributes.Add("state", input.State);
+                    }
+                }
+            });
         }
 
+        var stream = xliffDocument.ToStream();
         return new ScoreXliffResponse
         {
             AverageScore = results.Average(x => x.Value),
-            File = await FileManagementClient.UploadAsync(new MemoryStream(encoding.GetBytes(fileContent)),
-                MediaTypeNames.Text.Xml, input.File.Name),
+            File = await FileManagementClient.UploadAsync(stream, MediaTypeNames.Text.Xml, input.File.Name),
             Usage = usage,
         };
     }

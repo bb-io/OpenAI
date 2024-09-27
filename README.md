@@ -105,7 +105,9 @@ All actions can take: Target audience, locale, glossary, tone of voice and any a
 
 ### XLIFF operations
 
-- **Get Quality Scores for XLIFF file** Gets segment and file level quality scores for XLIFF files. Supports only version 1.2 of XLIFF currently. Optionally, you can add Threshold, New Target State and Condition input parameters to the Blackbird action to change the target state value of segments meeting the desired criteria (all three must be filled).
+All XLIFF actions supports 1.2 and 2.1 versions of the XLIFF format, since these are the most common versions used in the industry, but if you need support for other versions, please reach out to us and we will consider adding support for them.
+
+- **Get Quality Scores for XLIFF file** Gets segment and file level quality scores for XLIFF files. Optionally, you can add Threshold, New Target State and Condition input parameters to the Blackbird action to change the target state value of segments meeting the desired criteria (all three must be filled).
 
     Optional inputs:
 	- Prompt: Add your criteria for scoring each source-target pair. If none are provided, this is replaced by _"accuracy, fluency, consistency, style, grammar and spelling"_.
@@ -123,7 +125,7 @@ As an example, the settings in the image below will result in all semegments wit
 
 ![OpenAIOptionalInput](image/README/OpenAIOptionalInput.png)
 
-- **Post-edit XLIFF file** Updates the targets of XLIFF 1.2 files
+- **Post-edit XLIFF file** Updates the targets of XLIFF files
 
 Optional inputs:
 	- Prompt: Add your linguistic criteria for postediting targets.
@@ -132,7 +134,7 @@ Optional inputs:
 	- Glossary
 	- Update locked segments: If true, locked segments will be updated, otherwise they will be skipped. By default, this is set to false.
 
-- **Process XLIFF file** given an XLIFF file, processes each translation unit according to provided instructions (default is to translate source tags) and updates the target text for each unit. Supports only version 1.2 of XLIFF currently.
+- **Process XLIFF file** given an XLIFF file, processes each translation unit according to provided instructions (default is to translate source tags) and updates the target text for each unit.
 
 Here is an example bird for processing XLIFF files:
 
@@ -152,8 +154,8 @@ XLIFF files can contain a lot of segments. Each action takes your segments and s
 
 You can use batch (async) actions to process large XLIFF files. The batch action will return a `batch` object that you can use to check the status of the processing by using Batch ID.
 
-- **(Batch) Process XLIFF file** - Asynchronously process each translation unit in the XLIFF file according to the provided instructions (by default it just translates the source tags) and updates the target text for each unit. For now it supports only 1.2 version of XLIFF.
-- **(Batch) Post-edit XLIFF file** - Asynchronously post-edit the target text of each translation unit in the XLIFF file according to the provided instructions and updates the target text for each unit. For now it supports only 1.2 version of XLIFF.
+- **(Batch) Process XLIFF file** - Asynchronously process each translation unit in the XLIFF file according to the provided instructions (by default it just translates the source tags) and updates the target text for each unit. 
+- **(Batch) Post-edit XLIFF file** - Asynchronously post-edit the target text of each translation unit in the XLIFF file according to the provided instructions and updates the target text for each unit.
 - **(Batch) Get Quality Scores for XLIFF file** - Asynchronously get quality scores for each translation unit in the XLIFF file.
 
 To get the results of the batch processing, you can use the following actions:
