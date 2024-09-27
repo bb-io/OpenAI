@@ -21,7 +21,7 @@ namespace Apps.OpenAI.Models.Requests.Chat
         [StaticDataSource(typeof(ConditionDataSourceHandler))]
         public string? Condition { get; set; }
 
-        [Display("New Target State")]
+        [Display("New target state")]
         [StaticDataSource(typeof(XliffStateDataSourceHandler))]
         public string? State { get; set; }
     }

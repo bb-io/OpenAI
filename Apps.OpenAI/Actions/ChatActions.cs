@@ -659,7 +659,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         return new TranslateXliffResponse { File = fileReference, Usage = usage };
     }
 
-    [Action("Get Quality Scores for XLIFF file",
+    [Action("Get quality scores for XLIFF file",
         Description = "Gets segment and file level quality scores for XLIFF files")]
     public async Task<ScoreXliffResponse> ScoreXLIFF([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] ScoreXliffRequest input, [ActionParameter,
