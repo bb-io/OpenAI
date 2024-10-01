@@ -156,6 +156,10 @@ Here is an example bird for processing XLIFF files:
 
 XLIFF files can contain a lot of segments. Each action takes your segments and sends them to OpenAI for processing. It's possible that the amount of segments is so high that the prompt exceeds to model's context window or that the model takes longer than Blackbird actions are allowed to take. This is why we have introduced the bucket size parameter. You can tweak the bucket size parameter to determine how many segments to send to OpenAI at once. This will allow you to split the workload into different OpenAI calls. The trade-off is that the same context prompt needs to be send along with each request (which increases the tokens used). From experiments we have found that a bucket size of 1500 is sufficient for gpt-4o. That's why 1500 is the default bucket size, however other models may require different bucket sizes.
 
+## Eggs
+
+Check downloadable workflow prototypes featuring this app that you can import to your Nests [here](https://docs.blackbird.io/eggs/tms-to-llm/). 
+
 ## Batch processing
 
 You can use batch (async) actions to process large XLIFF files. The batch action will return a `batch` object that you can use to check the status of the processing by using Batch ID.
