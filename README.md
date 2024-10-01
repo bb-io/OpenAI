@@ -121,7 +121,7 @@ All XLIFF actions supports 1.2 and 2.1 versions of the XLIFF format, since these
 	- Average Score: aggregated score of all segment level scores.
 	- Updated XLIFF file: segment level score added to extradata attribute & updated target state when instructed.
 
-> The Prompt used in this action is "Your input is going to be a group of sentences in {source language} and their translation into {target language}. Only provide as output the ID of the sentence and the score number. The score number is a score from 1 to 10 assessing the quality of the translation, considering the following criteria: {Criteria provided in Prompt input}."
+> The Prompt used in this action is "Your input is going to be a group of sentences in `source language` and their translation into `target language`. Only provide as output the ID of the sentence and the score number. The score number is a score from 1 to 10 assessing the quality of the translation, considering the following criteria: `Criteria provided via Prompt input`."
 
 As an example, the settings in the image below will result in all semegments with a score below or equal to 6 to have their target state updated to "needs-review-translation". 
 
@@ -136,7 +136,7 @@ Optional inputs:
 	- Glossary
 	- Update locked segments: If true, locked segments will be updated, otherwise they will be skipped. By default, this is set to false.
 
-> The Prompt used in this actions is "Your input consists of sentences in {source} language with their translations into {target language}. Review and edit the translated target text as necessary to ensure it is a correct and accurate translation of the source text. If you encounter XML tags in the source also include them in the target text, don't delete or modify them." By using the "Prompt" optional input,your instructions will be appended to the prompt.
+> The Prompt used in this actions is "Your input consists of sentences in `source` language with their translations into `target language`. Review and edit the translated target text as necessary to ensure it is a correct and accurate translation of the source text. If you encounter XML tags in the source also include them in the target text, don't delete or modify them." By using the "Prompt" optional input, your instructions will be appended to the prompt.
 
 - **Process XLIFF file** given an XLIFF file, processes each translation unit according to provided instructions in the optinal input "Prompt" (if no Prompt is provided, the source texts will be translated) and updates the target text for each unit.
 
