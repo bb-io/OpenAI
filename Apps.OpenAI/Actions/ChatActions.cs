@@ -639,10 +639,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         int? bucketSize = 1500)
     {
         var xliffDocument = await DownloadXliffDocumentAsync(input.File);
-
-        var model = modelIdentifier.ModelId ?? "gpt-4o-2024-05-13";
         var systemPrompt = PromptBuilder.BuildSystemPrompt(string.IsNullOrEmpty(prompt));
-        var (translatedTexts, usage) = await ProcessTranslationUnits(prompt, xliffDocument, model, systemPrompt,
+        var (translatedTexts, usage) = await ProcessTranslationUnits(prompt, xliffDocument, modelIdentifier.ModelId, systemPrompt,
             bucketSize ?? 1500,
             glossary.Glossary);
 
@@ -675,8 +673,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         int? bucketSize = 1500)
     {
         var xliffDocument = await DownloadXliffDocumentAsync(input.File);
-        var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
-        string criteriaPrompt = string.IsNullOrEmpty(prompt)
+        var criteriaPrompt = string.IsNullOrEmpty(prompt)
             ? "accuracy, fluency, consistency, style, grammar and spelling"
             : prompt;
 
@@ -689,13 +686,13 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         foreach (var batch in batches)
         {
-            var userPrompt = PromptBuilder.BuildQualityScorePrompt(src, tgt, criteriaPrompt, 
-                JsonConvert.SerializeObject(batch.Select(x => new { x.Id, x.Source, x.Target }).ToList()));;
+            var userPrompt = PromptBuilder.BuildQualityScorePrompt(src, tgt, criteriaPrompt,
+                JsonConvert.SerializeObject(batch.Select(x => new { x.Id, x.Source, x.Target }).ToList()));
 
             var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
             request.AddJsonBody(new
             {
-                model,
+                model = modelIdentifier.ModelId,
                 messages = new List<ChatMessageDto>
                 {
                     new(MessageRoles.System, PromptBuilder.DefaultSystemPrompt),
@@ -709,12 +706,12 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
             var content = response.Choices.First().Message.Content;
             usage += response.Usage;
-            
+
             TryCatchHelper.TryCatch(() =>
-            {
-                var entity = JsonConvert.DeserializeObject<TranslationEntities>(content);
-                results.AddRange(entity.Translations);
-            }, $"Failed to deserialize the response from OpenAI, try again later. Response: {content}");
+                {
+                    var entity = JsonConvert.DeserializeObject<TranslationEntities>(content);
+                    results.AddRange(entity.Translations);
+                }, $"Failed to deserialize the response from OpenAI, try again later. Response: {content}");
         }
 
         results.ForEach(x =>
@@ -741,19 +738,24 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             switch (input.Condition)
             {
                 case ">":
-                    filteredTUs = results.Where(x => x.QualityScore > input.Threshold).Select(x => x.TranslationId).ToList();
+                    filteredTUs = results.Where(x => x.QualityScore > input.Threshold).Select(x => x.TranslationId)
+                        .ToList();
                     break;
                 case ">=":
-                    filteredTUs = results.Where(x => x.QualityScore >= input.Threshold).Select(x => x.TranslationId).ToList();
+                    filteredTUs = results.Where(x => x.QualityScore >= input.Threshold).Select(x => x.TranslationId)
+                        .ToList();
                     break;
                 case "=":
-                    filteredTUs = results.Where(x => x.QualityScore == input.Threshold).Select(x => x.TranslationId).ToList();
+                    filteredTUs = results.Where(x => x.QualityScore == input.Threshold).Select(x => x.TranslationId)
+                        .ToList();
                     break;
                 case "<":
-                    filteredTUs = results.Where(x => x.QualityScore < input.Threshold).Select(x => x.TranslationId).ToList();
+                    filteredTUs = results.Where(x => x.QualityScore < input.Threshold).Select(x => x.TranslationId)
+                        .ToList();
                     break;
                 case "<=":
-                    filteredTUs = results.Where(x => x.QualityScore <= input.Threshold).Select(x => x.TranslationId).ToList();
+                    filteredTUs = results.Where(x => x.QualityScore <= input.Threshold).Select(x => x.TranslationId)
+                        .ToList();
                     break;
             }
 
@@ -802,7 +804,6 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     {
         var xliffDocument = await DownloadXliffDocumentAsync(input.File);
 
-        var model = modelIdentifier.ModelId ?? "gpt-4o";
         var results = new List<TranslationEntity>();
         var batches = xliffDocument.TranslationUnits.Batch((int)bucketSize);
         var src = input.SourceLanguage ?? xliffDocument.SourceLanguage;
@@ -836,18 +837,18 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 $"{prompt ?? ""} {glossaryPrompt ?? ""} Sentences: \n" +
                 JsonConvert.SerializeObject(batch.Select(x => new { x.Id, x.Source, x.Target }));
 
-            var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
-            request.AddJsonBody(new
-            {
-                model,
-                messages = new List<ChatMessageDto>
+            var request = new OpenAIRequest("/chat/completions", Method.Post, Creds)
+                .AddJsonBody(new
                 {
-                    new(MessageRoles.System, PromptBuilder.DefaultSystemPrompt),
-                    new(MessageRoles.User, userPrompt)
-                },
-                response_format = ResponseFormats.GetProcessXliffResponseFormat(),
-                temperature = 0.1f
-            });
+                    model = modelIdentifier.ModelId,
+                    messages = new List<ChatMessageDto>
+                    {
+                        new(MessageRoles.System, PromptBuilder.DefaultSystemPrompt),
+                        new(MessageRoles.User, userPrompt)
+                    },
+                    response_format = ResponseFormats.GetProcessXliffResponseFormat(),
+                    temperature = 0.1f
+                });
 
             var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
             var content = response.Choices.First().Message.Content;
@@ -875,21 +876,6 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         var finalFile =
             await FileManagementClient.UploadAsync(xliffDocument.ToStream(), input.File.ContentType, input.File.Name);
         return new TranslateXliffResponse { File = finalFile, Usage = usage, };
-    }
-
-    private string UpdateTargetState(string fileContent, string state, List<string> filteredTUs)
-    {
-        var tus = Regex.Matches(fileContent, @"<trans-unit[\s\S]+?</trans-unit>").Select(x => x.Value);
-        foreach (var tu in tus.Where(x =>
-                     filteredTUs.Any(y => y == Regex.Match(x, @"<trans-unit id=""(\d+)""").Groups[1].Value)))
-        {
-            string transformedTU = Regex.IsMatch(tu, @"<target(.*?)state=""(.*?)""(.*?)>")
-                ? Regex.Replace(tu, @"<target(.*?state="")(.*?)("".*?)>", @"<target${1}" + state + "${3}>")
-                : Regex.Replace(tu, "<target", @"<target state=""" + state + @"""");
-            fileContent = Regex.Replace(fileContent, Regex.Escape(tu), transformedTU);
-        }
-
-        return fileContent;
     }
 
     [Action("Get localizable content from image", Description = "Retrieve localizable content from image.")]
@@ -940,17 +926,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     }
 
     #endregion
-
-    private async Task<XliffDocument> LoadAndParseXliffDocument(FileReference inputFile)
-    {
-        var stream = await FileManagementClient.DownloadAsync(inputFile);
-        var memoryStream = new MemoryStream();
-        await stream.CopyToAsync(memoryStream);
-        memoryStream.Position = 0;
-
-        return memoryStream.ToXliffDocument();
-    }
-
+    
     private async Task<(List<TranslationEntity>, UsageDto)> ProcessTranslationUnits(string prompt,
         XliffDocument xliff, string model,
         string systemPrompt, int bucketSize, FileReference? glossary)
