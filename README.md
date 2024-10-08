@@ -107,6 +107,13 @@ All actions can take: Target audience, locale, glossary, tone of voice and any a
 
 All XLIFF actions supports 1.2 and 2.1 versions of the XLIFF format, since these are the most common versions used in the industry, but if you need support for other versions, please reach out to us and we will consider adding support for them.
 
+Currently we are using [structured output](https://platform.openai.com/docs/guides/structured-outputs/structured-outputs) feature to return the results of the actions. This means that the output of the actions will be structured in a way that is easy to parse and could increase the stability of the actions. However note, `Structured Outputs` are available in latest large language models, starting with GPT-4o:
+- gpt-4o-mini-2024-07-18 and later
+- gpt-4o-2024-08-06 and later
+<br/>
+
+You can find more information about structured outputs in the [OpenAI documentation](https://platform.openai.com/docs/guides/structured-outputs/introduction).
+
 - **Get Quality Scores for XLIFF file** Gets segment and file level quality scores for XLIFF files. Optionally, you can add Threshold, New Target State and Condition input parameters to the Blackbird action to change the target state value of segments meeting the desired criteria (all three must be filled).
 
     Optional inputs:
