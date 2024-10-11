@@ -16,7 +16,7 @@ public class OpenAIClient : BlackBirdRestClient
         new() { MissingMemberHandling = MissingMemberHandling.Ignore };
 
     public OpenAIClient() : base(new RestClientOptions
-        { ThrowOnAnyError = false, BaseUrl = new Uri("https://api.openai.com/v1"), MaxTimeout = (int)TimeSpan.FromMinutes(5).TotalMilliseconds }) { }
+        { ThrowOnAnyError = false, BaseUrl = new Uri("https://api.openai.com/v1"), MaxTimeout = (int)TimeSpan.FromMinutes(15).TotalMilliseconds }) { }
 
     protected override Exception ConfigureErrorException(RestResponse response)
     {
