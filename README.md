@@ -188,12 +188,13 @@ Note, that you should specify the correct original XLIFF file in `Original XLIFF
 
 ### How to know if the batch process is completed? 
 
-You have 2 options here:
+You have 3 options here:
 
 1. You can use the `On batch finished` event trigger to get notified when the batch process is completed. But note, that this is a polling trigger and it will check the status of the batch process based on the interval you set.
 2. Use the `Delay` operator to wait for a certain amount of time before checking the status of the batch process. This is a more straightforward way to check the status of the batch process.
+3. Since October 2024, users can rely on [Checkpoints](https://docs.blackbird.io/concepts/checkpoints/#large-language-models-llms--batch-processing) to achieve a fully streamlined process. A Checkpoint can pause the workflow until the LLM returns a result or a batch process completes. 
 
-We recommend using the `On batch finished` event trigger as it is more efficient for checking the status of the batch process.
+We recommend using the `On batch finished` event trigger with Checkpoints.
 
 ## Example
 
