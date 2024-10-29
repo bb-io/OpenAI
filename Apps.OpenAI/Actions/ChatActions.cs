@@ -32,6 +32,7 @@ using MoreLinq;
 using Apps.OpenAI.Utils.Xliff;
 using Blackbird.Xliff.Utils.Extensions;
 using Blackbird.Xliff.Utils.Models;
+using Apps.OpenAI.Models.Requests.Xliff;
 
 namespace Apps.OpenAI.Actions;
 
@@ -163,7 +164,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         if (request?.Glossary != null)
         {
-            var glossaryPromptPart = await GetGlossaryPromptPart(request.Glossary, input.Message);
+            var glossaryPromptPart = await GetGlossaryPromptPart(request.Glossary, input.Message, true);
             if (glossaryPromptPart != null)
                 messages.Add(new ChatMessageDto(MessageRoles.User, $"Glossary: {glossaryPromptPart}"));
         }
@@ -214,7 +215,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 "If a term has variations or synonyms, consider them and choose the most appropriate " +
                 "translation to maintain consistency and precision. ";
 
-            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, content);
+            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, content, true);
             if (glossaryPromptPart != null) prompt += (glossaryAddition + glossaryPromptPart);
         }
 
@@ -307,7 +308,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         if (glossary.Glossary != null)
         {
-            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, input.SourceText);
+            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, input.SourceText, true);
             if (glossaryPromptPart != null) userPrompt += glossaryPromptPart;
         }
 
@@ -363,7 +364,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         if (glossary.Glossary != null)
         {
-            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, input.SourceText);
+            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, input.SourceText, true);
             if (glossaryPromptPart != null) userPrompt += glossaryPromptPart;
         }
 
@@ -421,7 +422,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         if (glossary.Glossary != null)
         {
-            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, input.SourceText);
+            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, input.SourceText, true);
             if (glossaryPromptPart != null) userPrompt += glossaryPromptPart;
         }
 
@@ -481,7 +482,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         if (glossary.Glossary != null)
         {
-            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, input.SourceText);
+            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, input.SourceText, true);
             if (glossaryPromptPart != null) userPrompt += glossaryPromptPart;
         }
 
@@ -587,7 +588,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         if (glossary.Glossary != null)
         {
-            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, input.Text);
+            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, input.Text, true);
             if (glossaryPromptPart != null)
             {
                 userPrompt +=
@@ -642,7 +643,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         var systemPrompt = PromptBuilder.BuildSystemPrompt(string.IsNullOrEmpty(prompt));
         var (translatedTexts, usage) = await ProcessTranslationUnits(prompt, xliffDocument, modelIdentifier.ModelId, systemPrompt,
             bucketSize ?? 1500,
-            glossary.Glossary);
+            glossary.Glossary, input.FilterGlossary ?? true);
 
         translatedTexts.ForEach(x =>
         {
@@ -818,7 +819,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 var glossaryPromptPart =
                     await GetGlossaryPromptPart(glossary.Glossary,
                         string.Join(';', batch.Select(x => x.Source)) + ";" +
-                        string.Join(';', batch.Select(x => x.Target)));
+                        string.Join(';', batch.Select(x => x.Target)), input.FilterGlossary ?? true);
                 if (glossaryPromptPart != null)
                 {
                     glossaryPrompt +=
@@ -929,7 +930,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     
     private async Task<(List<TranslationEntity>, UsageDto)> ProcessTranslationUnits(string prompt,
         XliffDocument xliff, string model,
-        string systemPrompt, int bucketSize, FileReference? glossary)
+        string systemPrompt, int bucketSize, FileReference? glossary, bool filter)
     {
         var results = new List<TranslationEntity>();
         var batches = xliff.TranslationUnits.Batch(bucketSize);
@@ -943,7 +944,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
             if (glossary != null)
             {
-                var glossaryPromptPart = await GetGlossaryPromptPart(glossary, json);
+                var glossaryPromptPart = await GetGlossaryPromptPart(glossary, json, filter);
                 if (glossaryPromptPart != null)
                 {
                     var glossaryPrompt =

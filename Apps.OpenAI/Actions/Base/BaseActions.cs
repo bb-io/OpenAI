@@ -27,7 +27,7 @@ public abstract class BaseActions : OpenAIInvocable
         FileManagementClient = fileManagementClient;
     }
     
-    protected async Task<string> GetGlossaryPromptPart(FileReference glossary, string sourceContent)
+    protected async Task<string> GetGlossaryPromptPart(FileReference glossary, string sourceContent, bool filter)
     {
         var glossaryStream = await FileManagementClient.DownloadAsync(glossary);
         var blackbirdGlossary = await glossaryStream.ConvertFromTbx();
@@ -42,7 +42,7 @@ public abstract class BaseActions : OpenAIInvocable
         foreach (var entry in blackbirdGlossary.ConceptEntries)
         {
             var allTerms = entry.LanguageSections.SelectMany(x => x.Terms.Select(y => y.Term));
-            if (!allTerms.Any(x => Regex.IsMatch(sourceContent, $@"\b{x}\b", RegexOptions.IgnoreCase))) continue;
+            if (filter && !allTerms.Any(x => Regex.IsMatch(sourceContent, $@"\b{x}\b", RegexOptions.IgnoreCase))) continue;
             entriesIncluded = true;
 
             glossaryPromptPart.AppendLine();
