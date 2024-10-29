@@ -151,7 +151,7 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
             if (request.Glossary != null)
             {
                 var glossaryPrompt = GlossaryConstants.GlossaryBeginning +
-                                     await GetGlossaryPromptPart(request.Glossary, translationUnit.Source);
+                                     await GetGlossaryPromptPart(request.Glossary, translationUnit.Source, request.FilterGlossary ?? true);
                 content += $". {glossaryPrompt}";
             }
 

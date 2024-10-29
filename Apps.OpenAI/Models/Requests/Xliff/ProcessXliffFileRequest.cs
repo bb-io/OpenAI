@@ -12,4 +12,7 @@ public class ProcessXliffFileRequest : TextChatModelIdentifier
 
     [Display("Instructions", Description = "Instructions for processing the XLIFF file. For example, 'Translate the text.'")]
     public string? Instructions { get; set; }
+
+    [Display("Filter glossary terms")]
+    public bool? FilterGlossary { get; set; }
 }
