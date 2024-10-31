@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using Blackbird.Xliff.Utils.Models;
 using static Apps.OpenAI.Utils.Xliff.ParsedXliff;
 
 namespace Apps.OpenAI.Utils.Xliff;
@@ -54,24 +55,35 @@ public static class Extensions
         };
     }
 
-    private static List<Tag> GetTags(string src)
+    private static List<Blackbird.Xliff.Utils.Models.Tag> GetTags(string src)
     {
-        var parsedTags = new List<Tag>();
-        var tags = Regex.Matches(src, "<(ept|bpt|ph) (.*?)>(.*?)<\\/\\1>");
-        if (tags is null || tags.Count == 0 ) return parsedTags;
+        var parsedTags = new List<Blackbird.Xliff.Utils.Models.Tag>();
+    
+        var tagPattern = @"<(ept|bpt|ph|g)(\s+[^>]*)?>(.*?)</\1>";
+
+        var tags = Regex.Matches(src, tagPattern, RegexOptions.Singleline | RegexOptions.IgnoreCase);
+        if (tags == null || tags.Count == 0) return parsedTags;
         var count = 0;
-        foreach ( var tag in tags.Select(x => x.Value)) 
+        foreach (Match match in tags)
         {
             count++;
-            parsedTags.Add(new Tag 
+
+            var tagName = match.Groups[1].Value.ToLower(); 
+            var attributes = match.Groups[2].Value;        
+            var fullTag = match.Value;                     
+
+            var idMatch = Regex.Match(attributes, @"id=""(.*?)""", RegexOptions.IgnoreCase);
+            var id = idMatch.Success ? idMatch.Groups[1].Value : string.Empty;
+
+            parsedTags.Add(new Blackbird.Xliff.Utils.Models.Tag
             {
                 Position = count,
-                Id = Regex.Match(tag.ToLower(), "id=\"(.*?)\"").Groups[1].Value,
-                Value = tag,
-                Type = Regex.Match(tag, "<(.*?) ").Groups[1].Value
+                Id = id,
+                Value = fullTag,
+                Type = tagName
             });
-
         }
+    
         return parsedTags;
     }
 
@@ -114,13 +126,13 @@ public static class Extensions
         }
         return new MemoryStream(encoding.GetBytes(fileContent));
     }
-    public static Dictionary<string, string> CheckTagIssues(List<TransUnit> translationUnits, Dictionary<string, string> results)
+    public static Dictionary<string, string> CheckTagIssues(List<TranslationUnit> translationUnits, Dictionary<string, string> results)
     {
         var changesToImplement = new Dictionary<string, string>();
         foreach (var update in results)
         {
             var newTags = GetTags(update.Value);
-            if (AreTagsOk(translationUnits.FirstOrDefault(x => x.Id == update.Key).Tags,newTags)) 
+            if (AreTagsOk(translationUnits.FirstOrDefault(x => x.Id == update.Key).Tags, newTags)) 
             {
                 changesToImplement.Add(update.Key, update.Value);
             }
@@ -129,35 +141,43 @@ public static class Extensions
         return changesToImplement;
     }
 
-    private static bool AreTagsOk(List<Tag> tags, List<Tag> newTags)
+    private static bool AreTagsOk(List<Blackbird.Xliff.Utils.Models.Tag> tags, List<Blackbird.Xliff.Utils.Models.Tag> newTags)
     {
-        if (tags.Count != newTags.Count)
-        { return false; }
-        foreach (var tag in newTags)
+        var filteredTags = tags.Where(t => t.Type == "bpt" || t.Type == "ept").ToList();
+        var filteredNewTags = newTags.Where(t => t.Type == "bpt" || t.Type == "ept").ToList();
+
+        if (filteredTags.Count != filteredNewTags.Count)
         {
-            if (tags.Any(x => x.Id == tag.Id && x.Type == tag.Type && x.Value == tag.Value && x.Position == tag.Position))
+            return false;
+        }
+
+        foreach (var tag in filteredNewTags)
+        {
+            if (filteredTags.Any(x => x.Id == tag.Id && x.Type == tag.Type && x.Value == tag.Value && x.Position == tag.Position))
             {
                 continue;
             }
-            else if (tags.Any(x => x.Id == tag.Id && x.Type == tag.Type && x.Value == tag.Value)) 
+            else if (filteredTags.Any(x => x.Id == tag.Id && x.Type == tag.Type && x.Value == tag.Value))
             {
-                if (tag.Type == "bpt" || tag.Type == "ept")
+                if (tag.Type == "bpt")
                 {
-                    if (tag.Type == "bpt") 
-                    {
-
-                        if (newTags.Any(x => x.Type == "ept" && x.Id == tag.Id && x.Position > tag.Position)) continue;
-                        else return false;
-                    } 
-                    else if (tag.Type == "ept") 
-                    {
-                        if (newTags.Any(x => x.Type == "bpt" && x.Id == tag.Id && x.Position < tag.Position)) continue;
-                        else return false;
-                    }
+                    if (filteredNewTags.Any(x => x.Type == "ept" && x.Id == tag.Id && x.Position > tag.Position))
+                        continue;
+                    else
+                        return false;
                 }
-                else continue;
+                else if (tag.Type == "ept")
+                {
+                    if (filteredNewTags.Any(x => x.Type == "bpt" && x.Id == tag.Id && x.Position < tag.Position))
+                        continue;
+                    else
+                        return false;
+                }
             }
-            else return false;
+            else
+            {
+                return false;
+            }
         }
         return true;
     }

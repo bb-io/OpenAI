@@ -650,7 +650,35 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             var translationUnit = xliffDocument.TranslationUnits.FirstOrDefault(tu => tu.Id == x.TranslationId);
             if (translationUnit != null)
             {
-                translationUnit.Target = x.TranslatedText;
+                if (input.AddMissingTrailingTags.HasValue && input.AddMissingTrailingTags == true)
+                {
+                    var sourceContent = translationUnit.Source;
+                    var targetContent = translationUnit.Target;
+
+                    var tagPattern = @"<(?<tag>\w+)([^>]*)>(?<content>.*)</\k<tag>>";
+                    var sourceMatch = Regex.Match(sourceContent, tagPattern, RegexOptions.Singleline);
+
+                    if (sourceMatch.Success)
+                    {
+                        var tagName = sourceMatch.Groups["tag"].Value;
+                        var tagAttributes = sourceMatch.Groups[2].Value;
+                        var openingTag = $"<{tagName}{tagAttributes}>";
+                        var closingTag = $"</{tagName}>";
+
+                        if (!targetContent.Contains(openingTag) && !targetContent.Contains(closingTag))
+                        {
+                            translationUnit.Target = openingTag + targetContent + closingTag;
+                        }
+                    }
+                    else
+                    {
+                        translationUnit.Target = x.TranslatedText;
+                    }
+                }
+                else
+                {
+                    translationUnit.Target = x.TranslatedText;
+                } 
             }
         });
 
@@ -864,13 +892,44 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         var dictionary = results.ToDictionary(x => x.TranslationId, x => x.TranslatedText);
         var updatedResults =
-            Blackbird.Xliff.Utils.Utils.XliffExtensions.CheckTagIssues(xliffDocument.TranslationUnits, dictionary);
+            Utils.Xliff.Extensions.CheckTagIssues(xliffDocument.TranslationUnits, dictionary);
         updatedResults.ForEach(x =>
         {
             var translationUnit = xliffDocument.TranslationUnits.FirstOrDefault(tu => tu.Id == x.Key);
             if (translationUnit != null)
             {
-                translationUnit.Target = x.Value;
+                if (input.AddMissingTrailingTags.HasValue && input.AddMissingTrailingTags == true)
+                {
+                    var sourceContent = translationUnit.Source;
+                    
+                    var tagPattern = @"<(?<tag>\w+)(?<attributes>[^>]*)>(?<content>.*?)</\k<tag>>";
+                    var sourceMatch = Regex.Match(sourceContent, tagPattern, RegexOptions.Singleline);
+
+                    if (sourceMatch.Success)
+                    {
+                        var tagName = sourceMatch.Groups["tag"].Value;
+                        var tagAttributes = sourceMatch.Groups["attributes"].Value;
+                        var openingTag = $"<{tagName}{tagAttributes}>";
+                        var closingTag = $"</{tagName}>";
+
+                        if (!x.Value.Contains(openingTag) && !x.Value.Contains(closingTag))
+                        {
+                            translationUnit.Target = openingTag + x.Value + closingTag;
+                        }
+                        else
+                        {
+                            translationUnit.Target = x.Value;
+                        }
+                    }
+                    else
+                    {
+                        translationUnit.Target = x.Value;
+                    }
+                }
+                else
+                {
+                    translationUnit.Target = x.Value;
+                }
             }
         });
 
