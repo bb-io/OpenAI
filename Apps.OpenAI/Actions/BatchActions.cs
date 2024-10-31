@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
 using Apps.OpenAI.Api;
@@ -86,7 +87,31 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
                     $"Translation unit with id {batchRequest.CustomId} not found in the XLIFF file.");
             }
 
-            translationUnit.Target = batchRequest.Response.Body.Choices[0].Message.Content;
+            if (request.AddMissingTrailingTags.HasValue && request.AddMissingTrailingTags == true)
+            {
+                var sourceContent = translationUnit.Source;
+                var targetContent = translationUnit.Target;
+                
+                var tagPattern = @"<(?<tag>\w+)([^>]*)>(?<content>.*)</\k<tag>>";
+                var sourceMatch = Regex.Match(sourceContent, tagPattern, RegexOptions.Singleline);
+
+                if (sourceMatch.Success)
+                {
+                    var tagName = sourceMatch.Groups["tag"].Value;
+                    var tagAttributes = sourceMatch.Groups[2].Value;
+                    var openingTag = $"<{tagName}{tagAttributes}>";
+                    var closingTag = $"</{tagName}>";
+
+                    if (!targetContent.Contains(openingTag) && !targetContent.Contains(closingTag))
+                    {
+                        translationUnit.Target = openingTag + targetContent + closingTag;
+                    }
+                }
+            }
+            else
+            {
+                translationUnit.Target = batchRequest.Response.Body.Choices[0].Message.Content;
+            }
         }
 
         return new()
