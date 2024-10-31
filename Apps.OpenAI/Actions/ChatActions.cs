@@ -670,6 +670,10 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                             translationUnit.Target = openingTag + targetContent + closingTag;
                         }
                     }
+                    else
+                    {
+                        translationUnit.Target = x.TranslatedText;
+                    }
                 }
                 else
                 {
@@ -888,7 +892,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         var dictionary = results.ToDictionary(x => x.TranslationId, x => x.TranslatedText);
         var updatedResults =
-            Blackbird.Xliff.Utils.Utils.XliffExtensions.CheckTagIssues(xliffDocument.TranslationUnits, dictionary);
+            Utils.Xliff.Extensions.CheckTagIssues(xliffDocument.TranslationUnits, dictionary);
         updatedResults.ForEach(x =>
         {
             var translationUnit = xliffDocument.TranslationUnits.FirstOrDefault(tu => tu.Id == x.Key);
@@ -897,22 +901,29 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 if (input.AddMissingTrailingTags.HasValue && input.AddMissingTrailingTags == true)
                 {
                     var sourceContent = translationUnit.Source;
-                    var targetContent = translationUnit.Target;
-
-                    var tagPattern = @"<(?<tag>\w+)([^>]*)>(?<content>.*)</\k<tag>>";
+                    
+                    var tagPattern = @"<(?<tag>\w+)(?<attributes>[^>]*)>(?<content>.*?)</\k<tag>>";
                     var sourceMatch = Regex.Match(sourceContent, tagPattern, RegexOptions.Singleline);
 
                     if (sourceMatch.Success)
                     {
                         var tagName = sourceMatch.Groups["tag"].Value;
-                        var tagAttributes = sourceMatch.Groups[2].Value;
+                        var tagAttributes = sourceMatch.Groups["attributes"].Value;
                         var openingTag = $"<{tagName}{tagAttributes}>";
                         var closingTag = $"</{tagName}>";
 
-                        if (!targetContent.Contains(openingTag) && !targetContent.Contains(closingTag))
+                        if (!x.Value.Contains(openingTag) && !x.Value.Contains(closingTag))
                         {
-                            translationUnit.Target = openingTag + targetContent + closingTag;
+                            translationUnit.Target = openingTag + x.Value + closingTag;
                         }
+                        else
+                        {
+                            translationUnit.Target = x.Value;
+                        }
+                    }
+                    else
+                    {
+                        translationUnit.Target = x.Value;
                     }
                 }
                 else

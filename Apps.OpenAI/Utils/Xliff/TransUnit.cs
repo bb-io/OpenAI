@@ -10,6 +10,6 @@ namespace Apps.OpenAI.Utils.Xliff
 
         public string Id { get; set; }
 
-        public List<Tag> Tags { get; set; } 
+        public List<Blackbird.Xliff.Utils.Models.Tag> Tags { get; set; } 
     }
 }

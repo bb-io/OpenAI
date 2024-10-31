@@ -107,6 +107,10 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
                         translationUnit.Target = openingTag + targetContent + closingTag;
                     }
                 }
+                else
+                {
+                    translationUnit.Target = batchRequest.Response.Body.Choices[0].Message.Content;
+                }
             }
             else
             {
