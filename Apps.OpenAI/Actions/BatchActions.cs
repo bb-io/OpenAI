@@ -87,34 +87,38 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
                     $"Translation unit with id {batchRequest.CustomId} not found in the XLIFF file.");
             }
 
+            var newTargetContent = batchRequest.Response.Body.Choices[0].Message.Content;
             if (request.AddMissingTrailingTags.HasValue && request.AddMissingTrailingTags == true)
             {
                 var sourceContent = translationUnit.Source;
-                var targetContent = translationUnit.Target;
-                
-                var tagPattern = @"<(?<tag>\w+)([^>]*)>(?<content>.*)</\k<tag>>";
+                    
+                var tagPattern = @"<(?<tag>\w+)(?<attributes>[^>]*)>(?<content>.*?)</\k<tag>>";
                 var sourceMatch = Regex.Match(sourceContent, tagPattern, RegexOptions.Singleline);
 
                 if (sourceMatch.Success)
                 {
                     var tagName = sourceMatch.Groups["tag"].Value;
-                    var tagAttributes = sourceMatch.Groups[2].Value;
+                    var tagAttributes = sourceMatch.Groups["attributes"].Value;
                     var openingTag = $"<{tagName}{tagAttributes}>";
                     var closingTag = $"</{tagName}>";
 
-                    if (!targetContent.Contains(openingTag) && !targetContent.Contains(closingTag))
+                    if (!newTargetContent.Contains(openingTag) && !newTargetContent.Contains(closingTag))
                     {
-                        translationUnit.Target = openingTag + targetContent + closingTag;
+                        translationUnit.Target = openingTag + newTargetContent + closingTag;
+                    }
+                    else
+                    {
+                        translationUnit.Target = newTargetContent;
                     }
                 }
                 else
                 {
-                    translationUnit.Target = batchRequest.Response.Body.Choices[0].Message.Content;
+                    translationUnit.Target = newTargetContent;
                 }
             }
             else
             {
-                translationUnit.Target = batchRequest.Response.Body.Choices[0].Message.Content;
+                translationUnit.Target = newTargetContent;
             }
         }
 
