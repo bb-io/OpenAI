@@ -13,10 +13,10 @@ namespace Apps.OpenAI.Models.Requests.Xliff
         public FileReference File { get; set; }
 
         [Display("Source language")]
-        public string SourceLanguage { get; set; }
+        public string? SourceLanguage { get; set; }
 
         [Display("Target language")]
-        public string TargetLanguage { get; set; }
+        public string? TargetLanguage { get; set; }
 
         [Display("Filter glossary terms")]
         public bool? FilterGlossary { get; set; }
