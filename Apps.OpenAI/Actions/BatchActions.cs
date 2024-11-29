@@ -12,16 +12,13 @@ using Apps.OpenAI.Models.Requests.Xliff;
 using Apps.OpenAI.Models.Responses.Batch;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
-using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Utils.Extensions.Http;
 using Blackbird.Xliff.Utils;
-using Blackbird.Xliff.Utils.Extensions;
 using Blackbird.Xliff.Utils.Models;
 using Newtonsoft.Json;
 using RestSharp;
-using DocumentFormat.OpenXml.EMMA;
 
 namespace Apps.OpenAI.Actions;
 

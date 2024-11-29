@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -29,12 +28,7 @@ using Blackbird.Xliff.Utils;
 using System.Text.RegularExpressions;
 using Apps.OpenAI.Models.Entities;
 using MoreLinq;
-using Apps.OpenAI.Utils.Xliff;
-using Blackbird.Xliff.Utils.Extensions;
-using Blackbird.Xliff.Utils.Models;
 using Apps.OpenAI.Models.Requests.Xliff;
-using DocumentFormat.OpenXml.EMMA;
-using System.Xml.Serialization;
 
 namespace Apps.OpenAI.Actions;
 
