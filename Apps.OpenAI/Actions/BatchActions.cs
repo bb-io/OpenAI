@@ -12,12 +12,10 @@ using Apps.OpenAI.Models.Requests.Xliff;
 using Apps.OpenAI.Models.Responses.Batch;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
-using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Utils.Extensions.Http;
 using Blackbird.Xliff.Utils;
-using Blackbird.Xliff.Utils.Extensions;
 using Blackbird.Xliff.Utils.Models;
 using Newtonsoft.Json;
 using RestSharp;
@@ -209,7 +207,8 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
                             content
                         }
                     },
-                    max_tokens = 4096
+                    max_tokens = !request.ModelId.Contains("o1") ? (int?) 4096 : null,
+                    max_completion_tokens = request.ModelId.Contains("o1") ? (int?) 4096 : null,
                 }
             };
 

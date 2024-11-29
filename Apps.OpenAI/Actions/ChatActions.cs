@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -29,9 +28,6 @@ using Blackbird.Xliff.Utils;
 using System.Text.RegularExpressions;
 using Apps.OpenAI.Models.Entities;
 using MoreLinq;
-using Apps.OpenAI.Utils.Xliff;
-using Blackbird.Xliff.Utils.Extensions;
-using Blackbird.Xliff.Utils.Models;
 using Apps.OpenAI.Models.Requests.Xliff;
 
 namespace Apps.OpenAI.Actions;
@@ -47,9 +43,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         [ActionParameter] ChatRequest input,
         [ActionParameter] GlossaryRequest glossary)
     {
-        var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
-
-        if (input.Image != null) model = "gpt-4-vision-preview";
+        if (input.Image != null) modelIdentifier.ModelId = "gpt-4-vision-preview";
 
         var messages = await GenerateChatMessages(input, glossary);
         var completeMessage = string.Empty;
@@ -57,26 +51,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         while (true)
         {
-            var jsonBody = new
-            {
-                model,
-                Messages = messages,
-                max_tokens = input.MaximumTokens ?? 4096,
-                top_p = input.TopP ?? 1,
-                presence_penalty = input.PresencePenalty ?? 0,
-                frequency_penalty = input.FrequencyPenalty ?? 0,
-                temperature = input.Temperature ?? 1
-            };
-
-            var jsonBodySerialized = JsonConvert.SerializeObject(jsonBody, new JsonSerializerSettings
-            {
-                ContractResolver = new CamelCasePropertyNamesContractResolver()
-            });
-
-            var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
-            request.AddJsonBody(jsonBodySerialized);
-
-            var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+            var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input);
             completeMessage += response.Choices.First().Message.Content;
 
             usage += response.Usage;
@@ -86,17 +61,17 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 break;
             }
 
-            messages.Add(new ChatMessageDto(MessageRoles.Assistant, response.Choices.First().Message.Content));
-            messages.Add(new ChatMessageDto(MessageRoles.User, "Continue your latest message, it was too long."));
+            messages.Append(new ChatMessageDto(MessageRoles.Assistant, response.Choices.First().Message.Content));
+            messages.Append(new ChatMessageDto(MessageRoles.User, "Continue your latest message, it was too long."));
         }
 
         return new()
         {
             Message = completeMessage,
             SystemPrompt = messages.Where(x => x.GetType() == typeof(ChatMessageDto) && x.Role == MessageRoles.System)
-                .Select(x => x.Content).FirstOrDefault() ?? string.Empty,
+                .Select(x => ((ChatMessageDto)x).Content).FirstOrDefault() ?? string.Empty,
             UserPrompt = messages.Where(x => x.GetType() == typeof(ChatMessageDto) && x.Role == MessageRoles.User)
-                .Select(x => x.Content).FirstOrDefault() ?? string.Empty,
+                .Select(x => ((ChatMessageDto)x).Content).FirstOrDefault() ?? string.Empty,
             Usage = usage,
         };
     }
@@ -112,19 +87,46 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         {
             SystemPrompt = input.SystemPrompt,
             Message = input.Message,
-            MaximumTokens = input.MaximumTokens ?? 4096,
-            FrequencyPenalty = input.FrequencyPenalty ?? 0,
+            MaximumTokens = input.MaximumTokens,
+            FrequencyPenalty = input.FrequencyPenalty,
             Image = input.Image,
             Parameters = input.Parameters,
-            PresencePenalty = input.PresencePenalty ?? 0,
-            Temperature = input.Temperature ?? 1,
-            TopP = input.TopP ?? 1
+            PresencePenalty = input.PresencePenalty,
+            Temperature = input.Temperature,
+            TopP = input.TopP
         }, glossary);
     }
 
-    private async Task<List<dynamic>> GenerateChatMessages(ChatRequest input, GlossaryRequest? request)
+    private async Task<ChatCompletionDto> ExecuteChatCompletion(IEnumerable<object> messages, string model = "gpt-4-turbo-preview", BaseChatRequest input = null, object responseFormat = null)
     {
-        var messages = new List<dynamic>();
+        var jsonBody = new
+        {
+            model,
+            Messages = messages,
+            max_tokens = !model.Contains("o1") ? (int?)(input.MaximumTokens ?? 4096) : null,
+            max_completion_tokens = model.Contains("o1") ? (int?)(input.MaximumTokens ?? 4096) : null,
+            top_p = input?.TopP ?? 1,
+            presence_penalty = input?.PresencePenalty ?? 0,
+            frequency_penalty = input?.FrequencyPenalty ?? 0,
+            temperature = input?.Temperature ?? 1,
+            response_format = responseFormat,
+        };
+
+        var jsonBodySerialized = JsonConvert.SerializeObject(jsonBody, new JsonSerializerSettings
+        {
+            ContractResolver = new CamelCasePropertyNamesContractResolver(),
+            NullValueHandling = NullValueHandling.Ignore,
+        });
+
+        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
+        request.AddJsonBody(jsonBodySerialized);
+
+        return await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+    }
+
+    private async Task<IEnumerable<BaseChatMessageDto>> GenerateChatMessages(ChatRequest input, GlossaryRequest? request)
+    {
+        var messages = new List<BaseChatMessageDto>();
 
         if (input.SystemPrompt != null)
             messages.Add(new ChatMessageDto(MessageRoles.System, input.SystemPrompt));
@@ -196,8 +198,6 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     private async Task<RepurposeResponse> HandleRepurposeRequest(string initialPrompt,
         TextChatModelIdentifier modelIdentifier, string content, RepurposeRequest input, GlossaryRequest glossary)
     {
-        var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
-
         var prompt = @$"
                 {initialPrompt}. 
                 {input.AdditionalPrompt}. 
@@ -218,20 +218,9 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, content, true);
             if (glossaryPromptPart != null) prompt += (glossaryAddition + glossaryPromptPart);
         }
+        var messages = new List<ChatMessageDto> { new(MessageRoles.System, prompt), new(MessageRoles.User, content) };
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input);
 
-        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
-        request.AddJsonBody(new
-        {
-            model,
-            messages = new List<ChatMessageDto> { new(MessageRoles.System, prompt), new(MessageRoles.User, content) },
-            max_tokens = input.MaximumTokens ?? 4096,
-            top_p = input.TopP ?? 1,
-            presence_penalty = input.PresencePenalty ?? 0,
-            frequency_penalty = input.FrequencyPenalty ?? 0,
-            temperature = input.Temperature ?? 1
-        });
-
-        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
             SystemPrompt = prompt,
@@ -244,25 +233,13 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     public async Task<ChatResponse> ExecuteBlackbirdPrompt([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] ExecuteBlackbirdPromptRequest input)
     {
-        var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
         var (messages, info) = BlackbirdPromptParser.ParseBlackbirdPrompt(input.Prompt);
 
-        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
-        request.AddJsonBody(new
-        {
-            model,
-            Messages = messages,
-            max_tokens = input.MaximumTokens ?? 4096,
-            temperature = input.Temperature ?? 0.5,
-            response_format = info?.FileFormat is not null
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input,
+            info?.FileFormat is not null
                 ? new { type = BlackbirdPromptParser.ParseFileFormat(info.FileFormat) }
-                : null,
-            top_p = input.TopP ?? 1,
-            presence_penalty = input.PresencePenalty ?? 0,
-            frequency_penalty = input.FrequencyPenalty ?? 0,
-        });
+                : null);
 
-        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
             Message = response.Choices.First().Message.Content,
@@ -278,8 +255,6 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     public async Task<EditResponse> PostEditRequest([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] PostEditRequest input, [ActionParameter] GlossaryRequest glossary)
     {
-        var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
-
         var systemPrompt =
             $"You are receiving a source text{(input.SourceLanguage != null ? $" written in {input.SourceLanguage} " : "")}" +
             $"that was translated by NMT into target text{(input.TargetLanguage != null ? $" written in {input.TargetLanguage}" : "")}. " +
@@ -312,15 +287,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             if (glossaryPromptPart != null) userPrompt += glossaryPromptPart;
         }
 
-        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
-        request.AddJsonBody(new
-        {
-            model,
-            Messages = new List<ChatMessageDto>
-                { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) }
-        });
-
-        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+        var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId);
         return new()
         {
             UserPrompt = userPrompt,
@@ -335,8 +303,6 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     public async Task<ChatResponse> GetTranslationIssues([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] GetTranslationIssuesRequest input, [ActionParameter] GlossaryRequest glossary)
     {
-        var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
-
         var systemPrompt =
             $"You are receiving a source text{(input.SourceLanguage != null ? $" written in {input.SourceLanguage} " : "")}" +
             $"that was translated by NMT into target text{(input.TargetLanguage != null ? $" written in {input.TargetLanguage}" : "")}. " +
@@ -368,17 +334,9 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             if (glossaryPromptPart != null) userPrompt += glossaryPromptPart;
         }
 
-        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
-        request.AddJsonBody(new
-        {
-            model,
-            Messages = new List<ChatMessageDto>
-                { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) },
-            max_tokens = input.MaximumTokens ?? 4096,
-            temperature = input.Temperature ?? 0.5
-        });
+        var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId);
 
-        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
             SystemPrompt = systemPrompt,
@@ -393,8 +351,6 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     public async Task<ChatResponse> GetLqaAnalysis([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] GetTranslationIssuesRequest input, [ActionParameter] GlossaryRequest glossary)
     {
-        var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
-
         var systemPrompt = "Perform an LQA analysis and use the MQM error typology format using all 7 dimensions. " +
                            "Here is a brief description of the seven high-level error type dimensions: " +
                            "1. Terminology – errors arising when a term does not conform to normative domain or organizational terminology standards or when a term in the target text is not the correct, normative equivalent of the corresponding term in the source text. " +
@@ -426,17 +382,9 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             if (glossaryPromptPart != null) userPrompt += glossaryPromptPart;
         }
 
-        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
-        request.AddJsonBody(new
-        {
-            model,
-            Messages = new List<ChatMessageDto>
-                { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) },
-            max_tokens = input.MaximumTokens ?? 4096,
-            temperature = input.Temperature ?? 0.5
-        });
+        var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId);
 
-        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
             SystemPrompt = systemPrompt,
@@ -453,8 +401,6 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     public async Task<MqmAnalysis> GetLqaDimensionValues([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] GetTranslationIssuesRequest input, [ActionParameter] GlossaryRequest glossary)
     {
-        var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
-
         var systemPrompt = "Perform an LQA analysis and use the MQM error typology format using all 7 dimensions. " +
                            "Here is a brief description of the seven high-level error type dimensions: " +
                            "1. Terminology – errors arising when a term does not conform to normative domain or organizational terminology standards or when a term in the target text is not the correct, normative equivalent of the corresponding term in the source text. " +
@@ -486,17 +432,9 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             if (glossaryPromptPart != null) userPrompt += glossaryPromptPart;
         }
 
-        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
-        request.AddJsonBody(new
-        {
-            model,
-            Messages = new List<ChatMessageDto>
-                { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) },
-            temperature = input.Temperature ?? 0.5,
-            response_format = new { type = "json_object" },
-        });
+        var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input, new { type = "json_object" });
 
-        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         try
         {
             var analysis = JsonConvert.DeserializeObject<MqmAnalysis>(response.Choices.First().Message.Content);
@@ -515,24 +453,14 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     public async Task<GlossaryResponse> ExtractGlossary([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] ExtractGlossaryRequest input)
     {
-        var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
-
         var systemPrompt = $"Extract and list all the subject matter terminologies and proper nouns from the text " +
                            $"inputted by the user. Extract words and phrases, instead of sentences. For each term, " +
                            $"provide a terminology entry for the connected language codes: {string.Join(", ", input.Languages)}. Extract words and phrases, instead of sentences. " +
                            $"Return a JSON of the following structure: {{\"result\": [{{{string.Join(", ", input.Languages.Select(x => $"\"{x}\": \"\""))}}}].";
 
-        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
-        request.AddJsonBody(new
-        {
-            model,
-            Messages = new List<ChatMessageDto>
-                { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, input.Content) },
-            temperature = input.Temperature ?? 0.5,
-            response_format = new { type = "json_object" },
-        });
+        var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, input.Content) };
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input, new { type = "json_object" });
 
-        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         List<Dictionary<string, string>> items = null;
         try
         {
@@ -575,8 +503,6 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     public async Task<ChatResponse> LocalizeText([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] LocalizeTextRequest input, [ActionParameter] GlossaryRequest glossary)
     {
-        var model = modelIdentifier.ModelId ?? "gpt-4-turbo-preview";
-
         var systemPrompt = "You are a text localizer. Localize the provided text for the specified locale while " +
                            "preserving the original text structure. Respond with localized text.";
 
@@ -602,17 +528,9 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         userPrompt += "Localized text: ";
 
-        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
-        request.AddJsonBody(new
-        {
-            model,
-            Messages = new List<ChatMessageDto>
-                { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) },
-            max_tokens = input.MaximumTokens ?? 4096,
-            temperature = 0.1f
-        });
+        var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input, new { type = "json_object" });
 
-        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
             SystemPrompt = systemPrompt,
@@ -718,21 +636,9 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             var userPrompt = PromptBuilder.BuildQualityScorePrompt(src, tgt, criteriaPrompt,
                 JsonConvert.SerializeObject(batch.Select(x => new { x.Id, x.Source, x.Target }).ToList()));
 
-            var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
-            request.AddJsonBody(new
-            {
-                model = modelIdentifier.ModelId,
-                messages = new List<ChatMessageDto>
-                {
-                    new(MessageRoles.System, PromptBuilder.DefaultSystemPrompt),
-                    new(MessageRoles.User, userPrompt)
-                },
-                response_format = ResponseFormats.GetQualityScoreXliffResponseFormat(),
-                max_tokens = 4096,
-                temperature = 0.1f
-            });
-
-            var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+            var messages = new List<ChatMessageDto> { new(MessageRoles.System, PromptBuilder.DefaultSystemPrompt), new(MessageRoles.User, userPrompt) };
+            var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, new BaseChatRequest { Temperature = 0.1f }, ResponseFormats.GetQualityScoreXliffResponseFormat());
+            
             var content = response.Choices.First().Message.Content;
             usage += response.Usage;
 
@@ -866,20 +772,9 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 $"{prompt ?? ""} {glossaryPrompt ?? ""} Sentences: \n" +
                 JsonConvert.SerializeObject(batch.Select(x => new { x.Id, x.Source, x.Target }));
 
-            var request = new OpenAIRequest("/chat/completions", Method.Post, Creds)
-                .AddJsonBody(new
-                {
-                    model = modelIdentifier.ModelId,
-                    messages = new List<ChatMessageDto>
-                    {
-                        new(MessageRoles.System, PromptBuilder.DefaultSystemPrompt),
-                        new(MessageRoles.User, userPrompt)
-                    },
-                    response_format = ResponseFormats.GetProcessXliffResponseFormat(),
-                    temperature = 0.1f
-                });
+            var messages = new List<ChatMessageDto> { new(MessageRoles.System, PromptBuilder.DefaultSystemPrompt), new(MessageRoles.User, userPrompt) };
+            var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, new BaseChatRequest { Temperature = 0.1f }, ResponseFormats.GetProcessXliffResponseFormat());
 
-            var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
             var content = response.Choices.First().Message.Content;
             usage += response.Usage;
 
@@ -947,13 +842,9 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                      "localizable content present in the image. Respond with the text found in the image, if any. " +
                      "If no localizable content is detected, provide an empty response.";
 
-        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
         var fileStream = await FileManagementClient.DownloadAsync(input.Image);
         var fileBytes = await fileStream.GetByteData();
-        var jsonBody = new
-        {
-            model = modelIdentifier.ModelId,
-            messages = new List<ChatImageMessageDto>
+        var messages = new List<ChatImageMessageDto>
             {
                 new(MessageRoles.User, new List<ChatImageMessageContentDto>
                 {
@@ -961,21 +852,9 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                     new ChatImageMessageImageContentDto("image_url", new ImageUrlDto(
                         $"data:{input.Image.ContentType};base64,{Convert.ToBase64String(fileBytes)}"))
                 })
-            },
-            max_tokens = input.MaximumTokens ?? 4096,
-            top_p = input.TopP ?? 1,
-            presence_penalty = input.PresencePenalty ?? 0,
-            frequency_penalty = input.FrequencyPenalty ?? 0,
-            temperature = input.Temperature ?? 1
-        };
-        var jsonBodySerialized = JsonConvert.SerializeObject(jsonBody, new JsonSerializerSettings
-        {
-            ContractResolver = new CamelCasePropertyNamesContractResolver()
-        });
+            };
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input);
 
-        request.AddJsonBody(jsonBodySerialized);
-
-        var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
         return new()
         {
             SystemPrompt = prompt,
@@ -1016,21 +895,13 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 }
             }
 
-            var request = new OpenAIRequest("/chat/completions", Method.Post, Creds)
-                .AddJsonBody(new
-                {
-                    model,
-                    messages = new List<ChatMessageDto>
+            var messages = new List<ChatMessageDto>
                     {
                         new(MessageRoles.System, systemPrompt),
                         new(MessageRoles.User, userPrompt)
-                    },
-                    response_format = ResponseFormats.GetProcessXliffResponseFormat(),
-                    max_tokens = 4096,
-                    temperature = 0.1f
-                });
+                    };
+            var response = await ExecuteChatCompletion(messages, model, new BaseChatRequest { Temperature = 0.1f });
 
-            var response = await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
             var content = response.Choices.First().Message.Content;
             usageDto += response.Usage;
             TryCatchHelper.TryCatch(() =>

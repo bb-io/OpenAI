@@ -5,13 +5,10 @@ using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.OpenAI.Models.Requests.Chat;
 
-public class LocalizeTextRequest
+public class LocalizeTextRequest : BaseChatRequest
 {
     public string Text { get; set; }
         
     [StaticDataSource(typeof(LocaleDataSourceHandler))]
     public string Locale { get; set; }
-    
-    [Display("Maximum tokens")]
-    public int? MaximumTokens { get; set; }
 }

@@ -15,7 +15,6 @@ public class ConnectionDefinition : IConnectionDefinition
         {
             Name = "Developer API token",
             AuthenticationType = ConnectionAuthenticationType.Undefined,
-            ConnectionUsage = ConnectionUsage.Actions,
             ConnectionProperties = new List<ConnectionProperty>
             {
                 new(CredNames.OrganizationId),
@@ -31,11 +30,11 @@ public class ConnectionDefinition : IConnectionDefinition
         {
             var organizationId = values.First(v => v.Key == CredNames.OrganizationId);
             var apiKey = values.First(v => v.Key == CredNames.ApiKey);
-            return new AuthenticationCredentialsProvider[]
-            {
-                new(AuthenticationCredentialsRequestLocation.None, organizationId.Key, organizationId.Value),
-                new(AuthenticationCredentialsRequestLocation.None, apiKey.Key, apiKey.Value)
-            };
+            return
+            [
+                new(organizationId.Key, organizationId.Value),
+                new(apiKey.Key, apiKey.Value)
+            ];
         }
         catch (InvalidOperationException)
         {

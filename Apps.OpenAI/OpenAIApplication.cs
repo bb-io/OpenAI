@@ -12,12 +12,6 @@ public class OpenAIApplication : IApplication, ICategoryProvider
         get => [ApplicationCategory.ArtificialIntelligence, ApplicationCategory.Multimedia];
         set { }
     }
-    
-    public string Name
-    {
-        get => "OpenAI";
-        set { }
-    }
 
     public T GetInstance<T>()
     {
