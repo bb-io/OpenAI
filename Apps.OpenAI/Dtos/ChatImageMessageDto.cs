@@ -2,7 +2,7 @@
 
 namespace Apps.OpenAI.Dtos;
 
-public record ChatImageMessageDto(string Role, List<ChatImageMessageContentDto> Content);
+public record ChatImageMessageDto(string Role, List<ChatImageMessageContentDto> Content) : BaseChatMessageDto(Role);
 
 public abstract record ChatImageMessageContentDto(string Type);
 

@@ -21,6 +21,7 @@ using Blackbird.Xliff.Utils.Extensions;
 using Blackbird.Xliff.Utils.Models;
 using Newtonsoft.Json;
 using RestSharp;
+using DocumentFormat.OpenXml.EMMA;
 
 namespace Apps.OpenAI.Actions;
 
@@ -209,7 +210,8 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
                             content
                         }
                     },
-                    max_tokens = 4096
+                    max_tokens = !request.ModelId.Contains("o1") ? (int?) 4096 : null,
+                    max_completion_tokens = request.ModelId.Contains("o1") ? (int?) 4096 : null,
                 }
             };
 

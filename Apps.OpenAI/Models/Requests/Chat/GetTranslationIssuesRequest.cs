@@ -5,7 +5,7 @@ using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.OpenAI.Models.Requests.Chat;
 
-public class GetTranslationIssuesRequest
+public class GetTranslationIssuesRequest : BaseChatRequest
 {
     [Display("Source text")]
     public string SourceText { get; set; }
@@ -21,13 +21,6 @@ public class GetTranslationIssuesRequest
 
     [Display("Target langauge")]
     public string? TargetLanguage { get; set; }
-
-    [Display("Maximum tokens")]
-    public int? MaximumTokens { get; set; }
-
-    [Display("Temperature")]
-    [StaticDataSource(typeof(TemperatureDataSourceHandler))]
-    public float? Temperature { get; set; }
 
     [Display("Target audience")]
     public string? TargetAudience { get; set; }

@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Apps.OpenAI.Models.Requests.Chat
 {
-    public class ExtractGlossaryRequest
+    public class ExtractGlossaryRequest : BaseChatRequest
     {
         [Display("Content")]
         public string Content { get; set; }
@@ -16,10 +16,6 @@ namespace Apps.OpenAI.Models.Requests.Chat
         public IEnumerable<string> Languages { get; set; }
 
         public string? Name { get; set; }
-
-        [Display("Temperature")]
-        [StaticDataSource(typeof(TemperatureDataSourceHandler))]
-        public float? Temperature { get; set; }
 
     }
 }
