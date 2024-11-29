@@ -61,7 +61,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             {
                 model,
                 Messages = messages,
-                max_tokens = input.MaximumTokens,
+                max_tokens = input.MaximumTokens ?? 4096,
                 top_p = input.TopP ?? 1,
                 presence_penalty = input.PresencePenalty ?? 0,
                 frequency_penalty = input.FrequencyPenalty ?? 0,
@@ -112,13 +112,13 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         {
             SystemPrompt = input.SystemPrompt,
             Message = input.Message,
-            MaximumTokens = input.MaximumTokens,
-            FrequencyPenalty = input.FrequencyPenalty,
+            MaximumTokens = input.MaximumTokens ?? 4096,
+            FrequencyPenalty = input.FrequencyPenalty ?? 0,
             Image = input.Image,
             Parameters = input.Parameters,
-            PresencePenalty = input.PresencePenalty,
-            Temperature = input.Temperature,
-            TopP = input.TopP
+            PresencePenalty = input.PresencePenalty ?? 0,
+            Temperature = input.Temperature ?? 1,
+            TopP = input.TopP ?? 1
         }, glossary);
     }
 
@@ -224,7 +224,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         {
             model,
             messages = new List<ChatMessageDto> { new(MessageRoles.System, prompt), new(MessageRoles.User, content) },
-            max_tokens = input.MaximumTokens ?? 500,
+            max_tokens = input.MaximumTokens ?? 4096,
             top_p = input.TopP ?? 1,
             presence_penalty = input.PresencePenalty ?? 0,
             frequency_penalty = input.FrequencyPenalty ?? 0,
@@ -962,7 +962,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                         $"data:{input.Image.ContentType};base64,{Convert.ToBase64String(fileBytes)}"))
                 })
             },
-            max_tokens = input.MaximumTokens ?? 1000,
+            max_tokens = input.MaximumTokens ?? 4096,
             top_p = input.TopP ?? 1,
             presence_penalty = input.PresencePenalty ?? 0,
             frequency_penalty = input.FrequencyPenalty ?? 0,
