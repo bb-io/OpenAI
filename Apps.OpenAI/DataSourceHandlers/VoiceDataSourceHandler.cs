@@ -1,20 +1,21 @@
 ﻿using System.Collections.Generic;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.OpenAI.DataSourceHandlers;
 
-public class VoiceDataSourceHandler : IStaticDataSourceHandler
+public class VoiceDataSourceHandler : IStaticDataSourceItemHandler
 {
-    public Dictionary<string, string> GetData()
+    public IEnumerable<DataSourceItem> GetData()
     {
-        return new Dictionary<string, string>
+        return new List<DataSourceItem>
         {
-            { "alloy", "Alloy" },
-            { "echo", "Echo" },
-            { "fable", "Fable" },
-            { "onyx", "Onyx" },
-            { "nova", "Nova" },
-            { "shimmer", "Shimmer" },
+            new( "alloy", "Alloy" ),
+            new( "echo", "Echo" ),
+            new( "fable", "Fable" ),
+            new( "onyx", "Onyx" ),
+            new( "nova", "Nova" ),
+            new( "shimmer", "Shimmer" ),
         };
     }
 }

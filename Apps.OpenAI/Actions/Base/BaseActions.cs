@@ -23,7 +23,7 @@ public abstract class BaseActions : OpenAIInvocable
     protected BaseActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
         : base(invocationContext)
     {
-        Client = new OpenAIClient();
+        Client = new OpenAIClient(invocationContext.AuthenticationCredentialsProviders);
         FileManagementClient = fileManagementClient;
     }
     

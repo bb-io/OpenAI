@@ -67,7 +67,7 @@ public class AssistantActions : BaseActions
 
     private async Task<string> GetThreadLastMessage(string threadId)
     {
-        var request = new OpenAIRequest($"/threads/{threadId}/messages", Method.Get, Creds, Beta);
+        var request = new OpenAIRequest($"/threads/{threadId}/messages", Method.Get, Beta);
         var response = await Client.ExecuteWithErrorHandling<DataDto<AssistantResponseDto>>(request);
         if (response.Data.Count() < 2) throw new Exception("The assistant did not respond to the message.");
         var lastMessage = response.Data.FirstOrDefault();
@@ -76,13 +76,13 @@ public class AssistantActions : BaseActions
 
     private Task<RunDto> GetRun(string threadId, string runId)
     {
-        var request = new OpenAIRequest($"/threads/{threadId}/runs/{runId}", Method.Get, Creds, Beta);
+        var request = new OpenAIRequest($"/threads/{threadId}/runs/{runId}", Method.Get, Beta);
         return Client.ExecuteWithErrorHandling<RunDto>(request);
     }
 
     private Task<RunDto> StartRun(RunRequest input, TextChatModelIdentifier modelIdentifier, List<string> fileIds)
     {
-        var request = new OpenAIRequest("/threads/runs", Method.Post, Creds, Beta);
+        var request = new OpenAIRequest("/threads/runs", Method.Post, Beta);
 
         var jsonBody = new
         {
@@ -113,7 +113,7 @@ public class AssistantActions : BaseActions
 
     private async Task<FileDto> UploadFile(FileReference file)
     {
-        var request = new OpenAIRequest($"/files", Method.Post, Creds);
+        var request = new OpenAIRequest($"/files", Method.Post);
         var fileStream = await FileManagementClient.DownloadAsync(file);
         var fileBytes = await fileStream.GetByteData();
         request.AddFile("file", fileBytes, file.Name);
@@ -123,10 +123,10 @@ public class AssistantActions : BaseActions
 
     private async Task<FileReference> DownloadFile(string fileID)
     {
-        var infoRequest = new OpenAIRequest($"/files/{fileID}", Method.Get, Creds);
+        var infoRequest = new OpenAIRequest($"/files/{fileID}", Method.Get);
         var infoResponse = await Client.ExecuteWithErrorHandling<FileDto>(infoRequest);
 
-        var downloadRequest = new OpenAIRequest($"/files/{fileID}/content", Method.Get, Creds);
+        var downloadRequest = new OpenAIRequest($"/files/{fileID}/content", Method.Get);
         var downloadResponse = await Client.ExecuteWithErrorHandling(downloadRequest);
 
         using var stream = new MemoryStream(downloadResponse.RawBytes);

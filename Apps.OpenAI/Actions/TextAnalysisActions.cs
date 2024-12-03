@@ -32,7 +32,7 @@ public class TextAnalysisActions : BaseActions
     {
         var model = modelIdentifier.ModelId ?? "text-embedding-ada-002";
 
-        var request = new OpenAIRequest("/embeddings", Method.Post, Creds);
+        var request = new OpenAIRequest("/embeddings", Method.Post);
         request.AddJsonBody(new
         {
             model,

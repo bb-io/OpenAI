@@ -118,7 +118,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             NullValueHandling = NullValueHandling.Ignore,
         });
 
-        var request = new OpenAIRequest("/chat/completions", Method.Post, Creds);
+        var request = new OpenAIRequest("/chat/completions", Method.Post);
         request.AddJsonBody(jsonBodySerialized);
 
         return await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);

@@ -2,14 +2,15 @@
 using System.Linq;
 using Apps.OpenAI.Extensions;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.OpenAI.DataSourceHandlers;
 
-public class TopPDataSourceHandler : IStaticDataSourceHandler
+public class TopPDataSourceHandler : IStaticDataSourceItemHandler
 {
-    public Dictionary<string, string> GetData()
+    public IEnumerable<DataSourceItem> GetData()
     {
         return DataSourceHandlersExtensions.GenerateFormattedFloatArray(0.0f, 1.0f, 0.1f)
-            .ToDictionary(p => p, p => p);
+            .Select(x => new DataSourceItem(x, x));
     }
 }

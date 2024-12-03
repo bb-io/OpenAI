@@ -9,32 +9,10 @@ using Blackbird.Applications.Sdk.Common.Invocation;
 
 namespace Apps.OpenAI.DataSourceHandlers;
 
-public class LocaleDataSourceHandler : IStaticDataSourceHandler
+public class LocaleDataSourceHandler : IStaticDataSourceItemHandler
 {
-
-    public Dictionary<string, string> GetData()
+    public IEnumerable<DataSourceItem> GetData()
     {
-        return CultureInfo.GetCultures(CultureTypes.SpecificCultures).ToDictionary(c => c.Name, c => c.DisplayName);
+        return CultureInfo.GetCultures(CultureTypes.SpecificCultures).Select(c => new DataSourceItem(c.Name, c.DisplayName));
     }
-
-    //private Dictionary<string, string> GetCommonLocales()
-    //{
-    //    return new()
-    //    {
-    //        { "zh-Hans-CN", "Chinese (Simplified, China)" },
-    //        { "en-AU", "English (Australia)"},
-    //        { "en-CA", "English (Canada)" },
-    //        { "en-GB", "English (United Kingdom)" },
-    //        { "en-US", "English (United States)" },
-    //        { "fr-CA", "French (Canada)" },
-    //        { "fr-FR", "French (France)" },
-    //        { "de-DE", "German (Germany)" },
-    //        { "hi-IN", "Hindi (India)" },
-    //        { "it-IT", "Italian (Italy)" },
-    //        { "ja-JP", "Japanese (Japan)" },
-    //        { "pt-BR", "Portuguese (Brazil)" },
-    //        { "es-MX", "Spanish (Mexico)" },
-    //        { "es-ES", "Spanish (Spain)" }
-    //    };
-    //}
 }

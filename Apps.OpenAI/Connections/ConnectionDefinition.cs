@@ -17,28 +17,12 @@ public class ConnectionDefinition : IConnectionDefinition
             AuthenticationType = ConnectionAuthenticationType.Undefined,
             ConnectionProperties = new List<ConnectionProperty>
             {
-                new(CredNames.OrganizationId),
                 new(CredNames.ApiKey) { Sensitive = true }
             }
         }
     };
 
     public IEnumerable<AuthenticationCredentialsProvider> CreateAuthorizationCredentialsProviders(
-        Dictionary<string, string> values)
-    {
-        try
-        {
-            var organizationId = values.First(v => v.Key == CredNames.OrganizationId);
-            var apiKey = values.First(v => v.Key == CredNames.ApiKey);
-            return
-            [
-                new(organizationId.Key, organizationId.Value),
-                new(apiKey.Key, apiKey.Value)
-            ];
-        }
-        catch (InvalidOperationException)
-        {
-            throw new Exception("Organization ID and/or API key are not specified in connection.");
-        }
-    }
+        Dictionary<string, string> values) =>
+        values.Select(x => new AuthenticationCredentialsProvider(x.Key, x.Value)).ToList();
 }

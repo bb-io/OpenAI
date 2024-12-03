@@ -1,18 +1,18 @@
 ﻿using System.Collections.Generic;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.OpenAI.DataSourceHandlers;
 
-public class AudioResponseFormatDataSourceHandler : IStaticDataSourceHandler
-{
-    public Dictionary<string, string> GetData()
+public class AudioResponseFormatDataSourceHandler : IStaticDataSourceItemHandler
+{    public IEnumerable<DataSourceItem> GetData()
     {
-        return new()
+        return new List<DataSourceItem>()
         {
-            { "mp3", "MP3" },
-            { "opus", "OPUS" },
-            { "aac", "AAC" },
-            { "flac", "FLAC" }
+            new( "mp3", "MP3" ),
+            new( "opus", "OPUS" ),
+            new( "aac", "AAC" ),
+            new( "flac", "FLAC"),
         };
     }
 }

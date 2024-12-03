@@ -7,17 +7,17 @@ using Blackbird.Applications.Sdk.Common.Invocation;
 
 namespace Apps.OpenAI.DataSourceHandlers;
 
-public class ImageSizeDataSourceHandler : IStaticDataSourceHandler
+public class ImageSizeDataSourceHandler : IStaticDataSourceItemHandler
 {
-    public Dictionary<string, string> GetData()
+    public IEnumerable<DataSourceItem> GetData()
     {
-        return new Dictionary<string, string>
+        return new List<DataSourceItem>
         {
-            { "256x256", "256x256 (dall-e-2)" },
-            { "512x512", "512x512 (dall-e-2)" },
-            { "1024x1024", "1024x1024" },
-            { "1792x1024", "1792x1024 (dall-e-3)" },
-            { "1024x1792", "1024x1792 (dall-e-3)" },
+            new( "256x256", "256x256 (dall-e-2)" ),
+            new( "512x512", "512x512 (dall-e-2)" ),
+            new( "1024x1024", "1024x1024" ),
+            new( "1792x1024", "1792x1024 (dall-e-3)" ),
+            new( "1024x1792", "1024x1792 (dall-e-3)" ),
         };
     }
 }

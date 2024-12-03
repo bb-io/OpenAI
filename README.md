@@ -13,7 +13,6 @@ This OpenAI app in Blackbird grants you access to all API endpoints and models t
 Before you can connect you need to make sure that:
 
 - You have an [OpenAI account](https://platform.openai.com/signup).
-- You have an organization and have obtained its Organization ID that you can find in your [OpenAI organization settings](https://platform.openai.com/account/org-settings). The organization ID has the shape `org-xxxxxxxxxxxxxxxxxxxxxxxx`.
 - You have generated a new API key in the [API keys](https://platform.openai.com/account/api-keys) section, granting programmatic access to OpenAI models on a 'pay-as-you-go' basis. With this, you only pay for your actual usage, which [starts at $0,002 per 1,000 tokens](https://openai.com/pricing) for the fastest chat model. Note that the ChatGPT Plus subscription plan is not applicable for this; it only provides access to the limited web interface at chat.openai.com and doesn't include OpenAI API access. Ensure you copy the entire API key, displayed once upon creation, rather than an abbreviated version. The API key has the shape `sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`.
 - Your API account has a payment method and a positive balance, with a minimum of $5. You can set this up in the [Billing settings](https://platform.openai.com/account/billing/overview) section.
 
@@ -21,12 +20,11 @@ Before you can connect you need to make sure that:
 
 ## Connecting
 
-1. Navigate to apps and search for OpenAI. If you cannot find OpenAI then click _Add App_ in the top right corner, select OpenAI and add the app to your Blackbird environment.
+1. Navigate to apps and search for OpenAI.
 2. Click _Add Connection_.
 3. Name your connection for future reference e.g. 'My OpenAI connection'.
-4. Fill in your Organization ID obtained earlier.
-5. Fill in your API key obtained earlier.
-6. Click _Connect_.
+4. Fill in your API key obtained earlier.
+5. Click _Connect_.
 
 ![1694611695232](image/README/1694611695232.png)
 

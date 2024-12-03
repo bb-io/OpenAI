@@ -8,12 +8,11 @@ using Blackbird.Applications.Sdk.Common.Invocation;
 
 namespace Apps.OpenAI.DataSourceHandlers;
 
-public class SpeedDataSourceHandler : IStaticDataSourceHandler
+public class SpeedDataSourceHandler : IStaticDataSourceItemHandler
 {
-
-    public Dictionary<string, string> GetData()
+    public IEnumerable<DataSourceItem> GetData()
     {
         return DataSourceHandlersExtensions.GenerateFormattedFloatArray(0.25f, 4.0f, 0.05f, "0.00")
-            .ToDictionary(speed => speed, speed => speed);
+            .Select(speed => new DataSourceItem(speed, speed));
     }
 }

@@ -1,16 +1,17 @@
 ﻿using System.Collections.Generic;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.OpenAI.DataSourceHandlers;
 
-public class EncodingDataSourceHandler : IStaticDataSourceHandler
+public class EncodingDataSourceHandler : IStaticDataSourceItemHandler
 {
-    public Dictionary<string, string> GetData()
+    public IEnumerable<DataSourceItem> GetData()
     {
-        return new Dictionary<string, string>()
+        return new List<DataSourceItem>()
         {
-            { "cl100k_base", "cl100k base" },
-            { "p50k_base", "p50k base" }
+            new( "cl100k_base", "cl100k base" ),
+            new( "p50k_base", "p50k base"),
         };
     }
 }

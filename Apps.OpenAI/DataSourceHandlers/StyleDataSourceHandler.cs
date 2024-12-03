@@ -8,14 +8,14 @@ using Blackbird.Applications.Sdk.Common.Invocation;
 
 namespace Apps.OpenAI.DataSourceHandlers;
 
-public class StyleDataSourceHandler : IStaticDataSourceHandler
+public class StyleDataSourceHandler : IStaticDataSourceItemHandler
 {
-    public Dictionary<string, string> GetData()
+    public IEnumerable<DataSourceItem> GetData()
     {
-        return new Dictionary<string, string>
+        return new List<DataSourceItem>
         {
-            { "vivid", "Vivid" },
-            { "natural", "Natural" }
-        };       
+            new( "vivid", "Vivid" ),
+            new( "natural", "Natural"),
+        };
     }
 }

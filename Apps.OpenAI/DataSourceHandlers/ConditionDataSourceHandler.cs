@@ -1,23 +1,21 @@
 ﻿using Blackbird.Applications.Sdk.Common.Dictionaries;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 using System.Collections.Generic;
 
 namespace Apps.OpenAI.DataSourceHandlers
 {
-    public class ConditionDataSourceHandler : IStaticDataSourceHandler
+    public class ConditionDataSourceHandler : IStaticDataSourceItemHandler
     {
-        private static Dictionary<string, string> EnumValues => new()
+        public IEnumerable<DataSourceItem> GetData()
         {
-            { ">", "Score is above threshold" },
-            { ">=", "Score is above or equal threshold" },
-            { "=", "Score is same as threshold" },
-            { "<", "Score is below threshold" },
-            { "<=", "Score is below or equal threshold" }
-        };
-
-        public Dictionary<string, string> GetData()
-        {
-            return EnumValues;
+            return new List<DataSourceItem>()
+            {
+                new( ">", "Score is above threshold" ),
+                new( ">=", "Score is above or equal threshold" ),
+                new( "=", "Score is same as threshold" ),
+                new( "<", "Score is below threshold" ),
+                new( "<=", "Score is below or equal threshold"),
+            };
         }
-
     }
 }

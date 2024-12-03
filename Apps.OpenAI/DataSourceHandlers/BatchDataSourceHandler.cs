@@ -12,17 +12,15 @@ using RestSharp;
 namespace Apps.OpenAI.DataSourceHandlers;
 
 public class BatchDataSourceHandler(InvocationContext invocationContext)
-    : BaseInvocable(invocationContext), IAsyncDataSourceHandler
+    : BaseInvocable(invocationContext), IAsyncDataSourceItemHandler
 {
-    public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context,
-        CancellationToken cancellationToken)
+    public async Task<IEnumerable<DataSourceItem>> GetDataAsync(DataSourceContext context, CancellationToken cancellationToken)
     {
-        var client = new OpenAIClient();
-        var request = new OpenAIRequest("/batches?limit=100", Method.Get, InvocationContext.AuthenticationCredentialsProviders);
+        var client = new OpenAIClient(InvocationContext.AuthenticationCredentialsProviders);
+        var request = new OpenAIRequest("/batches?limit=100", Method.Get);
         var batches = await client.ExecuteWithErrorHandling<BatchPaginationResponse>(request);
-        var modelsDictionary = batches.Data
+        return batches.Data
             .Where(model => context.SearchString == null || model.Id.Contains(context.SearchString))
-            .ToDictionary(model => model.Id, model => model.Id);
-        return modelsDictionary;
+            .Select(model => new DataSourceItem( model.Id, model.Id));
     }
 }

@@ -14,8 +14,8 @@ namespace Apps.OpenAI.Connections
         public async ValueTask<ConnectionValidationResponse> ValidateConnection(
             IEnumerable<AuthenticationCredentialsProvider> authProviders, CancellationToken cancellationToken)
         {
-            var client = new OpenAIClient();
-            var request = new OpenAIRequest("/models", Method.Get, authProviders);
+            var client = new OpenAIClient(authProviders);
+            var request = new OpenAIRequest("/models", Method.Get);
 
             try
             {

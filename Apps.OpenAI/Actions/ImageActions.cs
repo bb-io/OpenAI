@@ -29,7 +29,7 @@ public class ImageActions : BaseActions
         [ActionParameter] ImageRequest input)
     {
         var model = modelIdentifier.ModelId ?? "dall-e-3";
-        var request = new OpenAIRequest("/images/generations", Method.Post, Creds);
+        var request = new OpenAIRequest("/images/generations", Method.Post);
 
         if (model == "dall-e-3")
             request.AddJsonBody(new
