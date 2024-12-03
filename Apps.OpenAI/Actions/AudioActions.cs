@@ -27,7 +27,7 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
                                                         "video file (mp3, mp4, mpeg, mpga, m4a, wav, or webm).")]
     public async Task<TranslationResponse> CreateTranslation([ActionParameter] TranslationRequest input)
     {
-        var request = new OpenAIRequest("/audio/translations", Method.Post, Creds);
+        var request = new OpenAIRequest("/audio/translations", Method.Post);
         var fileStream = await FileManagementClient.DownloadAsync(input.File);
         var fileBytes = await fileStream.GetByteData();
         request.AddFile("file", fileBytes, input.File.Name);
@@ -46,7 +46,7 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
                                                   "mp4, mpeg, mpga, m4a, wav, or webm).")]
     public async Task<TranscriptionResponse> CreateTranscription([ActionParameter] TranscriptionRequest input)
     {
-        var request = new OpenAIRequest("/audio/transcriptions", Method.Post, Creds);
+        var request = new OpenAIRequest("/audio/transcriptions", Method.Post);
         var fileStream = await FileManagementClient.DownloadAsync(input.File);
         var fileBytes = await fileStream.GetByteData();
         request.AddFile("file", fileBytes, input.File.Name);
@@ -83,7 +83,7 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
         var model = modelIdentifier.ModelId ?? "tts-1-hd";
         var responseFormat = input.ResponseFormat ?? "mp3";
 
-        var request = new OpenAIRequest("/audio/speech", Method.Post, Creds);
+        var request = new OpenAIRequest("/audio/speech", Method.Post);
         request.AddJsonBody(new
         {
             model,

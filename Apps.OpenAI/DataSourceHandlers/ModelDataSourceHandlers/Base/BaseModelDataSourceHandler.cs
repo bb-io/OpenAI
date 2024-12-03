@@ -12,7 +12,7 @@ using RestSharp;
 
 namespace Apps.OpenAI.DataSourceHandlers.ModelDataSourceHandlers.Base;
 
-public abstract class BaseModelDataSourceHandler : BaseInvocable, IAsyncDataSourceHandler
+public abstract class BaseModelDataSourceHandler : BaseInvocable, IAsyncDataSourceItemHandler
 {
     protected abstract Func<string, bool> ModelIdFilter { get; }
     
@@ -20,16 +20,14 @@ public abstract class BaseModelDataSourceHandler : BaseInvocable, IAsyncDataSour
     {
     }
 
-    public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context,
-        CancellationToken cancellationToken)
+    public async Task<IEnumerable<DataSourceItem>> GetDataAsync(DataSourceContext context, CancellationToken cancellationToken)
     {
-        var client = new OpenAIClient();
-        var request = new OpenAIRequest("/models", Method.Get, InvocationContext.AuthenticationCredentialsProviders);
+        var client = new OpenAIClient(InvocationContext.AuthenticationCredentialsProviders);
+        var request = new OpenAIRequest("/models", Method.Get);
         var models = await client.ExecuteWithErrorHandling<ModelsList>(request);
-        var modelsDictionary = models.Data
+        return models.Data
             .Where(model => ModelIdFilter(model.Id))
             .Where(model => context.SearchString == null || model.Id.Contains(context.SearchString))
-            .ToDictionary(model => model.Id, model => model.Id);
-        return modelsDictionary;
+            .Select(model => new DataSourceItem(model.Id, model.Id));
     }
 }

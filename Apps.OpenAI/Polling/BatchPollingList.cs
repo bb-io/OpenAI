@@ -32,7 +32,7 @@ public class BatchPollingList(InvocationContext invocationContext) : BaseActions
             };
         }
         
-        var getBatchRequest = new OpenAIRequest($"/batches/{identifier.BatchId}", Method.Get, Creds);
+        var getBatchRequest = new OpenAIRequest($"/batches/{identifier.BatchId}", Method.Get);
         var batch = await Client.ExecuteWithErrorHandling<BatchResponse>(getBatchRequest);
         var triggered = batch.Status == "completed" && !request.Memory.Triggered;
         return new()

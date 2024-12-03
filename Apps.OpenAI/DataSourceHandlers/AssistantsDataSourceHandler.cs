@@ -8,10 +8,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Blackbird.Applications.Sdk.Common.Authentication;
 
 namespace Apps.OpenAI.DataSourceHandlers
 {
-    public class AssistantsDataSourceHandler : BaseInvocable, IAsyncDataSourceHandler
+    public class AssistantsDataSourceHandler : BaseInvocable, IAsyncDataSourceItemHandler
     {
         private const string Beta = "assistants=v1";
 
@@ -19,17 +20,15 @@ namespace Apps.OpenAI.DataSourceHandlers
         {
         }
 
-        public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context,
-            CancellationToken cancellationToken)
+        public async Task<IEnumerable<DataSourceItem>> GetDataAsync(DataSourceContext context, CancellationToken cancellationToken)
         {
-            var client = new OpenAIClient();
-            var request = new OpenAIRequest("/assistants", Method.Get, InvocationContext.AuthenticationCredentialsProviders, Beta);
+            var client = new OpenAIClient(InvocationContext.AuthenticationCredentialsProviders);
+            var request = new OpenAIRequest("/assistants", Method.Get, Beta);
             request.AddQueryParameter("limit", 100);
             var assistants = await client.ExecuteWithErrorHandling<DataDto<AssistantDto>>(request);
-            var dictionary = assistants.Data
+            return assistants.Data
                 .Where(assistant => context.SearchString == null || assistant.Name.Contains(context.SearchString))
-                .ToDictionary(assistant => assistant.Id, assistant => assistant.Name);
-            return dictionary;
+                .Select(assistant => new DataSourceItem(assistant.Id, assistant.Name));
         }
     }
 }

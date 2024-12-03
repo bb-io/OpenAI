@@ -233,12 +233,12 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
 
         var bytes = memoryStream.ToArray();
 
-        var uploadFileRequest = new OpenAIRequest("/files", Method.Post, Creds)
+        var uploadFileRequest = new OpenAIRequest("/files", Method.Post)
             .AddFile("file", bytes, $"{Guid.NewGuid()}.jsonl", "application/jsonl")
             .AddParameter("purpose", "batch");
         var file = await Client.ExecuteWithErrorHandling<FileDto>(uploadFileRequest);
 
-        var createBatchRequest = new OpenAIRequest("/batches", Method.Post, Creds)
+        var createBatchRequest = new OpenAIRequest("/batches", Method.Post)
             .WithJsonBody(new
             {
                 input_file_id = file.Id,
@@ -250,7 +250,7 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
     
     private async Task<List<BatchRequestDto>> GetBatchRequestsAsync(string batchId)
     {
-        var getBatchRequest = new OpenAIRequest($"/batches/{batchId}", Method.Get, Creds);
+        var getBatchRequest = new OpenAIRequest($"/batches/{batchId}", Method.Get);
         var batch = await Client.ExecuteWithErrorHandling<BatchResponse>(getBatchRequest);
     
         if (batch.Status != "completed")
@@ -266,7 +266,7 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
         }
 
         var fileContentResponse = await Client.ExecuteWithErrorHandling(
-            new OpenAIRequest($"/files/{batch.OutputFileId}/content", Method.Get, Creds));
+            new OpenAIRequest($"/files/{batch.OutputFileId}/content", Method.Get));
 
         var batchRequests = new List<BatchRequestDto>();
         using var reader = new StringReader(fileContentResponse.Content!);

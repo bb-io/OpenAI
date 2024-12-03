@@ -1,16 +1,17 @@
 ﻿using System.Collections.Generic;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.OpenAI.DataSourceHandlers;
 
-public class QualityDataSourceHandler : IStaticDataSourceHandler
+public class QualityDataSourceHandler : IStaticDataSourceItemHandler
 {
-    public Dictionary<string, string> GetData()
+    public IEnumerable<DataSourceItem> GetData()
     {
-        return new Dictionary<string, string>()
+        return new List<DataSourceItem>()
         {
-            { "hd", "HD" },
-            { "standard", "Standard" }
-        };        
+            new( "hd", "HD" ),
+            new( "standard", "Standard"),
+        };
     }
 }

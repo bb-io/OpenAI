@@ -1,16 +1,17 @@
 ﻿using System.Collections.Generic;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.OpenAI.DataSourceHandlers;
 
-public class TimestampGranularitiesSourceHandler : IStaticDataSourceHandler
+public class TimestampGranularitiesSourceHandler : IStaticDataSourceItemHandler
 {
-    public Dictionary<string, string> GetData()
+    public IEnumerable<DataSourceItem> GetData()
     {
-        return new()
+        return new List<DataSourceItem>()
         {
-            { "word", "Word" },
-            { "segment", "Segment" }
+            new( "word", "Word" ),
+            new( "segment", "Segment"),
         };
     }
 }
