@@ -22,14 +22,14 @@ public class OpenAIClient : BlackBirdRestClient
     protected override Exception ConfigureErrorException(RestResponse response)
     {
         if (response.Content == null)
-            throw new Exception(response.ErrorMessage);
+            throw new PluginApplicationException(response.ErrorMessage);
 
         var error = JsonConvert.DeserializeObject<ErrorDtoWrapper>(response.Content, JsonSettings);
 
         if (response.StatusCode == HttpStatusCode.NotFound && error.Error.Type == "invalid_request_error")
             throw new PluginMisconfigurationException("Model chosen is not suitable for this task. Please choose a compatible model.");
         
-        return new(error?.Error?.Message ?? response.ErrorException.Message);
+        return new PluginApplicationException(error?.Error?.Message ?? response.ErrorException.Message);
     }
     
     protected async Task<T> ExecuteLongTimeRequest<T>(RestRequest request) where T : class
