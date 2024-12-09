@@ -3,14 +3,14 @@ using Apps.OpenAI.DataSourceHandlers.ModelDataSourceHandlers;
 using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Chat;
 using Blackbird.Applications.Sdk.Common.Dynamic;
-using OpenAITests.Base;
+using Tests.OpenAI.Base;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OpenAITests
+namespace Tests.OpenAI
 {
     [TestClass]
     public class Chat : TestBase

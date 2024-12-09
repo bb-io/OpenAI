@@ -3,7 +3,7 @@ using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.System;
 using Microsoft.Extensions.Configuration;
 
-namespace OpenAITests.Base
+namespace Tests.OpenAI.Base
 {
     public class TestBase
     {

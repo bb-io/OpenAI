@@ -2,9 +2,9 @@ using Apps.OpenAI.Connections;
 using Apps.OpenAI.Constants;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Newtonsoft.Json.Linq;
-using OpenAITests.Base;
+using Tests.OpenAI.Base;
 
-namespace OpenAITests
+namespace Tests.OpenAI
 {
     [TestClass]
     public class Validator : TestBase

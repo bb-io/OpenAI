@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OpenAITests.Base
+namespace Tests.OpenAI.Base
 {
     public class FileManager(string folderLocation) : IFileManagementClient
     {
