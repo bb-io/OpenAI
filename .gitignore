@@ -358,3 +358,4 @@ healthchecksdb
 /ConsoleApp2
 /ConsoleApp3
 /OpenAITests/appsettings.json
+/Tests.OpenAI/appsettings.json
