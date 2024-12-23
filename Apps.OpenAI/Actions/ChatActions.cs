@@ -103,8 +103,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         {
             model,
             Messages = messages,
-            max_tokens = !model.Contains("o1") ? (int?)(input.MaximumTokens ?? 4096) : null,
-            max_completion_tokens = model.Contains("o1") ? (int?)(input.MaximumTokens ?? 4096) : null,
+            max_tokens = !model.Contains("o1") ? (int?)(input?.MaximumTokens ?? 4096) : null,
+            max_completion_tokens = model.Contains("o1") ? (int?)(input?.MaximumTokens ?? 4096) : null,
             top_p = input?.TopP ?? 1,
             presence_penalty = input?.PresencePenalty ?? 0,
             frequency_penalty = input?.FrequencyPenalty ?? 0,
