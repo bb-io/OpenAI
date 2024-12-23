@@ -5,7 +5,7 @@ VisualStudioVersion = 17.4.33205.214
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Apps.OpenAI", "Apps.OpenAI\Apps.OpenAI.csproj", "{D82582CD-7BD9-49A0-85C7-77EFF8E511BF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenAITests", "OpenAITests\OpenAITests.csproj", "{6023FD60-EB0B-49D9-91C9-7BA45646BF77}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests.OpenAI", "Tests.OpenAI\Tests.OpenAI.csproj", "{6023FD60-EB0B-49D9-91C9-7BA45646BF77}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,6 +18,7 @@ Global
 		{D82582CD-7BD9-49A0-85C7-77EFF8E511BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D82582CD-7BD9-49A0-85C7-77EFF8E511BF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6023FD60-EB0B-49D9-91C9-7BA45646BF77}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6023FD60-EB0B-49D9-91C9-7BA45646BF77}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6023FD60-EB0B-49D9-91C9-7BA45646BF77}.Release|Any CPU.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
