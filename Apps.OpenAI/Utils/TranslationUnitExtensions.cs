@@ -6,17 +6,9 @@ public static class TranslationUnitExtensions
 {
     public static bool IsLocked(this TranslationUnit translationUnit)
     {
-        if (translationUnit.Attributes.TryGetValue("mq:locked", out var mqXliffLocked))
+        if (translationUnit.Attributes.TryGetValue("locked", out var locked))
         {
-            if (mqXliffLocked == "locked")
-            {
-                return true;
-            }
-        }
-        
-        if (translationUnit.Attributes.TryGetValue("m:locked", out var mXliffLocked))
-        {
-            if (mXliffLocked == "true")
+            if (locked == "locked" || locked == "true")
             {
                 return true;
             }
