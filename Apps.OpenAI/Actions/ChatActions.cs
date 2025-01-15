@@ -529,7 +529,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         userPrompt += "Localized text: ";
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input, new { type = "json_object" });
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input);
 
         return new()
         {
