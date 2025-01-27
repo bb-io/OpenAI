@@ -534,7 +534,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         userPrompt += "Localized text: ";
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input, new { type = "json_object" });
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input);
 
         return new()
         {
@@ -759,12 +759,17 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         foreach (var batch in batches)
         {
             string? glossaryPrompt = null;
+
+            var filteredBatch = input.PostEditLockedSegments == true
+                ? batch 
+                : batch.Where(x => !x.IsLocked()).ToArray();
+            
             if (glossary?.Glossary != null)
             {
                 var glossaryPromptPart =
                     await GetGlossaryPromptPart(glossary.Glossary,
-                        string.Join(';', batch.Select(x => x.Source)) + ";" +
-                        string.Join(';', batch.Select(x => x.Target)), input.FilterGlossary ?? true);
+                        string.Join(';', filteredBatch.Select(x => x.Source)) + ";" +
+                        string.Join(';', filteredBatch.Select(x => x.Target)), input.FilterGlossary ?? true);
                 if (glossaryPromptPart != null)
                 {
                     glossaryPrompt +=
@@ -781,7 +786,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 "Review and edit the translated target text as necessary to ensure it is a correct and accurate translation of the source text. " +
                 "If you see XML tags in the source also include them in the target text, don't delete or modify them. " +
                 $"{prompt ?? ""} {glossaryPrompt ?? ""} Sentences: \n" +
-                JsonConvert.SerializeObject(batch.Select(x => new { x.Id, x.Source, x.Target }));
+                JsonConvert.SerializeObject(filteredBatch.Select(x => new { x.Id, x.Source, x.Target }));
 
             var messages = new List<ChatMessageDto> { new(MessageRoles.System, PromptBuilder.DefaultSystemPrompt), new(MessageRoles.User, userPrompt) };
             var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, new BaseChatRequest { Temperature = 0.1f }, ResponseFormats.GetProcessXliffResponseFormat());
