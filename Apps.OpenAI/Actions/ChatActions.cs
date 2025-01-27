@@ -29,6 +29,7 @@ using System.Text.RegularExpressions;
 using Apps.OpenAI.Models.Entities;
 using MoreLinq;
 using Apps.OpenAI.Models.Requests.Xliff;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 
 namespace Apps.OpenAI.Actions;
 
@@ -36,6 +37,8 @@ namespace Apps.OpenAI.Actions;
 public class ChatActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : BaseActions(invocationContext, fileManagementClient)
 {
+    private const int MaxCompletionRetries = 3;
+    
     #region Default chat action without prompt
 
     [Action("Chat", Description = "Gives a response given a chat message")]
@@ -48,8 +51,9 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         var messages = await GenerateChatMessages(input, glossary);
         var completeMessage = string.Empty;
         var usage = new UsageDto();
-
-        while (true)
+        var counter = 0;
+        
+        while (counter < MaxCompletionRetries)
         {
             var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input);
             completeMessage += response.Choices.First().Message.Content;
@@ -63,6 +67,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
             messages.Append(new ChatMessageDto(MessageRoles.Assistant, response.Choices.First().Message.Content));
             messages.Append(new ChatMessageDto(MessageRoles.User, "Continue your latest message, it was too long."));
+            counter += 1;
         }
 
         return new()
@@ -638,9 +643,15 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
             var messages = new List<ChatMessageDto> { new(MessageRoles.System, PromptBuilder.DefaultSystemPrompt), new(MessageRoles.User, userPrompt) };
             var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, new BaseChatRequest { Temperature = 0.1f }, ResponseFormats.GetQualityScoreXliffResponseFormat());
-            
-            var content = response.Choices.First().Message.Content;
             usage += response.Usage;
+            
+            var choice = response.Choices.First();
+            var content = choice.Message.Content;
+            if (choice.FinishReason == "length")
+            {
+                throw new PluginApplicationException($"The response from Open AI is too long and was cut off. " +
+                                                     $"To avoid this, try lowering the 'Bucket size' to reduce the length of the response.");
+            }
 
             TryCatchHelper.TryCatch(() =>
                 {
@@ -779,9 +790,15 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
             var messages = new List<ChatMessageDto> { new(MessageRoles.System, PromptBuilder.DefaultSystemPrompt), new(MessageRoles.User, userPrompt) };
             var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, new BaseChatRequest { Temperature = 0.1f }, ResponseFormats.GetProcessXliffResponseFormat());
-
-            var content = response.Choices.First().Message.Content;
             usage += response.Usage;
+            
+            var choice = response.Choices.First();
+            var content = choice.Message.Content;
+            if (choice.FinishReason == "length")
+            {
+                throw new PluginApplicationException($"The response from Open AI is too long and was cut off. " +
+                                                     $"To avoid this, try lowering the 'Bucket size' to reduce the length of the response.");
+            }
 
             TryCatchHelper.TryCatch(() =>
                 {
@@ -901,14 +918,22 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             }
 
             var messages = new List<ChatMessageDto>
-                    {
-                        new(MessageRoles.System, systemPrompt),
-                        new(MessageRoles.User, userPrompt)
-                    };
-            var response = await ExecuteChatCompletion(messages, model, new BaseChatRequest { Temperature = 0.1f });
-
-            var content = response.Choices.First().Message.Content;
+            {
+                new(MessageRoles.System, systemPrompt),
+                new(MessageRoles.User, userPrompt)
+            };
+            
+            var response = await ExecuteChatCompletion(messages, model, new BaseChatRequest { Temperature = 0.1f }, responseFormat: ResponseFormats.GetProcessXliffResponseFormat());
             usageDto += response.Usage;
+            
+            var choice = response.Choices.First();
+            var content = choice.Message.Content;
+            if (choice.FinishReason == "length")
+            {
+                throw new PluginApplicationException($"The response from Open AI is too long and was cut off. " +
+                                                     $"To avoid this, try lowering the 'Bucket size' to reduce the length of the response.");
+            }
+            
             TryCatchHelper.TryCatch(() =>
                 {
                     var deserializedResponse = JsonConvert.DeserializeObject<TranslationEntities>(content);
