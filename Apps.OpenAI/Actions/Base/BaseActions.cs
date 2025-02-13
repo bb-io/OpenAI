@@ -12,6 +12,8 @@ using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Converters;
 using Blackbird.Xliff.Utils;
 using Blackbird.Xliff.Utils.Extensions;
+using System.Xml;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 
 namespace Apps.OpenAI.Actions.Base;
 
@@ -65,10 +67,18 @@ public abstract class BaseActions : OpenAIInvocable
         await fileStream.CopyToAsync(xliffMemoryStream);
         xliffMemoryStream.Position = 0;
 
-        var xliffDocument = xliffMemoryStream.ToXliffDocument();
+        XliffDocument xliffDocument;
+        try
+        {
+            xliffDocument = xliffMemoryStream.ToXliffDocument();
+        }
+        catch (XmlException ex)
+        {
+            throw new PluginMisconfigurationException("Incorrect XLIFF file structure. Check if the file complies with the XLIFF structure");
+        }
         if (xliffDocument.TranslationUnits.Count == 0)
         {
-            throw new InvalidOperationException("The XLIFF file does not contain any translation units.");
+            throw new PluginMisconfigurationException("The XLIFF file does not contain any translation units. Please check your input file");
         }
 
         return xliffDocument;
