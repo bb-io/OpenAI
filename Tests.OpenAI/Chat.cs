@@ -30,8 +30,6 @@ namespace Tests.OpenAI
             Assert.IsNotNull(result.Message);
         }
 
-        //test.xliff
-
         [TestMethod]
         public async Task PostEditXliffResponse()
         {
