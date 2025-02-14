@@ -14,7 +14,7 @@ using Apps.OpenAI.Models.Requests.Xliff;
 namespace Tests.OpenAI
 {
     [TestClass]
-    public class Chat : TestBase
+    public class ChatTests : TestBase
     {
         [TestMethod]
         public async Task ChatReturnsAResponse()
@@ -32,7 +32,7 @@ namespace Tests.OpenAI
 
         [TestMethod]
         public async Task PostEditXliffResponse()
-        {//chatgpt-4o-latest
+        {
             var actions = new ChatActions(InvocationContext, FileManager);
             var input1 = new TextChatModelIdentifier { ModelId= "o1" };
             var input2 = new PostEditXliffRequest {File = new Blackbird.Applications.Sdk.Common.Files.FileReference { Name= "test.xliff" } };
@@ -53,6 +53,3 @@ namespace Tests.OpenAI
         }
     }
 }
-
-//models that work with JSON schema:
-//gpt-4o, gpt-4o-2024-11-20, gpt-4o-mini, gpt-4o-mini-2024-07-18, gpt-4o-2024-08-06(and latest versions),  
