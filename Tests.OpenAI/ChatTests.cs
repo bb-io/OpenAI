@@ -14,7 +14,7 @@ using Apps.OpenAI.Models.Requests.Xliff;
 namespace Tests.OpenAI
 {
     [TestClass]
-    public class Chat : TestBase
+    public class ChatTests : TestBase
     {
         [TestMethod]
         public async Task ChatReturnsAResponse()
@@ -39,6 +39,17 @@ namespace Tests.OpenAI
             string? input3=null;
             var input4 = new GlossaryRequest { };
             var result = await actions.PostEditXLIFF(input1, input2, input3, input4);
+        }
+
+        [TestMethod]
+        public async Task ProcessXliffResponse()
+        {
+            var actions = new ChatActions(InvocationContext, FileManager);
+            var input1 = new TextChatModelIdentifier { ModelId = "o1" };
+            var input2 = new TranslateXliffRequest { File = new Blackbird.Applications.Sdk.Common.Files.FileReference { Name = "test.xliff" } };
+            string? input3 = null;
+            var input4 = new GlossaryRequest { };
+            var result = await actions.TranslateXliff(input1, input2, input3, input4);
         }
     }
 }

@@ -7,7 +7,7 @@ namespace Apps.OpenAI.DataSourceHandlers.ModelDataSourceHandlers;
 public class TextChatModelDataSourceHandler : BaseModelDataSourceHandler
 {
     protected override Func<string, bool> ModelIdFilter =>
-        id => (id.Contains("gpt") || id.Contains("o1" )) && !id.Contains("vision") && !id.Contains("instruct");
+        id => (id.Contains("gpt-4o")) && !id.Contains("vision") && !id.Contains("instruct");
 
     public TextChatModelDataSourceHandler(InvocationContext invocationContext) : base(invocationContext)
     {
