@@ -49,11 +49,11 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     {
         if (input.File != null)
         {
-            if (input.File.ContentType.StartsWith("audio"))
+            if (input.File.ContentType.StartsWith("audio") || input.File.Name.EndsWith("wav") || input.File.Name.EndsWith("mp3"))
             {
                 modelIdentifier.ModelId = "gpt-4o-audio-preview";
             }
-            if (input.File.ContentType.StartsWith("image"))
+            if (input.File.ContentType.StartsWith("image") || input.File.Name.EndsWith("png") || input.File.Name.EndsWith("jpg") || input.File.Name.EndsWith("jpeg")|| input.File.Name.EndsWith("webp") || input.File.Name.EndsWith("gif"))
             {
                 modelIdentifier.ModelId = "gpt-4-vision-preview";
             }
@@ -151,19 +151,19 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             var fileBytes = await fileStream.GetByteData();
             if (input.SystemPrompt != null)
                 messages.Add(new ChatMessageDto(MessageRoles.System, input.SystemPrompt));
-            
 
-            if (input.File.ContentType.StartsWith("audio"))
+
+            if (input.File.ContentType.StartsWith("audio") || input.File.Name.EndsWith("wav") || input.File.Name.EndsWith("mp3"))
             {
-                
+
                 messages.Add(new ChatAudioMessageDto(MessageRoles.User, new List<ChatAudioMessageContentDto>
                 {
 
                     new ChatAudioMessageTextContentDto("text", input.Message),
-                    new ChatAudioMessageAudioContentDto("input_audio", new InputAudio(){Format = "mp3",Data = Convert.ToBase64String(fileBytes) })
+                    new ChatAudioMessageAudioContentDto("input_audio", new InputAudio(){Format = input.File.Name.Substring(input.File.Name.Length-3).ToLower(),Data = Convert.ToBase64String(fileBytes) })
                 }));
             }
-            if (input.File.ContentType.StartsWith("image"))
+            if (input.File.ContentType.StartsWith("image") || input.File.Name.EndsWith("png") || input.File.Name.EndsWith("jpg") || input.File.Name.EndsWith("jpeg") || input.File.Name.EndsWith("webp") || input.File.Name.EndsWith("gif"))
             {
                 messages.Add(new ChatImageMessageDto(MessageRoles.User, new List<ChatImageMessageContentDto>
                 {

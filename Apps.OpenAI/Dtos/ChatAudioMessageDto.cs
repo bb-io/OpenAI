@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace Apps.OpenAI.Dtos;
 
-public record ChatAudioMessageDto(string Role, List<ChatAudioMessageContentDto> Content) : BaseChatMessageDto(Role); //TODO rework this model
+public record ChatAudioMessageDto(string Role, List<ChatAudioMessageContentDto> Content) : BaseChatMessageDto(Role);
 
 public abstract record ChatAudioMessageContentDto(string Type);
 
