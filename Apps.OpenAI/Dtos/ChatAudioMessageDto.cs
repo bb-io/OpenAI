@@ -9,7 +9,7 @@ public abstract record ChatAudioMessageContentDto(string Type);
 
 public record ChatAudioMessageTextContentDto(string Type, string Text) : ChatAudioMessageContentDto(Type);
 
-public record ChatAudioMessageAudioContentDto(string Type, AudioData Data, AudioFormat Format ) : ChatAudioMessageContentDto(Type);
+public record ChatAudioMessageAudioContentDto(string Type, AudioData Data, AudioFormat Format ) : ChatAudioMessageContentDto(Type); //TODO this might not work
 
 public record AudioData(string Type, string Base64): ChatAudioMessageContentDto(Type);
 
