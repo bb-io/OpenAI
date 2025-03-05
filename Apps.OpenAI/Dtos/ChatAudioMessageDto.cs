@@ -10,13 +10,13 @@ public abstract record ChatAudioMessageContentDto(string Type);
 
 public record ChatAudioMessageTextContentDto(string Type, string Text) : ChatAudioMessageContentDto(Type);
 
-public record ChatAudioMessageAudioContentDto(string Type, InputAudio InputAudio ) : ChatAudioMessageContentDto(Type);
-
+public record ChatAudioMessageAudioContentDto(string Type, InputAudio input_audio) : ChatAudioMessageContentDto(Type);
 
 public class InputAudio
 {
-    [JsonProperty("data")]
-    public string Data { get; set; }
     [JsonProperty("format")]
     public string Format { get; set; }
+
+    [JsonProperty("data")]
+    public string Data { get; set; }
 }
