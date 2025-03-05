@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using DocumentFormat.OpenXml.Spreadsheet;
+using Newtonsoft.Json;
 
 namespace Apps.OpenAI.Dtos;
 
@@ -9,8 +10,13 @@ public abstract record ChatAudioMessageContentDto(string Type);
 
 public record ChatAudioMessageTextContentDto(string Type, string Text) : ChatAudioMessageContentDto(Type);
 
-public record ChatAudioMessageAudioContentDto(string Type, AudioData Data, AudioFormat Format ) : ChatAudioMessageContentDto(Type); //TODO this might not work
+public record ChatAudioMessageAudioContentDto(string Type, InputAudio InputAudio ) : ChatAudioMessageContentDto(Type);
 
-public record AudioData(string Type, string Base64): ChatAudioMessageContentDto(Type);
 
-public record AudioFormat(string Type, string Format): ChatAudioMessageContentDto(Type);
+public class InputAudio
+{
+    [JsonProperty("data")]
+    public string Data { get; set; }
+    [JsonProperty("format")]
+    public string Format { get; set; }
+}
