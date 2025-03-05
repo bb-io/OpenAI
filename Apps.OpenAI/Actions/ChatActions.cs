@@ -160,7 +160,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 {
 
                     new ChatAudioMessageTextContentDto("text", input.Message),
-                    new ChatAudioMessageAudioContentDto("input_audio", new InputAudio(new AudioData(Convert.ToBase64String(fileBytes)),new AudioFormat(input.File.Name.Substring(input.File.Name.Length-3)))) // TODO: add The format of the encoded audio data. Currently supports "wav" and "mp3".
+                    new ChatAudioMessageAudioContentDto("input_audio", new AudioData("data", Convert.ToBase64String(fileBytes)),new AudioFormat("format", input.File.Name.Substring(input.File.Name.Length-3))) // TODO: add The format of the encoded audio data. Currently supports "wav" and "mp3".
+
                 }));
             }
             if (input.File.ContentType.StartsWith("image"))
