@@ -11,6 +11,6 @@ public record ChatAudioMessageTextContentDto(string Type, string Text) : ChatAud
 
 public record ChatAudioMessageAudioContentDto(string Type, AudioData Data, AudioFormat Format ) : ChatAudioMessageContentDto(Type);
 
-public record AudioData(string Type, string Base64);
+public record AudioData(string Type, string Base64): ChatAudioMessageContentDto(Type);
 
-public record AudioFormat(string Format);
+public record AudioFormat(string Type, string Format): ChatAudioMessageContentDto(Type);
