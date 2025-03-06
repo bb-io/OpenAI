@@ -30,6 +30,7 @@ using Apps.OpenAI.Models.Entities;
 using MoreLinq;
 using Apps.OpenAI.Models.Requests.Xliff;
 using Blackbird.Applications.Sdk.Common.Exceptions;
+using System.Xml.Serialization;
 
 namespace Apps.OpenAI.Actions;
 
@@ -46,8 +47,17 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         [ActionParameter] ChatRequest input,
         [ActionParameter] GlossaryRequest glossary)
     {
-        if (input.Image != null) modelIdentifier.ModelId = "gpt-4-vision-preview";
-
+        if (input.File != null)
+        {
+            if (input.File.ContentType.StartsWith("audio") || input.File.Name.EndsWith("wav") || input.File.Name.EndsWith("mp3"))
+            {
+                modelIdentifier.ModelId = "gpt-4o-audio-preview";
+            }
+            if (input.File.ContentType.StartsWith("image") || input.File.Name.EndsWith("png") || input.File.Name.EndsWith("jpg") || input.File.Name.EndsWith("jpeg")|| input.File.Name.EndsWith("webp") || input.File.Name.EndsWith("gif"))
+            {
+                modelIdentifier.ModelId = "gpt-4-vision-preview";
+            }
+        }
         var messages = await GenerateChatMessages(input, glossary);
         var completeMessage = string.Empty;
         var usage = new UsageDto();
@@ -94,14 +104,13 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             Message = input.Message,
             MaximumTokens = input.MaximumTokens,
             FrequencyPenalty = input.FrequencyPenalty,
-            Image = input.Image,
+            File = input.Image,
             Parameters = input.Parameters,
             PresencePenalty = input.PresencePenalty,
             Temperature = input.Temperature,
             TopP = input.TopP
         }, glossary);
     }
-
     private async Task<ChatCompletionDto> ExecuteChatCompletion(IEnumerable<object> messages, string model = "gpt-4-turbo-preview", BaseChatRequest input = null, object responseFormat = null)
     {
         var jsonBody = new
@@ -136,18 +145,34 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         if (input.SystemPrompt != null)
             messages.Add(new ChatMessageDto(MessageRoles.System, input.SystemPrompt));
 
-        if (input.Image != null)
+        if (input.File != null)
         {
-            var fileStream = await FileManagementClient.DownloadAsync(input.Image);
+            var fileStream = await FileManagementClient.DownloadAsync(input.File);
             var fileBytes = await fileStream.GetByteData();
             if (input.SystemPrompt != null)
                 messages.Add(new ChatMessageDto(MessageRoles.System, input.SystemPrompt));
-            messages.Add(new ChatImageMessageDto(MessageRoles.User, new List<ChatImageMessageContentDto>
+
+
+            if (input.File.ContentType.StartsWith("audio") || input.File.Name.EndsWith("wav") || input.File.Name.EndsWith("mp3"))
             {
-                new ChatImageMessageTextContentDto("text", input.Message),
-                new ChatImageMessageImageContentDto("image_url", new ImageUrlDto(
-                    $"data:{input.Image.ContentType};base64,{Convert.ToBase64String(fileBytes)}"))
-            }));
+
+                messages.Add(new ChatAudioMessageDto(MessageRoles.User, new List<ChatAudioMessageContentDto>
+                {
+
+                    new ChatAudioMessageTextContentDto("text", input.Message),
+                    new ChatAudioMessageAudioContentDto("input_audio", new InputAudio(){Format = input.File.Name.Substring(input.File.Name.Length-3).ToLower(),Data = Convert.ToBase64String(fileBytes) })
+                }));
+            }
+            if (input.File.ContentType.StartsWith("image") || input.File.Name.EndsWith("png") || input.File.Name.EndsWith("jpg") || input.File.Name.EndsWith("jpeg") || input.File.Name.EndsWith("webp") || input.File.Name.EndsWith("gif"))
+            {
+                messages.Add(new ChatImageMessageDto(MessageRoles.User, new List<ChatImageMessageContentDto>
+                {
+                    new ChatImageMessageTextContentDto("text", input.Message),
+                    new ChatImageMessageImageContentDto("image_url", new ImageUrlDto(
+                        $"data:{input.File.ContentType};base64,{Convert.ToBase64String(fileBytes)}"))
+                }));
+            }
+            
         }
         else
         {

@@ -16,13 +16,29 @@ namespace Tests.OpenAI
     [TestClass]
     public class ChatTests : TestBase
     {
+
         [TestMethod]
         public async Task ChatReturnsAResponse()
         {
             var actions = new ChatActions(InvocationContext, FileManager);
             var result = await actions.ChatMessageRequest(
-                new TextChatModelIdentifier { ModelId = "gpt-4o" }, 
-                new ChatRequest { Message = "Hello!" }, 
+                new TextChatModelIdentifier { ModelId = "gpt-4o" },
+                new ChatRequest { Message = "Hello!" },
+                new GlossaryRequest { });
+
+            Console.WriteLine(result.Message);
+
+            Assert.IsNotNull(result.Message);
+        }
+        [TestMethod]
+        public async Task ChatFromAudioReturnsAResponse()
+        {
+            var actions = new ChatActions(InvocationContext, FileManager);
+
+            var result = await actions.ChatMessageRequest(
+                new TextChatModelIdentifier { ModelId = "gpt-4o" },
+                new ChatRequest { Message = "Answer to the audio file!",
+                File = new Blackbird.Applications.Sdk.Common.Files.FileReference() { Name = "tts delorean.mp3", ContentType = "audio/mp3" }},
                 new GlossaryRequest { });
 
             Console.WriteLine(result.Message);
