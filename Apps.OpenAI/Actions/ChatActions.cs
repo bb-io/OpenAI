@@ -630,6 +630,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             }
         });
 
+        var openAiAnswers = JsonConvert.SerializeObject(translatedTexts);
         var stream = xliffDocument.ToStream();
         var fileReference = await fileManagementClient.UploadAsync(stream, input.File.ContentType, input.File.Name);
         return new TranslateXliffResponse { File = fileReference, Usage = usage };
