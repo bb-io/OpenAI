@@ -31,6 +31,9 @@ using MoreLinq;
 using Apps.OpenAI.Models.Requests.Xliff;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using System.Xml.Serialization;
+using System.IO;
+using System.Xml.Linq;
+using Microsoft.AspNetCore.Http;
 
 namespace Apps.OpenAI.Actions;
 
@@ -587,7 +590,11 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                  "Specify the number of source texts to be translated at once. Default value: 1500. (See our documentation for an explanation)")]
         int? bucketSize = 1500)
     {
+        var fileExtension = Path.GetExtension(input.File.Name);
+
+        await ValidateXliffFileStructure(input.File);
         var xliffDocument = await DownloadXliffDocumentAsync(input.File);
+
         var systemPrompt = PromptBuilder.BuildSystemPrompt(string.IsNullOrEmpty(prompt));
         var (translatedTexts, usage) = await ProcessTranslationUnits(prompt, xliffDocument, modelIdentifier.ModelId, systemPrompt,
             bucketSize ?? 1500,
@@ -634,6 +641,37 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         var fileReference = await fileManagementClient.UploadAsync(stream, input.File.ContentType, input.File.Name);
         return new TranslateXliffResponse { File = fileReference, Usage = usage };
     }
+
+    private async Task ValidateXliffFileStructure(FileReference file)
+    {
+
+        var fileExtension = Path.GetExtension(file.Name);
+        if (string.IsNullOrEmpty(fileExtension) ||
+            !new[] { ".xlf", ".xliff" }.Contains(fileExtension.ToLower()))
+        {
+            throw new PluginMisconfigurationException("Wrong format file. Please upload file format .xlf or .xliff.");
+        }
+
+        using (var stream = await fileManagementClient.DownloadAsync(file))
+        {
+            XDocument xdoc;
+            try
+            {
+                xdoc = XDocument.Load(stream);
+            }
+            catch (Exception ex)
+            {
+                throw new PluginMisconfigurationException("Error uploading XML. Please check your input file");
+            }
+
+
+            if (xdoc.Root == null || xdoc.Root.Name.LocalName != "xliff")
+            {
+                throw new PluginMisconfigurationException("Wrong format file. Expected XLIFF file  with root element <xliff>. Please check your file and try again");
+            }
+        }
+    }
+
 
     [Action("Get quality scores for XLIFF file",
         Description = "Gets segment and file level quality scores for XLIFF files")]
