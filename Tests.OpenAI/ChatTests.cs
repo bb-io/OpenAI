@@ -61,11 +61,11 @@ namespace Tests.OpenAI
         public async Task ProcessXliffResponse()
         {
             var actions = new ChatActions(InvocationContext, FileManager);
-            var input1 = new TextChatModelIdentifier { ModelId = "o1" };
-            var input2 = new TranslateXliffRequest { File = new Blackbird.Applications.Sdk.Common.Files.FileReference { Name = "test.xliff" } };
-            string? input3 = null;
+            var input1 = new TextChatModelIdentifier { ModelId = "gpt-4o-mini", };
+            var input2 = new TranslateXliffRequest { File = new Blackbird.Applications.Sdk.Common.Files.FileReference { Name = "test.tmx" } };
+            string? input3 = " If the content includes any URLs that start with \"https://remote.com/\" please insert the locale domain \"en-ph\" before the rest of the URL. For example, if you get \"https://remote.com/global-hr/hris-software\", change it to \"https://remote.com/en-ph/global-hr/hris-software\" ";
             var input4 = new GlossaryRequest { };
-            var result = await actions.TranslateXliff(input1, input2, input3, input4);
+            var result = await actions.TranslateXliff(input1, input2, input3, input4,30);
         }
     }
 }
