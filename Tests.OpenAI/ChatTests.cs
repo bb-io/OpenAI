@@ -53,7 +53,7 @@ namespace Tests.OpenAI
             var input1 = new TextChatModelIdentifier { ModelId= "gpt-4o-mini" };
             var input2 = new PostEditXliffRequest {File = new Blackbird.Applications.Sdk.Common.Files.FileReference { Name= "test.xlf" } };
             string? input3 = null;
-           var input4 = new GlossaryRequest { };
+            var input4 = new GlossaryRequest { };
             var result = await actions.PostEditXLIFF(input1, input2, input3, input4);
         }
 
