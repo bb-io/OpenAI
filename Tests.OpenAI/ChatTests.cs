@@ -52,8 +52,8 @@ namespace Tests.OpenAI
             var actions = new ChatActions(InvocationContext, FileManager);
             var input1 = new TextChatModelIdentifier { ModelId= "gpt-4o-mini" };
             var input2 = new PostEditXliffRequest {File = new Blackbird.Applications.Sdk.Common.Files.FileReference { Name= "test.xlf" } };
-            string? input3= "Review the following XLIFF file and correct any XML formatting issues while strictly preserving its structure. Follow these steps:Replace all raw \"&\" with &amp; to ensure proper XML encoding.Remove unnecessary metadata fields, including:\"blackbird-entry-id\"\"data-contentful-entry-id\"Preserve all placeholders, tags, and formatting exactly as they appear in the original file.Do NOT modify any translated content. The text should remain unchanged—only the XML formatting should be corrected.Return the cleaned XLIFF file in the same structure and format as the input.  ";
-            var input4 = new GlossaryRequest { };
+            string? input3 = null;
+           var input4 = new GlossaryRequest { };
             var result = await actions.PostEditXLIFF(input1, input2, input3, input4);
         }
 
