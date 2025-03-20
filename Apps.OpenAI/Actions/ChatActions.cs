@@ -870,6 +870,22 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 }, $"Failed to deserialize the response from OpenAI, try again later. Response: {content}");
         }
 
+        var duplicates = results
+        .GroupBy(r => r.TranslationId)
+        .Where(g => g.Count() > 1)
+        .Select(g => new
+        {
+            TranslationId = g.Key,
+            Count = g.Count(),
+            Items = g.ToList()
+        })
+        .ToList();
+
+        if (duplicates.Any())
+        {
+          throw new PluginApplicationException($"There are duplicate translation units in the response. Please try again.");
+        }
+
         var dictionary = results.ToDictionary(x => x.TranslationId, x => x.TranslatedText);
         var updatedResults =
             Utils.Xliff.Extensions.CheckTagIssues(xliffDocument.TranslationUnits, dictionary);

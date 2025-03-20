@@ -47,12 +47,12 @@ namespace Tests.OpenAI
         }
 
         [TestMethod]
-        public async Task PostEditXliffResponse()
+       public async Task PostEditXliffResponse()
         {
             var actions = new ChatActions(InvocationContext, FileManager);
-            var input1 = new TextChatModelIdentifier { ModelId= "o1" };
-            var input2 = new PostEditXliffRequest {File = new Blackbird.Applications.Sdk.Common.Files.FileReference { Name= "test.xliff" } };
-            string? input3=null;
+            var input1 = new TextChatModelIdentifier { ModelId= "gpt-4o-mini" };
+            var input2 = new PostEditXliffRequest {File = new Blackbird.Applications.Sdk.Common.Files.FileReference { Name= "test.xlf" } };
+            string? input3= "Review the following XLIFF file and correct any XML formatting issues while strictly preserving its structure. Follow these steps:Replace all raw \"&\" with &amp; to ensure proper XML encoding.Remove unnecessary metadata fields, including:\"blackbird-entry-id\"\"data-contentful-entry-id\"Preserve all placeholders, tags, and formatting exactly as they appear in the original file.Do NOT modify any translated content. The text should remain unchanged—only the XML formatting should be corrected.Return the cleaned XLIFF file in the same structure and format as the input.  ";
             var input4 = new GlossaryRequest { };
             var result = await actions.PostEditXLIFF(input1, input2, input3, input4);
         }
@@ -63,7 +63,8 @@ namespace Tests.OpenAI
             var actions = new ChatActions(InvocationContext, FileManager);
             var input1 = new TextChatModelIdentifier { ModelId = "gpt-4o-mini", };
             var input2 = new TranslateXliffRequest { File = new Blackbird.Applications.Sdk.Common.Files.FileReference { Name = "test.tmx" } };
-            string? input3 = " If the content includes any URLs that start with \"https://remote.com/\" please insert the locale domain \"en-ph\" before the rest of the URL. For example, if you get \"https://remote.com/global-hr/hris-software\", change it to \"https://remote.com/en-ph/global-hr/hris-software\" ";
+            //string? input3 = " If the content includes any URLs that start with \"https://remote.com/\" please insert the locale domain \"en-ph\" before the rest of the URL. For example, if you get \"https://remote.com/global-hr/hris-software\", change it to \"https://remote.com/en-ph/global-hr/hris-software\" ";
+            string? input3 = null;
             var input4 = new GlossaryRequest { };
             var result = await actions.TranslateXliff(input1, input2, input3, input4,30);
         }
