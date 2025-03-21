@@ -883,7 +883,12 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         if (duplicates.Any())
         {
-          throw new PluginApplicationException($"There are duplicate translation units in the response. Please try again.");
+            throw new PluginApplicationException($"There are duplicate translation units in the response. Please try again.");
+        }
+
+        if (results.Count()!=xliffDocument.TranslationUnits.Count())
+        {
+            throw new PluginApplicationException($"The original xliff has {xliffDocument.TranslationUnits.Count()} translation units, but the response has {results.Count()} translation units - possible hallucination. Please try again.");
         }
 
         var dictionary = results.ToDictionary(x => x.TranslationId, x => x.TranslatedText);
