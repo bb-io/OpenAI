@@ -644,31 +644,28 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
     private async Task ValidateXliffFileStructure(FileReference file)
     {
-
+        var acceptedFileExtensions = new[] { ".xlf", ".xliff", ".txlf", ".mqxliff", ".mxliff" };
         var fileExtension = Path.GetExtension(file.Name);
-        if (string.IsNullOrEmpty(fileExtension) ||
-            !new[] { ".xlf", ".xliff" }.Contains(fileExtension.ToLower()))
+        if (string.IsNullOrEmpty(fileExtension) || !acceptedFileExtensions.Contains(fileExtension.ToLower()))
         {
             throw new PluginMisconfigurationException("Wrong format file. Please upload file format .xlf or .xliff.");
         }
 
-        using (var stream = await fileManagementClient.DownloadAsync(file))
+        using var stream = await fileManagementClient.DownloadAsync(file);
+        XDocument xdoc;
+        try
         {
-            XDocument xdoc;
-            try
-            {
-                xdoc = XDocument.Load(stream);
-            }
-            catch (Exception ex)
-            {
-                throw new PluginMisconfigurationException("Error uploading XML. Please check your input file");
-            }
+            xdoc = XDocument.Load(stream);
+        }
+        catch (Exception)
+        {
+            throw new PluginMisconfigurationException("Error uploading XML. Please check your input file");
+        }
 
 
-            if (xdoc.Root == null || xdoc.Root.Name.LocalName != "xliff")
-            {
-                throw new PluginMisconfigurationException("Wrong format file. Expected XLIFF file  with root element <xliff>. Please check your file and try again");
-            }
+        if (xdoc.Root == null || xdoc.Root.Name.LocalName != "xliff")
+        {
+            throw new PluginMisconfigurationException("Wrong format file. Expected XLIFF file  with root element <xliff>. Please check your file and try again");
         }
     }
 

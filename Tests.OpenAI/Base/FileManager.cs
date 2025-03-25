@@ -1,34 +1,43 @@
 ﻿using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Tests.OpenAI.Base
+namespace Tests.OpenAI.Base;
+
+public class FileManager : IFileManagementClient
 {
-    public class FileManager(string folderLocation) : IFileManagementClient
+    private readonly string _folderLocation;
+    
+    public FileManager(string folderLocation)
     {
-        public Task<Stream> DownloadAsync(FileReference reference)
+        _folderLocation = folderLocation ?? throw new ArgumentNullException(nameof(folderLocation));
+    }
+    
+    public async Task<Stream> DownloadAsync(FileReference reference)
+    {
+        if (reference == null) throw new ArgumentNullException(nameof(reference));
+        
+        var path = Path.Combine(_folderLocation, "Input", reference.Name);
+        var bytes = await File.ReadAllBytesAsync(path);
+        
+        return new MemoryStream(bytes);
+    }
+    
+    public async Task<FileReference> UploadAsync(Stream stream, string contentType, string fileName)
+    {
+        if (stream == null) throw new ArgumentNullException(nameof(stream));
+        if (string.IsNullOrEmpty(fileName)) throw new ArgumentNullException(nameof(fileName));
+        
+        var path = Path.Combine(_folderLocation, "Output", fileName);
+        var directory = Path.GetDirectoryName(path);
+        
+        if (!string.IsNullOrEmpty(directory))
+            Directory.CreateDirectory(directory);
+            
+        using (var fileStream = File.Create(path))
         {
-            var path = Path.Combine(folderLocation, @$"Input\{reference.Name}");
-            var bytes = File.ReadAllBytes(path);
-
-            var stream = new MemoryStream(bytes);
-            return Task.FromResult((Stream)stream);
+            await stream.CopyToAsync(fileStream);
         }
-
-        public Task<FileReference> UploadAsync(Stream stream, string contentType, string fileName)
-        {
-            var path = Path.Combine(folderLocation, @$"Output\{fileName}");
-            new FileInfo(path).Directory.Create();
-            using (var fileStream = File.Create(path))
-            {
-                stream.CopyTo(fileStream);
-            }
-
-            return Task.FromResult(new FileReference() { Name = fileName });
-        }
+        
+        return new FileReference { Name = fileName };
     }
 }

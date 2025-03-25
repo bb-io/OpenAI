@@ -1,30 +1,43 @@
 ﻿using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Invocation;
-using Blackbird.Applications.Sdk.Utils.Extensions.System;
 using Microsoft.Extensions.Configuration;
 
-namespace Tests.OpenAI.Base
+namespace Tests.OpenAI.Base;
+
+public class TestBase
 {
-    public class TestBase
+    public IEnumerable<AuthenticationCredentialsProvider> Creds { get; private set; }
+    public InvocationContext InvocationContext { get; private set; }
+    public FileManager FileManager { get; private set; }
+
+    public TestBase()
     {
-        public IEnumerable<AuthenticationCredentialsProvider> Creds { get; set; }
+        InitializeCredentials();
+        InitializeInvocationContext();
+        InitializeFileManager();
+    }
 
-        public InvocationContext InvocationContext { get; set; }
+    private void InitializeCredentials()
+    {
+        var config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+        Creds = config.GetSection("ConnectionDefinition")
+                     .GetChildren()
+                     .Select(x => new AuthenticationCredentialsProvider(x.Key, x.Value))
+                     .ToList();
+    }
 
-        public FileManager FileManager { get; set; }
-
-        public TestBase()
+    private void InitializeInvocationContext()
+    {
+        InvocationContext = new InvocationContext
         {
-            var config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
-            Creds = config.GetSection("ConnectionDefinition").GetChildren().Select(x => new AuthenticationCredentialsProvider(x.Key, x.Value)).ToList();
-            var folderLocation = config.GetSection("TestFolder").Value;
+            AuthenticationCredentialsProviders = Creds
+        };
+    }
 
-            InvocationContext = new InvocationContext
-            {
-                AuthenticationCredentialsProviders = Creds,
-            };
-
-            FileManager = new FileManager(folderLocation);
-        }
+    private void InitializeFileManager()
+    {
+        var config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+        var folderLocation = config.GetSection("TestFolder").Value;
+        FileManager = new FileManager(folderLocation!);
     }
 }

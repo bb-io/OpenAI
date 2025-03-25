@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:gs4tr="http://www.gs4tr.org/schema/xliff-ext">
+  <file gs4tr:xliff-module-version="6.16.0" original="Markdown entry #1_en-US.html" gs4tr:system-attributes="&lt;attrs pd.xliff.id=&quot;88605&quot;/&gt;" gs4tr:uuid="fd6fb203-25de-4857-834d-b7e1f7b7947e" gs4tr:target-encoding="UTF-8" gs4tr:total-segment-count="29" gs4tr:target-eol="unix" gs4tr:md5checksum="12ee9418d8b4df1f1ddfb7b82f5986dc" gs4tr:wordcount="449" datatype="x-regexp" source-language="en-US" target-language="nl-NL" gs4tr:translated-segment-count="0" gs4tr:simplifier="fontformat">
+    <header>
+      <skl>
+        <internal-file>&lt;html&gt;&lt;head&gt;&lt;meta name="blackbird-entry-id" content="1lcz5tFE8v5JqylInsPvPW"&gt;&lt;meta name="blackbird-locale" content="en-US"&gt;&lt;/head&gt;&lt;body&gt;&lt;div data-contentful-entry-id="1lcz5tFE8v5JqylInsPvPW"&gt;&lt;h1 data-contentful-field-type="Symbol" data-contentful-field-id="title"&gt;￼{paragraph-1-1}￼&lt;/h1&gt;&lt;div data-contentful-field-type="Text" data-contentful-field-id="markdownLongText"&gt;&lt;p&gt;￼{paragraph-1-2}￼&lt;/p&gt;
+&lt;br&gt;
+&lt;p&gt;￼{paragraph-1-3}￼&lt;/p&gt;
+&lt;p&gt;￼{paragraph-1-4}￼&lt;/p&gt;
+&lt;br&gt;
+&lt;p&gt;￼{paragraph-1-5}￼&lt;/p&gt;
+&lt;p&gt;￼{paragraph-1-6}￼&lt;/p&gt;
+&lt;br&gt;
+&lt;p&gt;￼{paragraph-1-7}￼&lt;/p&gt;
+&lt;br&gt;
+&lt;p&gt;￼{paragraph-1-8}￼&lt;/p&gt;
+&lt;p&gt;￼{paragraph-1-9}￼&lt;/p&gt;
+&lt;br&gt;
+&lt;p&gt;￼{paragraph-1-10}￼&lt;/p&gt;
+&lt;p&gt;￼{paragraph-1-11}￼&lt;/p&gt;
+&lt;br&gt;
+&lt;p&gt;￼{paragraph-1-12}￼&lt;/p&gt;
+&lt;br&gt;
+&lt;p&gt;￼{paragraph-1-13}￼&lt;/p&gt;
+&lt;p&gt;￼{paragraph-1-14}￼&lt;/p&gt;
+&lt;br&gt;
+&lt;p&gt;￼{paragraph-1-15}￼&lt;/p&gt;
+&lt;br&gt;
+&lt;p&gt;￼{paragraph-2-1}￼&lt;/p&gt;
+&lt;p&gt;￼{paragraph-2-2}￼&lt;/p&gt;
+&lt;/div&gt;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;</internal-file>
+      </skl>
+      <phase-group>
+        <phase phase-name="Translation-1" process-name="No Review" contact-name="vitalii.bezuhlyi" tool-id="PD" date="2025-03-24T14:32:35Z" />
+      </phase-group>
+      <tool tool-id="PD" tool-name="ProjectDirector" tool-version="10.0.0" />
+    </header>
+    <body>
+      <group id="page-1" restype="x-page">
+        <group id="paragraph-1-1" restype="x-paragraph" datatype="html" gs4tr:segmented="true">
+          <trans-unit id="1-1-1" gs4tr:wordcount="3" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">Markdown entry #1</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">Markdown entry #1</target>
+          </trans-unit>
+        </group>
+        <group id="paragraph-1-2" restype="x-paragraph" datatype="html" gs4tr:segmented="true">
+          <trans-unit id="1-2-1" gs4tr:wordcount="10" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">Streamline projects with tools for planning, collaboration, and efficient execution.</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">Projecten stroomlijnen met hulpmiddelen voor plannen, samenwerking en efficiënte uitvoering.</target>
+            <ws xmlns="http://www.gs4tr.org/schema/xliff-ext" pos="after"></ws>
+          </trans-unit>
+          <trans-unit id="1-2-2" gs4tr:wordcount="18" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">The Strategy Development space offers a comprehensive suite of tools designed to support every aspect of your project.</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">De Strategieontwikkelingruimte biedt een volwaardige set van hulpmiddelen die elk aspect van uw project ondersteunen.</target>
+            <ws xmlns="http://www.gs4tr.org/schema/xliff-ext" pos="after"></ws>
+          </trans-unit>
+          <trans-unit id="1-2-3" gs4tr:wordcount="24" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">From aligning teams and defining goals to optimizing processes and enhancing collaboration, this space provides a seamless way to plan, execute, and track progress.</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">Van het samenstellen van teams en het definiëren van doelen tot het optimeren van processen en het verbeteren van samenwerking, biedt deze ruimte een vloeiende manier om te plannen, uit te voeren en de voortgang te volgen.</target>
+            <ws xmlns="http://www.gs4tr.org/schema/xliff-ext" pos="after"></ws>
+          </trans-unit>
+          <trans-unit id="1-2-4" gs4tr:wordcount="27" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">Whether you're mapping out customer journeys, developing new products, or managing complex workflows, these tools help ensure smooth, efficient project execution, driving success at every stage.</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">Wanneer u kijkt naar de klantengang, nieuwe producten ontwikkelt of complexe workflows beheert, helpen deze hulpmiddelen ervoor te zorgen dat de projectuitvoering smoot en efficiënt is, het succes aan elke fase te brengen.</target>
+          </trans-unit>
+        </group>
+        <group id="paragraph-1-3" restype="x-paragraph" datatype="html" gs4tr:segmented="true">
+          <trans-unit id="1-3-1" gs4tr:wordcount="2" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">### Project Kickoff</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">### Project Kickoff</target>
+          </trans-unit>
+        </group>
+        <group id="paragraph-1-4" restype="x-paragraph" datatype="html" gs4tr:segmented="true">
+          <trans-unit id="1-4-1" gs4tr:wordcount="13" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">The Project Kickoff template helps project managers align their teams from the start.</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">Het Project Kickoff template helpt projectleiders hun teams vanaf het begin in te richten.</target>
+            <ws xmlns="http://www.gs4tr.org/schema/xliff-ext" pos="after"></ws>
+          </trans-unit>
+          <trans-unit id="1-4-2" gs4tr:wordcount="15" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">It clearly defines expectations and next steps to ensure the project runs smoothly and efficiently.</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">Het duidt de verwachtingen en de volgende stappen uit om te zorgen dat het project smoot en efficiënt loopt.</target>
+            <ws xmlns="http://www.gs4tr.org/schema/xliff-ext" pos="after"></ws>
+          </trans-unit>
+          <trans-unit id="1-4-3" gs4tr:wordcount="26" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">This template is also perfect for creating a project manifesto, giving everyone involved easy access to project objectives, core values, and working methods at any time.</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">Dit template is ook perfect voor het creëren van een projectmanifest, zodat iedereen die betrokken is eenvoudig toegang heeft tot projectdoelstellingen, kernwaarden en werkmethoden op elk moment.</target>
+          </trans-unit>
+        </group>
+        <group id="paragraph-1-5" restype="x-paragraph" datatype="html" gs4tr:segmented="true">
+          <trans-unit id="1-5-1" gs4tr:wordcount="3" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">### Customer Journey Mapping</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">### Klantengang Mapping</target>
+          </trans-unit>
+        </group>
+        <group id="paragraph-1-6" restype="x-paragraph" datatype="html" gs4tr:segmented="true">
+          <trans-unit id="1-6-1" gs4tr:wordcount="27" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">The Customer Journey Mapping template shows the steps customers take when interacting with your company, whether through a product, website, store, service, or any combination in between.</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">Het Klantengang Mapping template toont de stappen die klanten nemen bij het interageren met uw bedrijf, via een product, website, winkel, service of een combinatie ervan.</target>
+          </trans-unit>
+        </group>
+        <group id="paragraph-1-7" restype="x-paragraph" datatype="html" gs4tr:segmented="true">
+          <trans-unit id="1-7-1" gs4tr:wordcount="18" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">This intelligent template helps you map the customer journey, design a better product experience, and ensure smooth transitions.</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">Dit intelligent template helpt u de klantengang te mappen, een beter productervaring te ontwerpen en smoot overgangen te garanderen.</target>
+            <ws xmlns="http://www.gs4tr.org/schema/xliff-ext" pos="after"></ws>
+          </trans-unit>
+          <trans-unit id="1-7-2" gs4tr:wordcount="25" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">It organizes interactions in a pre-made timeline to assess whether you're meeting your goals, improving conversion rates, and enhancing the overall customer experience.</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">Het organiseert interacties in een voorbereide tijdlijn om te beoordelen of u uw doelen voldoet, conversies te verbeteren en de klantenervaring te verbeteren.</target>
+          </trans-unit>
+        </group>
+        <group id="paragraph-1-8" restype="x-paragraph" datatype="html" gs4tr:segmented="true">
+          <trans-unit id="1-8-1" gs4tr:wordcount="3" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">### Product Development Flowchart</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">### Productontwikkelingsflowchart</target>
+          </trans-unit>
+        </group>
+        <group id="paragraph-1-9" restype="x-paragraph" datatype="html" gs4tr:segmented="true">
+          <trans-unit id="1-9-1" gs4tr:wordcount="24" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">The Product Development Flowchart template serves as a visual guide, helping teams navigate each stage of product development, from initial concepts to final implementation.</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">Het Productontwikkelingsflowchart template dient als visuele leiding, helpend teams door elke fase van productontwikkeling, van de eerste concepten tot de eindimplementatie.</target>
+            <ws xmlns="http://www.gs4tr.org/schema/xliff-ext" pos="after"></ws>
+          </trans-unit>
+          <trans-unit id="1-9-2" gs4tr:wordcount="13" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">It streamlines the process, encouraging collaboration and boosting productivity in a shared workspace.</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">Het stroomlijnt de processen, stimuleren samenwerking en productiviteit in een gedeeld werkruimte.</target>
+            <ws xmlns="http://www.gs4tr.org/schema/xliff-ext" pos="after"></ws>
+          </trans-unit>
+          <trans-unit id="1-9-3" gs4tr:wordcount="24" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">By centralizing ideas and insights, teams can work together to refine and improve the development journey, leading to a more successful and cohesive result.</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">Door ideeën en inzichten te centraliseren, kunnen teams samenwerken om de ontwikkelingsjourney te verbeteren en te verbeteren, leiden tot een succesvoler en cohesiever resultaat.</target>
+          </trans-unit>
+        </group>
+        <group id="paragraph-1-10" restype="x-paragraph" datatype="html" gs4tr:segmented="true">
+          <trans-unit id="1-10-1" gs4tr:wordcount="2" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">### Roadmap Planning</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">### Roadmap Planning</target>
+          </trans-unit>
+        </group>
+        <group id="paragraph-1-11" restype="x-paragraph" datatype="html" gs4tr:segmented="true">
+          <trans-unit id="1-11-1" gs4tr:wordcount="21" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">The Roadmap Planning template helps you share your project’s vision, track progress, delegate tasks, and outline new features and goals.</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">Het Roadmap Planning template helpt u uw project’s visie te delen, de voortgang te volgen, taken te delegeren en nieuwe functies en doelen te uitlijnen.</target>
+            <ws xmlns="http://www.gs4tr.org/schema/xliff-ext" pos="after"></ws>
+          </trans-unit>
+          <trans-unit id="1-11-2" gs4tr:wordcount="14" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">This intelligent template supports future project management by providing a clear structure for planning.</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">Dit intelligent template ondersteunt toekomstige projectbeheer door een duidelijke structuur te bieden voor het plannen.</target>
+          </trans-unit>
+        </group>
+        <group id="paragraph-1-12" restype="x-paragraph" datatype="html" gs4tr:segmented="true">
+          <trans-unit id="1-12-1" gs4tr:wordcount="19" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">Integrated intelligent widgets enhance the user experience, making it easier to organize roadmaps, plan milestones, and manage progress effectively.</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">Integreerde intelligent widgets verbeteren de gebruikerservaring, het makkelijker maken om roadmaps te organiseren, milestones te plannen en de voortgang efficiënt te beheer.</target>
+          </trans-unit>
+        </group>
+        <group id="paragraph-1-13" restype="x-paragraph" datatype="html" gs4tr:segmented="true">
+          <trans-unit id="1-13-1" gs4tr:wordcount="4" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">### Go-To-Market Plan</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">### Go-To-Market Plan</target>
+          </trans-unit>
+        </group>
+        <group id="paragraph-1-14" restype="x-paragraph" datatype="html" gs4tr:segmented="true">
+          <trans-unit id="1-14-1" gs4tr:wordcount="20" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">This all-in-one product launch template guides you from defining key features and target audience to addressing pain points.</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">Dit all-in-one productlaunch template leit u van het definiëren van de belangrijkste functies en de doelen van de doelen tot het beheersen van de schadepunten.</target>
+            <ws xmlns="http://www.gs4tr.org/schema/xliff-ext" pos="after"></ws>
+          </trans-unit>
+          <trans-unit id="1-14-2" gs4tr:wordcount="11" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">It helps highlight your value, unique selling points, and competitive edge.</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">Het helpt om uw waarde, unieke verkooppunten en concurrentievoordelen te benadruken.</target>
+          </trans-unit>
+        </group>
+        <group id="paragraph-1-15" restype="x-paragraph" datatype="html" gs4tr:segmented="true">
+          <trans-unit id="1-15-1" gs4tr:wordcount="18" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">The framework enables detailed marketing and sales strategies while offering resources to support every stage of the process.</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">De framework biedt een detaillere marketing- en verkoopstrategie, terwijl het resources biedt om elke fase van de process te ondersteunen.</target>
+          </trans-unit>
+        </group>
+      </group>
+      <group id="page-2" restype="x-page">
+        <group id="paragraph-2-1" restype="x-paragraph" datatype="html" gs4tr:segmented="true">
+          <trans-unit id="2-1-1" gs4tr:wordcount="2" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">### Production Workflow</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">### Productiewerkflow</target>
+          </trans-unit>
+        </group>
+        <group id="paragraph-2-2" restype="x-paragraph" datatype="html" gs4tr:segmented="true">
+          <trans-unit id="2-2-1" gs4tr:wordcount="25" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">The Production Workflow template helps you map out a step-by-step process to see how different components come together to create a final product.</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">Het Productiewerkflow template helpt u een stappenplan te maken om te zien hoe verschillende componenten samenkomen om een eindproduct te creëren.</target>
+            <ws xmlns="http://www.gs4tr.org/schema/xliff-ext" pos="after"></ws>
+          </trans-unit>
+          <trans-unit id="2-2-2" gs4tr:wordcount="13" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">It's ideal for training new team members or giving stakeholders an overview.</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">Het is ideaal voor het trainen van nieuwe teamleden of om een overzicht te geven aan stakeholders.</target>
+            <ws xmlns="http://www.gs4tr.org/schema/xliff-ext" pos="after"></ws>
+          </trans-unit>
+          <trans-unit id="2-2-3" gs4tr:wordcount="25" gs4tr:editStatus="leveraged">
+            <source xml:lang="en-US">Whether you're working on a podcast, marketing campaign, TV show, or content creation, this template makes it easy to establish an efficient production workflow.</source>
+            <target gs4tr:seginfo="&lt;root username=&quot;*leverager*&quot; timestamp=&quot;20250324T135422Z&quot;/&gt;" gs4tr:score="-1" gs4tr:repscore="0" state="needs-translation" state-qualifier="x-no-match" xml:lang="nl-NL">Wanneer u werkt op een podcast, marketingcampagne, televisieshow of inhoudscreatie, maakt dit template het makkelijker om een efficiënte productiewerkflow te creëren.</target>
+          </trans-unit>
+        </group>
+      </group>
+    </body>
+  </file>
+</xliff>
