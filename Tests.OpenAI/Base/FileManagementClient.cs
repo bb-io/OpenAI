@@ -3,11 +3,11 @@ using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 
 namespace Tests.OpenAI.Base;
 
-public class FileManager : IFileManagementClient
+public class FileManagementClient : IFileManagementClient
 {
     private readonly string _folderLocation;
     
-    public FileManager(string folderLocation)
+    public FileManagementClient(string folderLocation)
     {
         _folderLocation = folderLocation ?? throw new ArgumentNullException(nameof(folderLocation));
     }

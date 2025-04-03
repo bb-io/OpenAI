@@ -1,25 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
-	<file original="sample.properties" datatype="plaintext" xml:space="preserve" source-language="en" target-language="be">
+	<file original="sample.properties" datatype="plaintext" xml:space="preserve" source-language="en-us" target-language="fr-FR">
 		<header>
 			<tool tool-id="lokalise.com" tool-name="Lokalise"></tool>
 		</header>
 		<body>
 			<trans-unit id="1">
 				<source>Hooray, you're here! The day just got better - enjoy the following tips!</source>
-				<target></target>
+				<target>Bravo, vous êtes arrivé ! La journée s'est améliorée ! Profitez des conseils suivants !</target>
 			</trans-unit>
 			<trans-unit id="2">
 				<source>A section of text like this is known as a text segment. Start rockin' your translations now!</source>
-				<target></target>
+				<target>Une section de texte comme celle-ci est appelée un segment de texte. Commencez à traduire avec brio dès maintenant !</target>
 			</trans-unit>
 			<trans-unit id="3">
 				<source>Arriba, Arriba! Andale, Andale! Be fast as Speedy Gonzales. Just hit TAB to save and go to the next text segment, once you're done.</source>
-				<target></target>
+				<target>Arriba, Arriba ! Andale, Andale ! Soyez aussi rapide que Speedy Gonzales. Appuyez simplement sur TAB pour enregistrer et passer au segment de texte suivant une fois terminé.</target>
 			</trans-unit>
 			<trans-unit id="6">
 				<source>We just like to see you happy, that's why LingoChecks automatically check translations for predetermined criteria.\n    Among other checks LingoHub verifies if &quot;%@&quot; used in the original text are also present in translated texts.</source>
-				<target></target>
+				<target>Nous aimons votre satisfaction, c'est pourquoi LingoChecks vérifie automatiquement les traductions selon des critères prédéfinis. LingoHub vérifie notamment si les « %@ » utilisés dans le texte original sont également présents dans les textes traduits.</target>
 			</trans-unit>
 			<trans-unit id="9">
 				<source>Made with ❤</source>

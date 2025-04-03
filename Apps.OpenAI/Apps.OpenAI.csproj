@@ -22,7 +22,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="morelinq" Version="4.2.0" />
-    <PackageReference Include="TiktokenSharp" Version="1.0.6" />
+    <PackageReference Include="TiktokenSharp" Version="1.1.7" />
   </ItemGroup>
 	<ItemGroup>
 		<EmbeddedResource CopyToOutputDirectory="Always" Include="image\icon.png" />
