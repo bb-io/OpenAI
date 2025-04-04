@@ -83,6 +83,7 @@ public static class LanguageUtils
             "my" => "Myanmar (Burmese)",
             "ne" => "Nepali",
             "nl" => "Dutch",
+            "nl-nl" => "Dutch (Netherlands)",
             "nl-be" => "Dutch (Belgium)",
             "no" => "Norwegian",
             "ny" => "Nyanja (Chichewa)",

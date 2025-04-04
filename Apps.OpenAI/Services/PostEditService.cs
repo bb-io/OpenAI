@@ -63,6 +63,7 @@ public class PostEditService(
             result.Usage = SumUsageFromResults(batchProcessingResult.Usages);
             result.ErrorMessages.AddRange(batchProcessingResult.Errors);
 
+            IdentifyDuplicateTranslationIdsAndLogErrors(batchProcessingResult);
             if (batchProcessingResult.Results.Any())
             {
                 var tagOptions = new TagHandlingOptions(request.AddMissingTrailingTags ?? false);
@@ -83,6 +84,22 @@ public class PostEditService(
             result.ErrorMessages.Add($"Critical error: {ex.Message}");
             result.File = request.XliffFile;
             return result;
+        }
+    }
+
+    private void IdentifyDuplicateTranslationIdsAndLogErrors(BatchProcessingResult result)
+    {
+        var duplicates = result.Results.GroupBy(x => x.TranslationId)
+            .Where(g => g.Count() > 1)
+            .Select(g => new { TranslationId = g.Key, Count = g.Count() })
+            .ToList();
+
+        if (duplicates.Any())
+        {
+            foreach (var duplicate in duplicates)
+            {
+                result.Errors.Add($"Duplicate translation ID found: {duplicate.TranslationId} appears {duplicate.Count} times");
+            }
         }
     }
 

@@ -28,7 +28,7 @@ public class PostEditServiceTests : TestBase
             );
 
         // Initialize test files
-        _xliffFile = new FileReference { Name = "test.xlf" };
+        _xliffFile = new FileReference { Name = "locked.mqxliff" };
         _glossaryFile = new FileReference { Name = "glossary.tbx" };
     }
 

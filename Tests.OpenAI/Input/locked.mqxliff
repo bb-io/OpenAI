@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:mq="MQXliff" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+<file original="3 random sentences.txt" mq:id="94f07566-f769-4983-9f7d-72d5ad283b3d" mq:projectid="93a5da5a-140e-f011-875f-a8a15994f72e" source-language="en-us" target-language="de" datatype="x-plaintext">
+<header>
+<tool tool-id="MQ" tool-name="MemoQ" tool-version="10.3.12" tool-company="Kilgray" />
+<mq:export-path>\3 random sentences_ger.txt</mq:export-path>
+<mq:docinformation mq:isabstract="isabstract" mq:hashistory="false" mq:docname="3 random sentences.txt" mq:majorversion="1" mq:minorversion="3" mq:nosplitjoin="false" mq:langindepgroupid="2dcea113-b680-42f0-8d67-59b12afad4ed" mq:multidocgroupid="88bfd359-da38-48db-bf09-d4b37ff67eec" mq:origfile="3 random sentences.txt" mq:numberofwords="39" mq:filterconfigname="default" mq:filterconfigserverurl="" mq:changetrackingenabledstates="Off,Off,Off,Off"><mq:tagdefinition alignhighlight="true" caseinsensitive="false" rawhtml="false" showitags="true" basicformat="false" supersubscript="false" xmlcommands="false"><mq:tagdefelement name="mq:ch" placeholder="false" tagrequired="Normal"><mq:tagdefattribute name="val" filtered="true" required="true" translatable="false" /><mq:tagdefattribute name="invalidxmlchar" filtered="true" required="false" translatable="false" /></mq:tagdefelement><mq:tagdefelement name="mq:rxt" placeholder="false" tagrequired="Normal"><mq:tagdefattribute name="displaytext" filtered="true" required="true" translatable="false" /><mq:tagdefattribute name="val" filtered="true" required="true" translatable="false" /><mq:tagdefattribute name="fmt_b" filtered="true" required="false" translatable="false" /><mq:tagdefattribute name="fmt_i" filtered="true" required="false" translatable="false" /><mq:tagdefattribute name="fmt_u" filtered="true" required="false" translatable="false" /><mq:tagdefattribute name="fmt_sup" filtered="true" required="false" translatable="false" /><mq:tagdefattribute name="fmt_sub" filtered="true" required="false" translatable="false" /></mq:tagdefelement><mq:tagdefelement name="mq:rxt-req" placeholder="true" tagrequired="Required"><mq:tagdefattribute name="displaytext" filtered="true" required="true" translatable="false" /><mq:tagdefattribute name="val" filtered="true" required="true" translatable="false" /><mq:tagdefattribute name="fmt_b" filtered="true" required="false" translatable="false" /><mq:tagdefattribute name="fmt_i" filtered="true" required="false" translatable="false" /><mq:tagdefattribute name="fmt_u" filtered="true" required="false" translatable="false" /><mq:tagdefattribute name="fmt_sup" filtered="true" required="false" translatable="false" /><mq:tagdefattribute name="fmt_sub" filtered="true" required="false" translatable="false" /></mq:tagdefelement></mq:tagdefinition>
+<mq:doccomments />
+<mq:lqamodel><![CDATA[<XMLSerializedLQAModel xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><Version>1</Version><Name /><RevisionID>00000000-0000-0000-0000-000000000000</RevisionID><UseSeverityLevels>false</UseSeverityLevels><UsePenaltyPoints>false</UsePenaltyPoints><RequiresReviewerCommenting>false</RequiresReviewerCommenting><SeverityLevelNames /><ModelEntries /><PassFailCriterion><CountMultipleErrorOccuranceAsOne>false</CountMultipleErrorOccuranceAsOne><CritDefType>PenaltyPoints</CritDefType><PenaltyPointsNominator>0</PenaltyPointsNominator><PenaltyPointPerWordsDenominator>0</PenaltyPointPerWordsDenominator><NormalizedPenaltyScoreLimit>0</NormalizedPenaltyScoreLimit><CritDefinitionRules /></PassFailCriterion><QALQAMapping /><Timestamp>0001-01-01T00:00:00</Timestamp></XMLSerializedLQAModel>]]></mq:lqamodel>
+<mq:externalpreviewinfo>
+<mq:previewidsbylabels>
+<mq:previewidbylabel mq:label="1" mq:previewid="mQ-default-5c9acc66-a72d-4f15-a550-e2be81109178-1" />
+<mq:previewidbylabel mq:label="2" mq:previewid="mQ-default-5c9acc66-a72d-4f15-a550-e2be81109178-2" />
+<mq:previewidbylabel mq:label="3" mq:previewid="mQ-default-5c9acc66-a72d-4f15-a550-e2be81109178-3" />
+</mq:previewidsbylabels>
+</mq:externalpreviewinfo>
+</mq:docinformation>
+</header>
+<body>
+<trans-unit id="1" translate="no" mq:locked="locked" mq:status="Proofread" mq:segmentguid="012657c1-1284-41d9-8551-18aa60fb5c0e" mq:segmentproofread="segmentproofread" mq:lastchangedtimestamp="2025-03-31T09:44:01Z" mq:lastchanginguser="admin" mq:maxlengthchars="-1" mq:nosplitjoin="false" mq:firstlabel="1" mq:lastlabel="1" mq:autosplitjoinstate="0" mq:lastmodifrole="4" mq:multipleexactmatch="false">
+<source xml:space="preserve" mq:segpart="1" mq:hasfollowingobject="hasfollowingobject">Hang on, my kittens are scratching at the bathtub and they'll upset by the lack of biscuits.</source>
+<target xml:space="preserve">Moment mal, (this is an issue) meine Kätzchen kratzen an der Badewanne und werden sich über den Mangel an Keksen aufregen.</target>
+<mq:startingws xml:space="preserve" />
+<mq:endingws xml:space="preserve" />
+<mq:commitinfos xmlns="MQXliff"><commitinfo matchrate="0" role="4" timestamp="2025-03-31T09:44:01Z" username="admin" editingtime="0" /></mq:commitinfos>
+<mq:nosplitjoins />
+<mq:originalsource edited="false" />
+</trans-unit>
+<trans-unit id="2" mq:status="NotStarted" mq:segmentguid="74f3c267-9c15-4172-a40a-46fff2cedb88" mq:lastchangedtimestamp="0001-01-01T00:00:00Z" mq:maxlengthchars="-1" mq:nosplitjoin="false" mq:firstlabel="2" mq:lastlabel="2" mq:autosplitjoinstate="0" mq:lastmodifrole="0" mq:multipleexactmatch="false">
+<source xml:space="preserve" mq:segpart="2" mq:hasfollowingobject="hasfollowingobject">The glacier came alive as the climbers hiked closer.</source>
+<target xml:space="preserve"></target>
+<mq:startingws xml:space="preserve" />
+<mq:endingws xml:space="preserve" />
+<mq:commitinfos xmlns="MQXliff" />
+<mq:nosplitjoins />
+<mq:originalsource edited="false" />
+</trans-unit>
+<trans-unit id="3" mq:status="NotStarted" mq:segmentguid="6132657a-e5d0-482d-9267-751badfc3971" mq:lastchangedtimestamp="0001-01-01T00:00:00Z" mq:maxlengthchars="-1" mq:nosplitjoin="false" mq:firstlabel="3" mq:lastlabel="3" mq:autosplitjoinstate="0" mq:lastmodifrole="0" mq:multipleexactmatch="false">
+<source xml:space="preserve" mq:segpart="3" mq:hasfollowingobject="hasfollowingobject">He watched the dancing piglets with panda bear tummies in the swimming pool.</source>
+<target xml:space="preserve"></target>
+<mq:startingws xml:space="preserve" />
+<mq:endingws xml:space="preserve" />
+<mq:commitinfos xmlns="MQXliff" />
+<mq:nosplitjoins />
+<mq:originalsource edited="false" />
+</trans-unit>
+</body>
+</file>
+</xliff>
