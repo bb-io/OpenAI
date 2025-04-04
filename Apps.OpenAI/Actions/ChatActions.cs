@@ -799,9 +799,9 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         Description = "Updates the targets of XLIFF 1.2 files")]
     public async Task<PostEditXliffResponse> PostEditXLIFF([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] PostEditXliffRequest input, [ActionParameter,
-                                                       Display("Prompt",
+                                                       Display("Additional instructions",
                                                            Description =
-                                                               "Additional instructions")]
+                                                               "Additional instructions that will be added to the user prompt. Example: 'Be concise, use technical terms and avoid slang'")]
         string? prompt,
         [ActionParameter] GlossaryRequest glossary,
         [ActionParameter,
