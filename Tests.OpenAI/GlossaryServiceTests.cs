@@ -8,8 +8,8 @@ namespace Tests.OpenAI;
 [TestClass]
 public class GlossaryServiceTests : TestBase
 {
-    private GlossaryService _glossaryService;
-    private FileReference _glossaryFile;
+    private GlossaryService _glossaryService = null!;
+    private FileReference _glossaryFile = null!;
     
     [TestInitialize]
     public void Setup()

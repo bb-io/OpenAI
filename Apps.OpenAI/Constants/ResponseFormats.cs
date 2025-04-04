@@ -2,7 +2,7 @@
 
 public static class ResponseFormats
 {
-    public static object GetProcessXliffResponseFormat()
+    public static object GetXliffResponseFormat()
     {
         return new
         {

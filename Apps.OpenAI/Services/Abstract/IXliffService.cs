@@ -12,7 +12,7 @@ public interface IXliffService
     Task<XliffDocument> LoadXliffDocumentAsync(FileReference file);
     Stream SerializeXliffDocument(XliffDocument document);
     IEnumerable<IEnumerable<TranslationUnit>> BatchTranslationUnits(
-        IEnumerable<TranslationUnit> units, int batchSize, int modelMaxTokens);
+        IEnumerable<TranslationUnit> units, int batchSize);
     Dictionary<string, string> CheckAndFixTagIssues(
         IEnumerable<TranslationUnit> units, Dictionary<string, string> translations);
 }

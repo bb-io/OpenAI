@@ -34,7 +34,7 @@ public class XliffService(IFileManagementClient fileManagementClient) : IXliffSe
     }
 
     public IEnumerable<IEnumerable<TranslationUnit>> BatchTranslationUnits(
-        IEnumerable<TranslationUnit> units, int batchSize, int modelMaxTokens)
+        IEnumerable<TranslationUnit> units, int batchSize)
     {
         if (batchSize <= 0)
             throw new ArgumentException("Batch size must be greater than zero.", nameof(batchSize));

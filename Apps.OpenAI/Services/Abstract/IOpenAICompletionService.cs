@@ -8,11 +8,11 @@ namespace Apps.OpenAI.Services.Abstract;
 
 public interface IOpenAICompletionService
 {
-    Task<ChatCompletitionResult> ExecuteChatCompletionWithRetryAsync(
+    Task<ChatCompletitionResult> ExecuteChatCompletionAsync(
         IEnumerable<ChatMessageDto> messages, 
         string modelId, 
         BaseChatRequest request, 
-        int maxBatchRetries = 3);
+        object? responseFormat = null);
     int CalculateTokenCount(string text, string modelId);
     int GetModelMaxTokens(string modelId);
 }

@@ -5,8 +5,8 @@ namespace Apps.OpenAI.Models.PostEdit;
 public class PostEditInnerRequest
 {
     public string ModelId { get; set; } = string.Empty;
-    public string? Prompt { get; set; } = string.Empty;
-    public FileReference Xliff { get; set; } = new();
+    public string? Prompt { get; set; }
+    public FileReference XliffFile { get; set; } = new();
     public FileReference? Glossary { get; set; } 
     public int BucketSize { get; set; } = 1500;
     public string? SourceLanguage { get; set; }

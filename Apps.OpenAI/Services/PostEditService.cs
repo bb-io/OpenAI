@@ -23,6 +23,8 @@ public class PostEditService(
     IXliffService xliffService,
     IGlossaryService glossaryService,
     IOpenAICompletionService openaiService,
+    IResponseDeserializationService deserializationService,
+    IPromptBuilderService promptBuilderService,
     IFileManagementClient fileManagementClient)
 {
     public async Task<PostEditResult> PostEditXliffAsync(PostEditInnerRequest request)
@@ -35,15 +37,14 @@ public class PostEditService(
 
         try
         {
-            var xliffDocument = await xliffService.LoadXliffDocumentAsync(request.Xliff);
+            var xliffDocument = await xliffService.LoadXliffDocumentAsync(request.XliffFile);
             result.TotalSegmentsCount = xliffDocument.TranslationUnits.Count();
 
             var sourceLanguage = request.SourceLanguage ?? xliffDocument.SourceLanguage;
             var targetLanguage = request.TargetLanguage ?? xliffDocument.TargetLanguage;
             var unitsToProcess = FilterTranslationUnits(xliffDocument.TranslationUnits, request.PostEditLockedSegments ?? false);
 
-            var modelMaxTokens = openaiService.GetModelMaxTokens(request.ModelId);
-            var batches = xliffService.BatchTranslationUnits(unitsToProcess, request.BucketSize, modelMaxTokens);
+            var batches = xliffService.BatchTranslationUnits(unitsToProcess, request.BucketSize);
             var batchOptions = new BatchProcessingOptions(
                 request.ModelId,
                 sourceLanguage,
@@ -73,14 +74,14 @@ public class PostEditService(
 
             var stream = xliffService.SerializeXliffDocument(xliffDocument);
             result.File = await fileManagementClient.UploadAsync(
-                stream, request.Xliff.ContentType, request.Xliff.Name);
+                stream, request.XliffFile.ContentType, request.XliffFile.Name);
 
             return result;
         }
         catch (Exception ex) when (request.NeverFail)
         {
             result.ErrorMessages.Add($"Critical error: {ex.Message}");
-            result.File = request.Xliff;
+            result.File = request.XliffFile;
             return result;
         }
     }
@@ -103,6 +104,7 @@ public class PostEditService(
         foreach (var batch in batches)
         {
             batchCounter++;
+            var batchSize = batch.Count();
 
             try
             {
@@ -121,12 +123,12 @@ public class PostEditService(
                 if (!batchResult.IsSuccess && !neverFail)
                 {
                     throw new PluginApplicationException(
-                        $"Failed to process batch {batchCounter}. Errors: {string.Join(", ", batchResult.ErrorMessages)}");
+                        $"Failed to process batch {batchCounter} (size: {batchSize}). Errors: {string.Join(", ", batchResult.ErrorMessages)}");
                 }
             }
             catch (Exception ex) when (neverFail)
             {
-                errors.Add($"Error in batch {batchCounter}: {ex.Message}");
+                errors.Add($"Error in batch {batchCounter} (size: {batchSize}): {ex.Message}");
             }
         }
 
@@ -152,7 +154,6 @@ public class PostEditService(
 
         try
         {
-            // Get glossary prompt if needed
             string? glossaryPrompt = null;
             if (options.Glossary != null)
             {
@@ -160,8 +161,7 @@ public class PostEditService(
                     options.Glossary, batch, options.FilterGlossary);
             }
 
-            // Build prompt and prepare messages
-            var userPrompt = BuildUserPrompt(
+            var userPrompt = promptBuilderService.BuildUserPrompt(
                 options.SourceLanguage,
                 options.TargetLanguage,
                 batch,
@@ -170,11 +170,10 @@ public class PostEditService(
 
             var messages = new List<ChatMessageDto>
             {
-                new(MessageRoles.System, PromptBuilder.DefaultSystemPrompt),
+                new(MessageRoles.System, promptBuilderService.GetSystemPrompt()),
                 new(MessageRoles.User, userPrompt)
             };
 
-            // Call OpenAI and process response
             var completionResult = await CallOpenAIAndProcessResponseAsync(
                 messages, options.ModelId, options.MaxRetryAttempts);
 
@@ -193,75 +192,56 @@ public class PostEditService(
         }
     }
 
-    private async Task<OpenAICompletionResult> CallOpenAIAndProcessResponseAsync(
-            List<ChatMessageDto> messages,
-            string modelId,
-            int maxRetryAttempts)
+    private async Task<OpenAICompletionResult> CallOpenAIAndProcessResponseAsync(List<ChatMessageDto> messages, string modelId, int maxRetryAttempts)
     {
         var errors = new List<string>();
         var translations = new List<TranslationEntity>();
         var usage = new UsageDto();
 
-        var chatCompletionResult = await openaiService.ExecuteChatCompletionWithRetryAsync(
-            messages,
-            modelId,
-            new BaseChatRequest { Temperature = 0.1f },
-            maxRetryAttempts);
+        int currentAttempt = 0;
+        bool success = false;
 
-        if (!chatCompletionResult.Success)
+        while (!success && currentAttempt < maxRetryAttempts)
         {
-            errors.Add(chatCompletionResult.Error ?? "Unknown error during OpenAI completion");
-            return new OpenAICompletionResult(false, usage, errors, translations);
+            currentAttempt++;
+            
+            var maxTokens = openaiService.GetModelMaxTokens(modelId);
+            var chatCompletionResult = await openaiService.ExecuteChatCompletionAsync(
+                messages,
+                modelId,
+                new BaseChatRequest { Temperature = 0.1f, MaximumTokens = maxTokens },
+                ResponseFormats.GetXliffResponseFormat());
+
+            if (!chatCompletionResult.Success)
+            {
+                var errorMessage = $"Attempt {currentAttempt}/{maxRetryAttempts}: API call failed - {chatCompletionResult.Error ?? "Unknown error during OpenAI completion"}";
+                errors.Add(errorMessage);
+                continue;
+            }
+
+            usage = chatCompletionResult.ChatCompletion.Usage;
+            var choice = chatCompletionResult.ChatCompletion.Choices.First();
+            var content = choice.Message.Content;
+
+            if (choice.FinishReason == "length")
+            {
+                errors.Add($"Attempt {currentAttempt}/{maxRetryAttempts}: The response from OpenAI was truncated. Try reducing the batch size.");
+            }
+
+            var deserializationResult = deserializationService.DeserializeResponse(content);
+            if (deserializationResult.Success)
+            {
+                success = true;
+                translations.AddRange(deserializationResult.Translations);
+                errors.Clear();
+            }
+            else
+            {
+                errors.Add($"Attempt {currentAttempt}/{maxRetryAttempts}: {deserializationResult.Error}");
+            }
         }
 
-        usage = chatCompletionResult.ChatCompletion.Usage;
-        var choice = chatCompletionResult.ChatCompletion.Choices.First();
-        var content = choice.Message.Content;
-
-        if (choice.FinishReason == "length")
-        {
-            errors.Add("The response from OpenAI was truncated. Try reducing the batch size.");
-            return new OpenAICompletionResult(false, usage, errors, translations);
-        }
-
-        try
-        {
-            var deserializedResponse = JsonConvert.DeserializeObject<TranslationEntities>(content);
-            translations.AddRange(deserializedResponse.Translations);
-            return new OpenAICompletionResult(true, usage, errors, translations);
-        }
-        catch (Exception ex)
-        {
-            errors.Add($"Failed to deserialize OpenAI response: {ex.Message}. Response: {content.Substring(0, Math.Min(content.Length, 200))}...");
-            return new OpenAICompletionResult(false, usage, errors, translations);
-        }
-    }
-
-    private string BuildUserPrompt(
-        string sourceLanguage,
-        string targetLanguage,
-        TranslationUnit[] batch,
-        string? additionalPrompt,
-        string? glossaryPrompt)
-    {
-        var json = JsonConvert.SerializeObject(batch.Select(x => new { x.Id, x.Source, x.Target }));
-
-        var prompt = $"Your input consists of sentences in {sourceLanguage} language with their translations into {targetLanguage}. " +
-            "Review and edit the translated target text as necessary to ensure it is a correct and accurate translation of the source text. " +
-            "If you see XML tags in the source also include them in the target text, don't delete or modify them. ";
-
-        if (!string.IsNullOrEmpty(additionalPrompt))
-        {
-            prompt += additionalPrompt + " ";
-        }
-
-        if (!string.IsNullOrEmpty(glossaryPrompt))
-        {
-            prompt += glossaryPrompt + " ";
-        }
-
-        prompt += "Return only translation_id and target in your response. Sentences: \n" + json;
-        return prompt;
+        return new OpenAICompletionResult(success, usage, errors, translations);
     }
 
     private int UpdateXliffWithResults(

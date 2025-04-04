@@ -849,7 +849,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 JsonConvert.SerializeObject(filteredBatch.Select(x => new { x.Id, x.Source, x.Target }));
 
             var messages = new List<ChatMessageDto> { new(MessageRoles.System, PromptBuilder.DefaultSystemPrompt), new(MessageRoles.User, userPrompt) };
-            var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, new BaseChatRequest { Temperature = 0.1f }, ResponseFormats.GetProcessXliffResponseFormat());
+            var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, new BaseChatRequest { Temperature = 0.1f }, ResponseFormats.GetXliffResponseFormat());
             usage += response.Usage;
             
             var choice = response.Choices.First();
@@ -1004,7 +1004,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 new(MessageRoles.User, userPrompt)
             };
             
-            var response = await ExecuteChatCompletion(messages, model, new BaseChatRequest { Temperature = 0.1f }, responseFormat: ResponseFormats.GetProcessXliffResponseFormat());
+            var response = await ExecuteChatCompletion(messages, model, new BaseChatRequest { Temperature = 0.1f }, responseFormat: ResponseFormats.GetXliffResponseFormat());
             usageDto += response.Usage;
             
             var choice = response.Choices.First();
