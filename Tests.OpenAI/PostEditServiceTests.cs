@@ -12,7 +12,7 @@ public class PostEditServiceTests : TestBase
     private const string ModelId = "gpt-4.5-preview-2025-02-27";
 
     private PostEditService _postEditService = null!;
-        private FileReference _xliffFile = null!;
+    private FileReference _xliffFile = null!;
     private FileReference _glossaryFile = null!;
 
     [TestInitialize]
