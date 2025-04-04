@@ -8,7 +8,7 @@ public class TestBase
 {
     public IEnumerable<AuthenticationCredentialsProvider> Creds { get; private set; }
     public InvocationContext InvocationContext { get; private set; }
-    public FileManager FileManager { get; private set; }
+    public FileManagementClient FileManagementClient { get; private set; }
 
     public TestBase()
     {
@@ -38,6 +38,6 @@ public class TestBase
     {
         var config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
         var folderLocation = config.GetSection("TestFolder").Value;
-        FileManager = new FileManager(folderLocation!);
+        FileManagementClient = new FileManagementClient(folderLocation!);
     }
 }

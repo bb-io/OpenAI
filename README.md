@@ -135,13 +135,24 @@ As an example, the settings in the image below will result in all semegments wit
 - **Post-edit XLIFF file** Updates the targets of XLIFF files
 
 Optional inputs:
-	- Prompt: Add your linguistic criteria for postediting targets.
-	- Bucket size: Amount of translation units to process in the same request. (See dedicated section)
-	- Source and Target languages: By default, we get these values from the XLIFF header. You can provide different values, no specific format required.
-	- Glossary
-	- Update locked segments: If true, locked segments will be updated, otherwise they will be skipped. By default, this is set to false.
+1. Additional instructions: Add your linguistic criteria for postediting targets.
+2. Bucket size: Amount of translation units to process in the same request. (See dedicated section)
+3. Source and Target languages: By default, we get these values from the XLIFF header. You can provide different values, no specific format required.
+4. Glossary: Glossary file in TBX format. The glossary will be used to enhance the target text by incorporating relevant terms from the glossary where applicable.
+5. Update locked segments: If true, locked segments will be updated, otherwise they will be skipped. By default, this is set to false.
+6. Batch retry attempts: Number of attempts to retry the batch process in case of failure. By default, this is set to 2.
+7. Never fail: If true, the action will never fail even with the critical errrors, it will just return the exact same file as input and the error message. By default, this is set to true.
 
 > The Prompt used in this actions is "Your input consists of sentences in `source` language with their translations into `target language`. Review and edit the translated target text as necessary to ensure it is a correct and accurate translation of the source text. If you encounter XML tags in the source also include them in the target text, don't delete or modify them." By using the "Prompt" optional input, your instructions will be appended to the prompt.
+
+Output includes:
+1. File: Updated XLIFF file with the post-edited target segments.
+2. Usage: Number of tokens used for the action.
+3. Error messages: If any errors occurred during the action, they will be included in the output.
+4. Error messages count: Number of errors that occurred during the action.
+5. Total segments count: Total number of segments (translation units) in the XLIFF file. This number includes all segments, even locked ones.
+6. Targets updated count: Number of segments (translation units) that were updated during the action.
+7. Proccessed batches count: Number of batches that were processed during the action.
 
 - **Process XLIFF file** given an XLIFF file, processes each translation unit according to provided instructions in the optinal input "Prompt" (if no Prompt is provided, the source texts will be translated) and updates the target text for each unit.
 

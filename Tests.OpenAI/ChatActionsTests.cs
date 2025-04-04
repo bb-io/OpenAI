@@ -14,7 +14,7 @@ public class ChatActionsTests : TestBase
     [TestMethod]
     public async Task ChatMessageRequest_WithSimpleTextMessage_ReturnsValidResponse()
     {
-        var actions = new ChatActions(InvocationContext, FileManager);
+        var actions = new ChatActions(InvocationContext, FileManagementClient);
         var result = await actions.ChatMessageRequest(
             new TextChatModelIdentifier { ModelId = "gpt-4o" },
             new ChatRequest { Message = "Hello!" },
@@ -27,7 +27,7 @@ public class ChatActionsTests : TestBase
     [TestMethod]
     public async Task ChatMessageRequest_WithAudioFile_ReturnsValidResponse()
     {
-        var actions = new ChatActions(InvocationContext, FileManager);
+        var actions = new ChatActions(InvocationContext, FileManagementClient);
         var result = await actions.ChatMessageRequest(
             new TextChatModelIdentifier { ModelId = "gpt-4o" },
             new ChatRequest
@@ -48,7 +48,7 @@ public class ChatActionsTests : TestBase
     [TestMethod]
     public async Task PostEditXLIFF_WithValidXlfFile_ProcessesSuccessfully()
     {
-        var actions = new ChatActions(InvocationContext, FileManager);
+        var actions = new ChatActions(InvocationContext, FileManagementClient);
         var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o-mini" };
         var editRequest = new PostEditXliffRequest 
         { 
@@ -67,7 +67,7 @@ public class ChatActionsTests : TestBase
     [TestMethod]
     public async Task TranslateXliff_WithValidTmxFile_ThrowMisconfigurationError()
     {
-        var actions = new ChatActions(InvocationContext, FileManager);
+        var actions = new ChatActions(InvocationContext, FileManagementClient);
         var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o-mini" };
         var translateRequest = new TranslateXliffRequest 
         { 
@@ -85,7 +85,7 @@ public class ChatActionsTests : TestBase
     [TestMethod]
     public async Task TranslateXliff_WithTxlfFile_ProcessesSuccessfully()
     {
-        var actions = new ChatActions(InvocationContext, FileManager);
+        var actions = new ChatActions(InvocationContext, FileManagementClient);
         var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o-mini" };
         var translateRequest = new TranslateXliffRequest 
         { 
@@ -105,14 +105,17 @@ public class ChatActionsTests : TestBase
     [TestMethod]
     public async Task PostEditXLIFF_WithTxlfFile_ProcessesSuccessfully()
     {
-        var actions = new ChatActions(InvocationContext, FileManager);
+        var actions = new ChatActions(InvocationContext, FileManagementClient);
         var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o-mini" };
         var editRequest = new PostEditXliffRequest 
         { 
-            File = new Blackbird.Applications.Sdk.Common.Files.FileReference { Name = "Markdown entry #1_en-US-Default_HTML-nl-NL#TR_FQTF#.html.txlf" } 
+            File = new Blackbird.Applications.Sdk.Common.Files.FileReference { Name = "test.xlf" } 
         };
         string? systemMessage = null;
-        var glossaryRequest = new GlossaryRequest();
+        var glossaryRequest = new GlossaryRequest()
+        {
+            Glossary = new Blackbird.Applications.Sdk.Common.Files.FileReference { Name = "glossary.tbx" } 
+        };
         
         var result = await actions.PostEditXLIFF(modelIdentifier, editRequest, systemMessage, glossaryRequest);
         Assert.IsNotNull(result);

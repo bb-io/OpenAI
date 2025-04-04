@@ -34,6 +34,8 @@ using System.Xml.Serialization;
 using System.IO;
 using System.Xml.Linq;
 using Microsoft.AspNetCore.Http;
+using Apps.OpenAI.Services;
+using Apps.OpenAI.Models.PostEdit;
 
 namespace Apps.OpenAI.Actions;
 
@@ -795,11 +797,11 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
     [Action("Post-edit XLIFF file",
         Description = "Updates the targets of XLIFF 1.2 files")]
-    public async Task<TranslateXliffResponse> PostEditXLIFF([ActionParameter] TextChatModelIdentifier modelIdentifier,
+    public async Task<PostEditXliffResponse> PostEditXLIFF([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] PostEditXliffRequest input, [ActionParameter,
-                                                       Display("Prompt",
+                                                       Display("Additional instructions",
                                                            Description =
-                                                               "Additional instructions")]
+                                                               "Additional instructions that will be added to the user prompt. Example: 'Be concise, use technical terms and avoid slang'")]
         string? prompt,
         [ActionParameter] GlossaryRequest glossary,
         [ActionParameter,
@@ -808,132 +810,30 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                  "Specify the number of translation units to be processed at once. Default value: 1500. (See our documentation for an explanation)")]
         int? bucketSize = 1500)
     {
-        var xliffDocument = await DownloadXliffDocumentAsync(input.File);
+        var postEditService = new PostEditService(new XliffService(FileManagementClient), 
+            new GlossaryService(FileManagementClient),
+            new OpenAICompletionService(new OpenAIClient(Creds)), 
+            new ResponseDeserializationService(),
+            new PromptBuilderService(), 
+            FileManagementClient);
 
-        var results = new List<TranslationEntity>();
-        var batches = xliffDocument.TranslationUnits.Batch((int)bucketSize);
-        var src = input.SourceLanguage ?? xliffDocument.SourceLanguage;
-        var tgt = input.TargetLanguage ?? xliffDocument.TargetLanguage;
-        var usage = new UsageDto();
-
-        foreach (var batch in batches)
+        var result = await postEditService.PostEditXliffAsync(new PostEditInnerRequest
         {
-            string? glossaryPrompt = null;
-
-            var filteredBatch = input.PostEditLockedSegments == true
-                ? batch 
-                : batch.Where(x => !x.IsLocked()).ToArray();
-            
-            if (glossary?.Glossary != null)
-            {
-                var glossaryPromptPart =
-                    await GetGlossaryPromptPart(glossary.Glossary,
-                        string.Join(';', filteredBatch.Select(x => x.Source)) + ";" +
-                        string.Join(';', filteredBatch.Select(x => x.Target)), input.FilterGlossary ?? true);
-                if (glossaryPromptPart != null)
-                {
-                    glossaryPrompt +=
-                        "Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
-                        "Ensure that the translation aligns with the glossary entries for the respective languages. " +
-                        "If a term has variations or synonyms, consider them and choose the most appropriate " +
-                        "translation to maintain consistency and precision. ";
-                    glossaryPrompt += glossaryPromptPart;
-                }
-            }
-
-            var userPrompt =
-                $"Your input consists of sentences in {src} language with their translations into {tgt}. " +
-                "Review and edit the translated target text as necessary to ensure it is a correct and accurate translation of the source text. " +
-                "If you see XML tags in the source also include them in the target text, don't delete or modify them. " +
-                $"{prompt ?? ""} {glossaryPrompt ?? ""} Sentences: \n" +
-                JsonConvert.SerializeObject(filteredBatch.Select(x => new { x.Id, x.Source, x.Target }));
-
-            var messages = new List<ChatMessageDto> { new(MessageRoles.System, PromptBuilder.DefaultSystemPrompt), new(MessageRoles.User, userPrompt) };
-            var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, new BaseChatRequest { Temperature = 0.1f }, ResponseFormats.GetProcessXliffResponseFormat());
-            usage += response.Usage;
-            
-            var choice = response.Choices.First();
-            var content = choice.Message.Content;
-            if (choice.FinishReason == "length")
-            {
-                throw new PluginApplicationException($"The response from Open AI is too long and was cut off. " +
-                                                     $"To avoid this, try lowering the 'Bucket size' to reduce the length of the response.");
-            }
-
-            TryCatchHelper.TryCatch(() =>
-                {
-                    var deserializedResponse = JsonConvert.DeserializeObject<TranslationEntities>(content);
-                    results.AddRange(deserializedResponse.Translations);
-                }, $"Failed to deserialize the response from OpenAI, try again later. Response: {content}");
-        }
-
-        var duplicates = results
-        .GroupBy(r => r.TranslationId)
-        .Where(g => g.Count() > 1)
-        .Select(g => new
-        {
-            TranslationId = g.Key,
-            Count = g.Count(),
-            Items = g.ToList()
-        })
-        .ToList();
-
-        if (duplicates.Any())
-        {
-            throw new PluginApplicationException($"There are duplicate translation units in the response. Please try again.");
-        }
-
-        if (results.Count()!=xliffDocument.TranslationUnits.Count())
-        {
-            throw new PluginApplicationException($"The original xliff has {xliffDocument.TranslationUnits.Count()} translation units, but the response has {results.Count()} translation units - possible hallucination. Please try again.");
-        }
-
-        var dictionary = results.ToDictionary(x => x.TranslationId, x => x.TranslatedText);
-        var updatedResults =
-            Utils.Xliff.Extensions.CheckTagIssues(xliffDocument.TranslationUnits, dictionary);
-        updatedResults.ForEach(x =>
-        {
-            var translationUnit = xliffDocument.TranslationUnits.FirstOrDefault(tu => tu.Id == x.Key);
-            if (translationUnit != null)
-            {
-                if (input.AddMissingTrailingTags.HasValue && input.AddMissingTrailingTags == true)
-                {
-                    var sourceContent = translationUnit.Source;
-                    
-                    var tagPattern = @"<(?<tag>\w+)(?<attributes>[^>]*)>(?<content>.*?)</\k<tag>>";
-                    var sourceMatch = Regex.Match(sourceContent, tagPattern, RegexOptions.Singleline);
-
-                    if (sourceMatch.Success)
-                    {
-                        var tagName = sourceMatch.Groups["tag"].Value;
-                        var tagAttributes = sourceMatch.Groups["attributes"].Value;
-                        var openingTag = $"<{tagName}{tagAttributes}>";
-                        var closingTag = $"</{tagName}>";
-
-                        if (!x.Value.Contains(openingTag) && !x.Value.Contains(closingTag))
-                        {
-                            translationUnit.Target = openingTag + x.Value + closingTag;
-                        }
-                        else
-                        {
-                            translationUnit.Target = x.Value;
-                        }
-                    }
-                    else
-                    {
-                        translationUnit.Target = x.Value;
-                    }
-                }
-                else
-                {
-                    translationUnit.Target = x.Value;
-                }
-            }
+            ModelId = modelIdentifier.ModelId,
+            Prompt = prompt,
+            XliffFile = input.File,
+            Glossary = glossary.Glossary,
+            BucketSize = bucketSize ?? 1500,
+            SourceLanguage = input.SourceLanguage,
+            TargetLanguage = input.TargetLanguage,
+            PostEditLockedSegments = input.PostEditLockedSegments ?? false,
+            AddMissingTrailingTags = input.AddMissingTrailingTags ?? false,
+            FilterGlossary = input.FilterGlossary ?? true,
+            NeverFail = input.NeverFail ?? true,
+            BatchRetryAttempts = input.BatchRetryAttempts ?? 2
         });
 
-        var finalFile =
-            await FileManagementClient.UploadAsync(xliffDocument.ToStream(), input.File.ContentType, input.File.Name);
-        return new TranslateXliffResponse { File = finalFile, Usage = usage, };
+        return new PostEditXliffResponse(result);
     }
 
     [Action("Get localizable content from image", Description = "Retrieve localizable content from image.")]
@@ -1004,7 +904,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 new(MessageRoles.User, userPrompt)
             };
             
-            var response = await ExecuteChatCompletion(messages, model, new BaseChatRequest { Temperature = 0.1f }, responseFormat: ResponseFormats.GetProcessXliffResponseFormat());
+            var response = await ExecuteChatCompletion(messages, model, new BaseChatRequest { Temperature = 0.1f }, responseFormat: ResponseFormats.GetXliffResponseFormat());
             usageDto += response.Usage;
             
             var choice = response.Choices.First();
