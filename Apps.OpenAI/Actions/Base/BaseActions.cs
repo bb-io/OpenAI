@@ -31,6 +31,12 @@ public abstract class BaseActions : OpenAIInvocable
     
     protected async Task<string> GetGlossaryPromptPart(FileReference glossary, string sourceContent, bool filter)
     {
+        if(!glossary.Name.EndsWith(".tbx", StringComparison.OrdinalIgnoreCase))
+        {
+            var extension = Path.GetExtension(glossary.Name);
+            throw new PluginMisconfigurationException($"Glossary file must be in TBX format. But the provided file has {extension} extension.");
+        }
+
         var glossaryStream = await FileManagementClient.DownloadAsync(glossary);
         var blackbirdGlossary = await glossaryStream.ConvertFromTbx();
 
