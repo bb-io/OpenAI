@@ -123,4 +123,28 @@ public class ChatActionsTests : TestBase
 
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
+
+    [TestMethod]
+    public async Task LocalizeText_WithSerbianLocale_ReturnsLocalizedText()
+    {
+        var actions = new ChatActions(InvocationContext, FileManagementClient);
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o" };
+        var localizeRequest = new LocalizeTextRequest 
+        { 
+            Text = "Develop and implement an HR strategy that drives organizational productivity and supports company's business goals. Design and oversee processes that promote team efficiency and operational effectiveness while reducing complexity and redundancies.",
+            Locale = "sr-Latn-RS"
+        };
+
+        var glossaryRequest = new GlossaryRequest();
+        
+        var result = await actions.LocalizeText(modelIdentifier, localizeRequest, glossaryRequest);
+        
+        Assert.IsNotNull(result);
+        Assert.IsNotNull(result.Message);
+        Console.WriteLine("Original: " + localizeRequest.Text);
+        Console.WriteLine("Localized: " + result.Message);
+        
+        // Additional validation to ensure response is not empty and contains Serbian characters
+        Assert.IsTrue(result.Message.Length > 0);
+    }
 }
