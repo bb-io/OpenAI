@@ -742,48 +742,60 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         if (input.Threshold != null && input.Condition != null && input.State != null)
         {
-            var filteredTUs = new List<string>();
-            switch (input.Condition)
-            {
-                case ">":
-                    filteredTUs = results.Where(x => x.QualityScore > input.Threshold).Select(x => x.TranslationId)
-                        .ToList();
-                    break;
-                case ">=":
-                    filteredTUs = results.Where(x => x.QualityScore >= input.Threshold).Select(x => x.TranslationId)
-                        .ToList();
-                    break;
-                case "=":
-                    filteredTUs = results.Where(x => x.QualityScore == input.Threshold).Select(x => x.TranslationId)
-                        .ToList();
-                    break;
-                case "<":
-                    filteredTUs = results.Where(x => x.QualityScore < input.Threshold).Select(x => x.TranslationId)
-                        .ToList();
-                    break;
-                case "<=":
-                    filteredTUs = results.Where(x => x.QualityScore <= input.Threshold).Select(x => x.TranslationId)
-                        .ToList();
-                    break;
-            }
+            using var e1 = input.Threshold.GetEnumerator();
+            using var e2 = input.Condition.GetEnumerator();
+            using var e3 = input.State.GetEnumerator();
 
-            filteredTUs.ForEach(x =>
+            while (e1.MoveNext() && e2.MoveNext() && e3.MoveNext())
             {
-                var translationUnit = xliffDocument.TranslationUnits.FirstOrDefault(tu => tu.Id == x);
-                if (translationUnit != null)
+                var threshold = e1.Current;
+                var condition = e2.Current;
+                var state = e3.Current;
+
+                var filteredTUs = new List<string>();
+                switch (condition)
                 {
-                    var stateAttribute = translationUnit.Attributes.FirstOrDefault(x => x.Key == "state");
-                    if (!string.IsNullOrEmpty(stateAttribute.Key))
-                    {
-                        translationUnit.Attributes.Remove(stateAttribute.Key);
-                        translationUnit.Attributes.Add("state", input.State);
-                    }
-                    else
-                    {
-                        translationUnit.Attributes.Add("state", input.State);
-                    }
+                    case ">":
+                        filteredTUs = results.Where(x => x.QualityScore > threshold).Select(x => x.TranslationId)
+                            .ToList();
+                        break;
+                    case ">=":
+                        filteredTUs = results.Where(x => x.QualityScore >= threshold).Select(x => x.TranslationId)
+                            .ToList();
+                        break;
+                    case "=":
+                        filteredTUs = results.Where(x => x.QualityScore == threshold).Select(x => x.TranslationId)
+                            .ToList();
+                        break;
+                    case "<":
+                        filteredTUs = results.Where(x => x.QualityScore < threshold).Select(x => x.TranslationId)
+                            .ToList();
+                        break;
+                    case "<=":
+                        filteredTUs = results.Where(x => x.QualityScore <= threshold).Select(x => x.TranslationId)
+                            .ToList();
+                        break;
                 }
-            });
+
+                filteredTUs.ForEach(x =>
+                {
+                    var translationUnit = xliffDocument.TranslationUnits.FirstOrDefault(tu => tu.Id == x);
+                    if (translationUnit != null)
+                    {
+                        var stateAttribute = translationUnit.Attributes.FirstOrDefault(x => x.Key == "state");
+                        if (!string.IsNullOrEmpty(stateAttribute.Key))
+                        {
+                            translationUnit.Attributes.Remove(stateAttribute.Key);
+                            translationUnit.Attributes.Add("state", state);
+                        }
+                        else
+                        {
+                            translationUnit.Attributes.Add("state", state);
+                        }
+                    }
+                });
+            }
+             
         }
 
         var stream = xliffDocument.ToStream();

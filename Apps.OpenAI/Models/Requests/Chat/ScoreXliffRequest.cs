@@ -3,6 +3,7 @@ using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Files;
+using System.Collections.Generic;
 
 namespace Apps.OpenAI.Models.Requests.Chat
 {
@@ -16,13 +17,13 @@ namespace Apps.OpenAI.Models.Requests.Chat
         [Display("Target Language")]
         public string? TargetLanguage { get; set; }
 
-        public float? Threshold { get; set; }
+        public IEnumerable<double>? Threshold { get; set; }
 
         [StaticDataSource(typeof(ConditionDataSourceHandler))]
-        public string? Condition { get; set; }
+        public IEnumerable<string>? Condition { get; set; }
 
         [Display("New target state")]
         [StaticDataSource(typeof(XliffStateDataSourceHandler))]
-        public string? State { get; set; }
+        public IEnumerable<string>? State { get; set; }
     }
 }
