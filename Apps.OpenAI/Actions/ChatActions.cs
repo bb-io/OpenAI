@@ -839,6 +839,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             SourceLanguage = input.SourceLanguage,
             TargetLanguage = input.TargetLanguage,
             PostEditLockedSegments = input.PostEditLockedSegments ?? false,
+            ProcessOnlyTargetState = input.ProcessOnlyTargetState,
             AddMissingTrailingTags = input.AddMissingTrailingTags ?? false,
             FilterGlossary = input.FilterGlossary ?? true,
             NeverFail = input.NeverFail ?? true,

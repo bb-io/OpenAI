@@ -12,6 +12,7 @@ public class PostEditInnerRequest
     public string? SourceLanguage { get; set; }
     public string? TargetLanguage { get; set; }
     public bool? PostEditLockedSegments { get; set; }
+    public string? ProcessOnlyTargetState { get; set; }
     public bool? AddMissingTrailingTags { get; set; }
     public bool? FilterGlossary { get; set; }
     public bool NeverFail { get; set; } = false;
