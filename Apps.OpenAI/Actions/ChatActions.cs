@@ -782,15 +782,15 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                     var translationUnit = xliffDocument.TranslationUnits.FirstOrDefault(tu => tu.Id == x);
                     if (translationUnit != null)
                     {
-                        var stateAttribute = translationUnit.Attributes.FirstOrDefault(x => x.Key == "state");
+                        var stateAttribute = translationUnit.TargetAttributes.FirstOrDefault(x => x.Key == "state");
                         if (!string.IsNullOrEmpty(stateAttribute.Key))
                         {
-                            translationUnit.Attributes.Remove(stateAttribute.Key);
-                            translationUnit.Attributes.Add("state", state);
+                            translationUnit.TargetAttributes.Remove(stateAttribute.Key);
+                            translationUnit.TargetAttributes.Add("state", state);
                         }
                         else
                         {
-                            translationUnit.Attributes.Add("state", state);
+                            translationUnit.TargetAttributes.Add("state", state);
                         }
                     }
                 });
