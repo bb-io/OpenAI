@@ -991,6 +991,57 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 "Something went wrong parsing the output from OpenAI, most likely due to a hallucination!");
         }
     }
+
+    [Action("Get translation issues from XLIFF",
+        Description = "Review the translated XLIFF file and generate a comment with the issue description")]
+    public async Task<ChatResponse> GetTranslationIssuesFromXliff([ActionParameter] TextChatModelIdentifier modelIdentifier,
+        [ActionParameter] GetTranslationIssuesXliffRequest input, [ActionParameter] GlossaryRequest glossary)
+    {
+        var XLFservice = new XliffService(fileManagementClient);
+        var xliffDocument = await XLFservice.LoadXliffDocumentAsync(input.File);
+
+        var systemPrompt =
+            $"You are receiving a source text{(input.SourceLanguage != null ? $" written in {input.SourceLanguage} " : $" written in {xliffDocument.SourceLanguage} ")}" +
+            $"that was translated by NMT into target text{(input.TargetLanguage != null ? $" written in {input.TargetLanguage}" : $" written in {xliffDocument.TargetLanguage}")}. " +
+            "Evaluate the target text for grammatical errors, language structure issues, and overall linguistic coherence, " +
+            "including them in the issues description. Respond with the issues description. " +
+            $"{(input.TargetAudience != null ? $"The target audience is {input.TargetAudience}" : string.Empty)}";
+
+
+        if (glossary.Glossary != null)
+            systemPrompt +=
+                " Ensure that the translation aligns with the glossary entries provided for the respective " +
+                "languages, and note any discrepancies, ambiguities, or incorrect usage of terms. Include " +
+                "these observations in the issues description.";
+
+        if (input.AdditionalPrompt != null)
+            systemPrompt = $"{systemPrompt} {input.AdditionalPrompt}";
+
+        var userPrompt = @$"
+            Source text: 
+            {string.Join(" ", xliffDocument.TranslationUnits.Select(x => x.Source))}
+
+            Target text: 
+            {string.Join(" ", xliffDocument.TranslationUnits.Select(x => x.Target))}
+        ";
+
+        if (glossary.Glossary != null)
+        {
+            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, string.Join(" ", xliffDocument.TranslationUnits.Select(x => x.Source)), true);
+            if (glossaryPromptPart != null) userPrompt += glossaryPromptPart;
+        }
+
+        var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId);
+
+        return new()
+        {
+            SystemPrompt = systemPrompt,
+            UserPrompt = userPrompt,
+            Message = response.Choices.First().Message.Content,
+            Usage = response.Usage,
+        };
+    }
     #endregion
 
     private async Task<(List<TranslationEntity>, UsageDto)> ProcessTranslationUnits(string prompt,
