@@ -15,6 +15,7 @@ using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Xliff.Utils;
 using Blackbird.Xliff.Utils.Models;
+using DocumentFormat.OpenXml;
 using Newtonsoft.Json;
 
 namespace Apps.OpenAI.Services;
@@ -42,7 +43,7 @@ public class PostEditService(
 
             var sourceLanguage = request.SourceLanguage ?? xliffDocument.SourceLanguage;
             var targetLanguage = request.TargetLanguage ?? xliffDocument.TargetLanguage;
-            var unitsToProcess = FilterTranslationUnits(xliffDocument.TranslationUnits, request.PostEditLockedSegments ?? false);
+            var unitsToProcess = FilterTranslationUnits(xliffDocument.TranslationUnits, request.PostEditLockedSegments ?? false, request.ProcessOnlyTargetState);
 
             var batches = xliffService.BatchTranslationUnits(unitsToProcess, request.BucketSize);
             var batchOptions = new BatchProcessingOptions(
@@ -103,9 +104,14 @@ public class PostEditService(
         }
     }
 
-    private IEnumerable<TranslationUnit> FilterTranslationUnits(IEnumerable<TranslationUnit> units, bool processLocked)
+    private IEnumerable<TranslationUnit> FilterTranslationUnits(IEnumerable<TranslationUnit> units, bool processLocked, string targetStateToFilter)
     {
-        return processLocked ? units : units.Where(x => !x.IsLocked());
+        if (!String.IsNullOrEmpty(targetStateToFilter))
+        { units = units.Where(x => x.TargetAttributes.TryGetValue("state", out string value) 
+        && x.TargetAttributes["state"] == targetStateToFilter); }
+        return processLocked? units : units.Where(x => !x.IsLocked());
+        
+         
     }
 
     private async Task<BatchProcessingResult> ProcessAllBatchesAsync(
