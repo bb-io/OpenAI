@@ -119,7 +119,27 @@ public class ChatActionsTests : TestBase
         
         var result = await actions.PostEditXLIFF(modelIdentifier, editRequest, systemMessage, glossaryRequest);
         Assert.IsNotNull(result);
-        Assert.IsTrue(result.File.Name.Contains("Markdown entry"));
+        Assert.IsTrue(result.File.Name.Contains("test.xlf"));
+
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+    }
+    
+    [TestMethod]
+    public async Task ScoreXLIFF_WithValidTxlfFile_ProcessesSuccessfully()
+    {
+        var actions = new ChatActions(InvocationContext, FileManagementClient);
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o-mini" };
+        var scoreRequest = new ScoreXliffRequest 
+        { 
+            File = new Blackbird.Applications.Sdk.Common.Files.FileReference { Name = "test.xlf" },
+            Threshold = new []{ 8.0},
+            Condition = new []{">="},
+            State = new []{"needs-adaptation"}
+        };
+        
+        var result = await actions.ScoreXLIFF(modelIdentifier, scoreRequest, null, 1500);
+        Assert.IsNotNull(result);
+        Assert.IsTrue(result.File.Name.Contains("test"));
 
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
