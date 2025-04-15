@@ -28,7 +28,7 @@ public class PostEditServiceTests : TestBase
             );
 
         // Initialize test files
-        _xliffFile = new FileReference { Name = "locked.mqxliff" };
+        _xliffFile = new FileReference { Name = "D_SENSORS_PP_AW.idml_spa.mqxliff" };
         _glossaryFile = new FileReference { Name = "glossary.tbx" };
     }
 
@@ -61,6 +61,7 @@ public class PostEditServiceTests : TestBase
         Console.WriteLine($"Total segments: {result.TotalSegmentsCount}");
         Console.WriteLine($"Updated segments: {result.TargetsUpdatedCount}");
         Console.WriteLine($"Errors count: {result.ErrorMessages.Count}");
+        Console.WriteLine($"Locked segments excluded count: {result.LockedSegmentsExcludeCount}");
 
         foreach (var error in result.ErrorMessages)
         {
@@ -97,6 +98,7 @@ public class PostEditServiceTests : TestBase
         Console.WriteLine($"Usage - Prompt tokens: {result.Usage.PromptTokens}");
         Console.WriteLine($"Usage - Completion tokens: {result.Usage.CompletionTokens}");
         Console.WriteLine($"Usage - Total tokens: {result.Usage.TotalTokens}");
+        Console.WriteLine($"Locked segments excluded count: {result.LockedSegmentsExcludeCount}");
     }
 
     [TestMethod]
@@ -126,6 +128,7 @@ public class PostEditServiceTests : TestBase
         // Output results for manual inspection
         Console.WriteLine($"Total segments: {result.TotalSegmentsCount}");
         Console.WriteLine($"Updated segments: {result.TargetsUpdatedCount}");
+        Console.WriteLine($"Locked segments excluded count: {result.LockedSegmentsExcludeCount}");
     }
 
     [TestMethod]
@@ -152,6 +155,7 @@ public class PostEditServiceTests : TestBase
         Console.WriteLine($"Processed batches: {result.ProcessedBatchesCount}");
         Console.WriteLine($"Total segments: {result.TotalSegmentsCount}");
         Console.WriteLine($"Updated segments: {result.TargetsUpdatedCount}");
+        Console.WriteLine($"Locked segments excluded count: {result.LockedSegmentsExcludeCount}");
     }
 
     [TestMethod]
@@ -179,6 +183,7 @@ public class PostEditServiceTests : TestBase
             Console.WriteLine($"Total segments: {result.TotalSegmentsCount}");
             Console.WriteLine($"Updated segments: {result.TargetsUpdatedCount}");
             Console.WriteLine($"Errors count: {result.ErrorMessages.Count}");
+            Console.WriteLine($"Locked segments excluded count: {result.LockedSegmentsExcludeCount}");
 
             foreach (var error in result.ErrorMessages)
             {

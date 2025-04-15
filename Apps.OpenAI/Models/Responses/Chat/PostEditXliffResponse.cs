@@ -21,6 +21,9 @@ public class PostEditXliffResponse : TranslateXliffResponse
     [Display("Error messages")]
     public List<string> ErrorMessages { get; set; } = new();
 
+    [Display("Locked segments exclude count")]
+    public double LockedSegmentsExcludeCount { get; set; }
+
     public PostEditXliffResponse(PostEditResult postEditResult) 
     {
         File = postEditResult.File;
@@ -30,5 +33,6 @@ public class PostEditXliffResponse : TranslateXliffResponse
         TotalSegmentsCount = postEditResult.TotalSegmentsCount;
         ErrorMessagesCount = postEditResult.ErrorMessages.Count;
         ErrorMessages = postEditResult.ErrorMessages;
+        LockedSegmentsExcludeCount = postEditResult.LockedSegmentsExcludeCount;
     }
 }
