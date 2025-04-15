@@ -843,7 +843,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             AddMissingTrailingTags = input.AddMissingTrailingTags ?? false,
             FilterGlossary = input.FilterGlossary ?? true,
             NeverFail = input.NeverFail ?? true,
-            BatchRetryAttempts = input.BatchRetryAttempts ?? 2
+            BatchRetryAttempts = input.BatchRetryAttempts ?? 2,
+            MaxTokens = input.MaxTokens,
         });
 
         return new PostEditXliffResponse(result);
