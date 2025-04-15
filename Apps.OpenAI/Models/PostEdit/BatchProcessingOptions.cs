@@ -9,4 +9,5 @@ public record BatchProcessingOptions(
     string? Prompt,
     FileReference? Glossary,
     bool FilterGlossary,
-    int MaxRetryAttempts);
+    int MaxRetryAttempts,
+    int? MaxTokens);

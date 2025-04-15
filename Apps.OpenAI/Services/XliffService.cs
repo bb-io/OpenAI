@@ -37,7 +37,9 @@ public class XliffService(IFileManagementClient fileManagementClient) : IXliffSe
         IEnumerable<TranslationUnit> units, int batchSize)
     {
         if (batchSize <= 0)
+        {
             throw new ArgumentException("Batch size must be greater than zero.", nameof(batchSize));
+        }
             
         return units
             .Select((unit, index) => new { Unit = unit, Index = index })

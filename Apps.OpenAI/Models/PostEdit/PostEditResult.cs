@@ -12,4 +12,5 @@ public class PostEditResult
     public List<string> ErrorMessages { get; set; } = new();
     public int ProcessedBatchesCount { get; set; }
     public int TotalSegmentsCount { get; set; }
+    public int LockedSegmentsExcludeCount { get; set; }
 }

@@ -33,4 +33,7 @@ public class PostEditXliffRequest
 
     [Display("Batch retry attempts", Description = "The number of attempts to retry the batch in case of failure. By default it is set to 2.")]
     public int? BatchRetryAttempts { get; set; }
+
+    [Display("Max tokens", Description = "The maximum number of tokens to generate in the completion. By default it is set to 1000.")]
+    public int? MaxTokens { get; set; }
 }

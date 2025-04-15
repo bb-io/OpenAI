@@ -11,12 +11,10 @@ using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Services.Abstract;
 using Apps.OpenAI.Utils;
 using Blackbird.Applications.Sdk.Common.Exceptions;
-using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Xliff.Utils;
 using Blackbird.Xliff.Utils.Models;
 using DocumentFormat.OpenXml;
-using Newtonsoft.Json;
 
 namespace Apps.OpenAI.Services;
 
@@ -44,6 +42,7 @@ public class PostEditService(
             var sourceLanguage = request.SourceLanguage ?? xliffDocument.SourceLanguage;
             var targetLanguage = request.TargetLanguage ?? xliffDocument.TargetLanguage;
             var unitsToProcess = FilterTranslationUnits(xliffDocument.TranslationUnits, request.PostEditLockedSegments ?? false, request.ProcessOnlyTargetState);
+            result.LockedSegmentsExcludeCount = CountLockedSegments(xliffDocument.TranslationUnits, request.PostEditLockedSegments ?? false);
 
             var batches = xliffService.BatchTranslationUnits(unitsToProcess, request.BucketSize);
             var batchOptions = new BatchProcessingOptions(
@@ -53,7 +52,8 @@ public class PostEditService(
                 request.Prompt,
                 request.Glossary,
                 request.FilterGlossary ?? true,
-                request.BatchRetryAttempts ?? 3);
+                request.BatchRetryAttempts ?? 3,
+                request.MaxTokens);
 
             var batchProcessingResult = await ProcessAllBatchesAsync(
                 batches,
@@ -106,12 +106,22 @@ public class PostEditService(
 
     private IEnumerable<TranslationUnit> FilterTranslationUnits(IEnumerable<TranslationUnit> units, bool processLocked, string targetStateToFilter)
     {
-        if (!String.IsNullOrEmpty(targetStateToFilter))
-        { units = units.Where(x => x.TargetAttributes.TryGetValue("state", out string value) 
-        && x.TargetAttributes["state"] == targetStateToFilter); }
-        return processLocked? units : units.Where(x => !x.IsLocked());
-        
-         
+        if (!string.IsNullOrEmpty(targetStateToFilter))
+        { 
+            units = units.Where(x => x.TargetAttributes.TryGetValue("state", out string value) && x.TargetAttributes["state"] == targetStateToFilter); 
+        }
+
+        return processLocked ? units : units.Where(x => !x.IsLocked());
+    }
+
+    private int CountLockedSegments(IEnumerable<TranslationUnit> units, bool processLocked)
+    {
+        if (processLocked)
+        {
+            return 0;
+        }
+
+        return units.Count(x => x.IsLocked());
     }
 
     private async Task<BatchProcessingResult> ProcessAllBatchesAsync(
@@ -198,7 +208,7 @@ public class PostEditService(
             };
 
             var completionResult = await CallOpenAIAndProcessResponseAsync(
-                messages, options.ModelId, options.MaxRetryAttempts);
+                messages, options.ModelId, options.MaxRetryAttempts, options.MaxTokens);
 
             result.IsSuccess = completionResult.IsSuccess;
             result.Usage = completionResult.Usage;
@@ -215,7 +225,7 @@ public class PostEditService(
         }
     }
 
-    private async Task<OpenAICompletionResult> CallOpenAIAndProcessResponseAsync(List<ChatMessageDto> messages, string modelId, int maxRetryAttempts)
+    private async Task<OpenAICompletionResult> CallOpenAIAndProcessResponseAsync(List<ChatMessageDto> messages, string modelId, int maxRetryAttempts, int? userMaxTokens = null)
     {
         var errors = new List<string>();
         var translations = new List<TranslationEntity>();
@@ -228,7 +238,7 @@ public class PostEditService(
         {
             currentAttempt++;
             
-            var maxTokens = openaiService.GetModelMaxTokens(modelId);
+            var maxTokens = userMaxTokens ?? openaiService.GetModelMaxTokens(modelId);
             var chatCompletionResult = await openaiService.ExecuteChatCompletionAsync(
                 messages,
                 modelId,

@@ -17,4 +17,5 @@ public class PostEditInnerRequest
     public bool? FilterGlossary { get; set; }
     public bool NeverFail { get; set; } = false;
     public int? BatchRetryAttempts { get; set; } = 3;
+    public int? MaxTokens { get; set; }
 }
