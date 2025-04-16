@@ -9,7 +9,7 @@ namespace Tests.OpenAI;
 [TestClass]
 public class PostEditServiceTests : TestBase
 {
-    private const string ModelId = "gpt-4.5-preview-2025-02-27";
+    private const string ModelId = "gpt-4o";
 
     private PostEditService _postEditService = null!;
     private FileReference _xliffFile = null!;
@@ -20,7 +20,7 @@ public class PostEditServiceTests : TestBase
     {
         _postEditService = new PostEditService(
             new XliffService(FileManagementClient),
-            new GlossaryService(FileManagementClient),
+            new JsonGlossaryService(FileManagementClient),
             new OpenAICompletionService(new Apps.OpenAI.Api.OpenAIClient(Creds)),
             new ResponseDeserializationService(),
             new PromptBuilderService(),
@@ -28,7 +28,7 @@ public class PostEditServiceTests : TestBase
             );
 
         // Initialize test files
-        _xliffFile = new FileReference { Name = "D_SENSORS_PP_AW.idml_spa.mqxliff" };
+        _xliffFile = new FileReference { Name = "Markdown entry #1_en-US-Default_HTML-nl-NL#TR_FQTF#.html.txlf" };
         _glossaryFile = new FileReference { Name = "glossary.tbx" };
     }
 
@@ -40,10 +40,9 @@ public class PostEditServiceTests : TestBase
         {
             ModelId = ModelId,
             XliffFile = _xliffFile,
-            BucketSize = 1000,
             NeverFail = true,
-            AddMissingTrailingTags = true,
-            BatchRetryAttempts = 2
+            MaxTokens = 16000,
+            BucketSize = 50
         };
 
         // Act

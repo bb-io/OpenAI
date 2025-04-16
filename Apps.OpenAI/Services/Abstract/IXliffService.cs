@@ -14,5 +14,5 @@ public interface IXliffService
     IEnumerable<IEnumerable<TranslationUnit>> BatchTranslationUnits(
         IEnumerable<TranslationUnit> units, int batchSize);
     Dictionary<string, string> CheckAndFixTagIssues(
-        IEnumerable<TranslationUnit> units, Dictionary<string, string> translations);
+        IEnumerable<TranslationUnit> units, Dictionary<string, string> translations, bool disableTagChecks);
 }

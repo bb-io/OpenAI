@@ -58,8 +58,13 @@ public class XliffService(IFileManagementClient fileManagementClient) : IXliffSe
     }
 
     public Dictionary<string, string> CheckAndFixTagIssues(
-        IEnumerable<TranslationUnit> units, Dictionary<string, string> translations)
+        IEnumerable<TranslationUnit> units, Dictionary<string, string> translations, bool disableTagChecks)
     {
+        if (disableTagChecks)
+        {
+            return translations;
+        }
+        
         return Utils.Xliff.Extensions.CheckTagIssues(units.ToList(), translations);
     }
 

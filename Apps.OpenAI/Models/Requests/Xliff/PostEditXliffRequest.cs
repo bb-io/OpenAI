@@ -36,4 +36,7 @@ public class PostEditXliffRequest
 
     [Display("Max tokens", Description = "The maximum number of tokens to generate in the completion. By default it is set to 1000.")]
     public int? MaxTokens { get; set; }
+
+    [Display("Disable tag checks", Description = "After LLM provide the translation, it will be checked for tags. If the tags are not correct (model hallucinated), the translation of specific translation unit will be rejected. But disabling this option you highly increase the risk of hallucinations. By default it is set to false.")]
+    public bool? DisableTagChecks { get; set; }
 }

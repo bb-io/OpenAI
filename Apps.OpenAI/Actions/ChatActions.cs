@@ -823,7 +823,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         int? bucketSize = 1500)
     {
         var postEditService = new PostEditService(new XliffService(FileManagementClient), 
-            new GlossaryService(FileManagementClient),
+            new JsonGlossaryService(FileManagementClient),
             new OpenAICompletionService(new OpenAIClient(Creds)), 
             new ResponseDeserializationService(),
             new PromptBuilderService(), 
@@ -845,6 +845,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             NeverFail = input.NeverFail ?? true,
             BatchRetryAttempts = input.BatchRetryAttempts ?? 2,
             MaxTokens = input.MaxTokens,
+            DisableTagChecks = input.DisableTagChecks ?? false,
         });
 
         return new PostEditXliffResponse(result);

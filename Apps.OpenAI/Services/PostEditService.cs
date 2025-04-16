@@ -71,7 +71,8 @@ public class PostEditService(
                 result.TargetsUpdatedCount = UpdateXliffWithResults(
                     xliffDocument,
                     batchProcessingResult.Results,
-                    tagOptions);
+                    tagOptions,
+                    request.DisableTagChecks);
             }
 
             var stream = xliffService.SerializeXliffDocument(xliffDocument);
@@ -266,7 +267,6 @@ public class PostEditService(
             {
                 success = true;
                 translations.AddRange(deserializationResult.Translations);
-                errors.Clear();
             }
             else
             {
@@ -280,11 +280,12 @@ public class PostEditService(
     private int UpdateXliffWithResults(
         XliffDocument document,
         List<TranslationEntity> updatedEntities,
-        TagHandlingOptions tagOptions)
+        TagHandlingOptions tagOptions,
+        bool disableTagChecks)
     {
         var translationDict = updatedEntities.ToDictionary(x => x.TranslationId, x => x.TranslatedText);
         var updatedTranslations = xliffService.CheckAndFixTagIssues(
-            document.TranslationUnits, translationDict);
+            document.TranslationUnits, translationDict, disableTagChecks);
 
         return UpdateXliffDocument(document, updatedTranslations, tagOptions.AddMissingTrailingTags);
     }
