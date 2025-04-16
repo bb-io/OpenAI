@@ -845,6 +845,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             NeverFail = input.NeverFail ?? true,
             BatchRetryAttempts = input.BatchRetryAttempts ?? 2,
             MaxTokens = input.MaxTokens,
+            DisableTagChecks = input.DisableTagChecks ?? false,
         });
 
         return new PostEditXliffResponse(result);

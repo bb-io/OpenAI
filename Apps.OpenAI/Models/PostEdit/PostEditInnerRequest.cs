@@ -18,4 +18,5 @@ public class PostEditInnerRequest
     public bool NeverFail { get; set; } = false;
     public int? BatchRetryAttempts { get; set; } = 3;
     public int? MaxTokens { get; set; }
+    public bool DisableTagChecks { get; set; }
 }

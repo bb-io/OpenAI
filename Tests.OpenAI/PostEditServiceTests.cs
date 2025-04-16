@@ -28,7 +28,7 @@ public class PostEditServiceTests : TestBase
             );
 
         // Initialize test files
-        _xliffFile = new FileReference { Name = "D_SENSORS_PP_AW.idml_spa.mqxliff" };
+        _xliffFile = new FileReference { Name = "Markdown entry #1_en-US-Default_HTML-nl-NL#TR_FQTF#.html.txlf" };
         _glossaryFile = new FileReference { Name = "glossary.tbx" };
     }
 
@@ -42,7 +42,7 @@ public class PostEditServiceTests : TestBase
             XliffFile = _xliffFile,
             NeverFail = true,
             MaxTokens = 16000,
-            BucketSize = 50,
+            BucketSize = 50
         };
 
         // Act
