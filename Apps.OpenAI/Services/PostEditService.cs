@@ -266,7 +266,6 @@ public class PostEditService(
             {
                 success = true;
                 translations.AddRange(deserializationResult.Translations);
-                errors.Clear();
             }
             else
             {
