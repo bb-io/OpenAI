@@ -80,7 +80,7 @@ public class JsonGlossaryService(IFileManagementClient fileManagementClient) : I
         {
             ContractResolver = new CamelCasePropertyNamesContractResolver(),
             NullValueHandling = NullValueHandling.Ignore,
-            Formatting = Formatting.Indented
+            Formatting = Formatting.None
         };
         
         var jsonString = JsonConvert.SerializeObject(jsonGlossary, jsonSettings);
