@@ -207,8 +207,6 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
                             content
                         }
                     },
-                    max_tokens = !request.ModelId.Contains("o1") ? (int?) 4096 : null,
-                    max_completion_tokens = request.ModelId.Contains("o1") ? (int?) 4096 : null,
                 }
             };
 

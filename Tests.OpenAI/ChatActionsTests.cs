@@ -16,7 +16,7 @@ public class ChatActionsTests : TestBase
     {
         var actions = new ChatActions(InvocationContext, FileManagementClient);
         var result = await actions.ChatMessageRequest(
-            new TextChatModelIdentifier { ModelId = "gpt-4o" },
+            new TextChatModelIdentifier { ModelId = "o3-mini" },
             new ChatRequest { Message = "Hello!" },
             new GlossaryRequest());
 

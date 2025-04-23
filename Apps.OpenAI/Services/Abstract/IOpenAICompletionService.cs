@@ -14,5 +14,4 @@ public interface IOpenAICompletionService
         BaseChatRequest request, 
         object? responseFormat = null);
     int CalculateTokenCount(string text, string modelId);
-    int GetModelMaxTokens(string modelId);
 }
