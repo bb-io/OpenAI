@@ -25,7 +25,14 @@ public class XliffService(IFileManagementClient fileManagementClient) : IXliffSe
         await stream.CopyToAsync(memoryStream);
         memoryStream.Position = 0;
 
-        return memoryStream.ToXliffDocument();
+        try
+        {
+            return memoryStream.ToXliffDocument();
+        }
+        catch(InvalidOperationException ex) when (ex.Message.Contains("Unsupported XLIFF version"))
+        {
+            throw new PluginMisconfigurationException("Unsupported XLIFF version. This action supports XLIFF 1.2, 2.1 and 2.2 versions only");
+        }
     }
 
     public Stream SerializeXliffDocument(XliffDocument xliffDocument)

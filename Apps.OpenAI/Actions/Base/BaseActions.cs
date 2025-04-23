@@ -78,6 +78,10 @@ public abstract class BaseActions : OpenAIInvocable
         {
             xliffDocument = xliffMemoryStream.ToXliffDocument();
         }
+        catch(InvalidOperationException ex) when (ex.Message.Contains("Unsupported XLIFF version"))
+        {
+            throw new PluginMisconfigurationException("Unsupported XLIFF version. This action supports XLIFF 1.2, 2.1 and 2.2 versions only");
+        }
         catch (XmlException ex)
         {
             throw new PluginMisconfigurationException("Incorrect XLIFF file structure. Check if the file complies with the XLIFF structure");
