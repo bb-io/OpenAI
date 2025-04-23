@@ -41,7 +41,6 @@ public class PostEditServiceTests : TestBase
             ModelId = ModelId,
             XliffFile = _xliffFile,
             NeverFail = true,
-            MaxTokens = 16000,
             BucketSize = 50
         };
 

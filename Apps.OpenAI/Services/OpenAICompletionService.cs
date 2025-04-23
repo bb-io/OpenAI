@@ -18,16 +18,6 @@ public class OpenAICompletionService(OpenAIClient openAIClient) : IOpenAIComplet
 {
     private const string DefaultEncoding = "cl100k_base";
 
-    private readonly Dictionary<string, int> _modelMaxTokens = new()
-    {
-        ["gpt-4-1106-preview"] = 128000,
-        ["gpt-4-vision-preview"] = 128000,
-        ["gpt-4"] = 8192,
-        ["gpt-4-32k"] = 32768,
-        ["gpt-3.5-turbo"] = 4096,
-        ["gpt-3.5-turbo-16k"] = 16384
-    };
-
     public async Task<ChatCompletitionResult> ExecuteChatCompletionAsync(
         IEnumerable<ChatMessageDto> messages,
         string modelId,
@@ -38,8 +28,7 @@ public class OpenAICompletionService(OpenAIClient openAIClient) : IOpenAIComplet
         {
             model = modelId,
             Messages = messages,
-            max_tokens = !modelId.Contains("o1") ? (int?)(request?.MaximumTokens ?? 4096) : null,
-            max_completion_tokens = modelId.Contains("o1") ? (int?)(request?.MaximumTokens ?? 4096) : null,
+            max_completion_tokens = request?.MaximumTokens,
             top_p = request?.TopP ?? 1,
             presence_penalty = request?.PresencePenalty ?? 0,
             frequency_penalty = request?.FrequencyPenalty ?? 0,
@@ -72,16 +61,6 @@ public class OpenAICompletionService(OpenAIClient openAIClient) : IOpenAIComplet
         {
             return (int)Math.Ceiling(text.Length / 4.0);
         }
-    }
-
-    public int GetModelMaxTokens(string modelId)
-    {
-        if (_modelMaxTokens.TryGetValue(modelId, out var tokens))
-        {
-            return tokens;
-        }
-
-        return 4096;
     }
 
     private TimeSpan CalculateBackoffDelay(int attempt)

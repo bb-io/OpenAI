@@ -239,11 +239,10 @@ public class PostEditService(
         {
             currentAttempt++;
             
-            var maxTokens = userMaxTokens ?? openaiService.GetModelMaxTokens(modelId);
             var chatCompletionResult = await openaiService.ExecuteChatCompletionAsync(
                 messages,
                 modelId,
-                new BaseChatRequest { Temperature = 0.1f, MaximumTokens = maxTokens },
+                new BaseChatRequest { Temperature = 0.1f, MaximumTokens = userMaxTokens },
                 ResponseFormats.GetXliffResponseFormat());
 
             if (!chatCompletionResult.Success)
