@@ -32,6 +32,7 @@ public class ImageActions : BaseActions
         var request = new OpenAIRequest("/images/generations", Method.Post);
 
         if (model == "dall-e-3")
+        {
             request.AddJsonBody(new
             {
                 model,
@@ -41,7 +42,18 @@ public class ImageActions : BaseActions
                 quality = input.Quality ?? "standard",
                 style = input.Style ?? "vivid"
             });
+        }
+        else if (model == "gpt-image-1")
+        {
+            request.AddJsonBody(new
+            {
+                model,
+                prompt = input.Prompt,
+                size = input.Size ?? "1024x1024"
+            });
+        }
         else
+        {
             request.AddJsonBody(new
             {
                 model,
@@ -49,6 +61,7 @@ public class ImageActions : BaseActions
                 response_format = "b64_json",
                 size = input.Size ?? "1024x1024"
             });
+        }
 
         var response = await Client.ExecuteWithErrorHandling<DataDto<ImageDataDto>>(request);
         var bytes = Convert.FromBase64String(response.Data.First().Base64);
