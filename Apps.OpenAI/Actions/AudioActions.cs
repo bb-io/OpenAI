@@ -88,7 +88,7 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
         {
             model,
             input = input.InputText,
-            voice = input.Voice,
+            voice = input.Voice ?? "alloy",
             response_format = responseFormat,
             speed = input.Speed ?? 1.0f
         });

@@ -6,7 +6,7 @@ namespace Apps.OpenAI.DataSourceHandlers.ModelDataSourceHandlers;
 
 public class SpeechCreationModelDataSourceHandler : BaseModelDataSourceHandler
 {
-    protected override Func<string, bool> ModelIdFilter => id => id.StartsWith("tts");
+    protected override Func<string, bool> ModelIdFilter => id => id.Contains("tts");
 
     public SpeechCreationModelDataSourceHandler(InvocationContext invocationContext) : base(invocationContext)
     {
