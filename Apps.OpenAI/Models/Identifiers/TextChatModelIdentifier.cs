@@ -7,8 +7,16 @@ namespace Apps.OpenAI.Models.Identifiers;
 
 public class TextChatModelIdentifier
 {
-    [Display("Model ID", Description = "Default model ID: gpt-4-turbo-preview")]
-    //[DataSource(typeof(TextChatModelDataSourceHandler))]
+    [Display("Model")]
     [StaticDataSource(typeof(PopularStaticModelDataSourceHandler))]
     public string ModelId { get; set; }
+
+    [Display("Advanced model", Description = "Browse more models than the static list under 'Model'. This value will replace 'Model'.")]
+    [DataSource(typeof(TextChatModelDataSourceHandler))]
+    public string? AdvancedModelId { get; set; }
+
+    public string GetModel()
+    {
+        return AdvancedModelId == null ? ModelId : AdvancedModelId;
+    }
 }

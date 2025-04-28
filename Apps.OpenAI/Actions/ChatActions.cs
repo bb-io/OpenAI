@@ -70,7 +70,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         
         while (counter < MaxCompletionRetries)
         {
-            var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input);
+            var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel(), input);
             completeMessage += response.Choices.First().Message.Content;
 
             usage += response.Usage;
@@ -253,7 +253,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             if (glossaryPromptPart != null) prompt += (glossaryAddition + glossaryPromptPart);
         }
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, prompt), new(MessageRoles.User, content) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input);
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel(), input);
 
         return new()
         {
@@ -269,7 +269,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     {
         var (messages, info) = BlackbirdPromptParser.ParseBlackbirdPrompt(input.Prompt);
 
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input,
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel(), input,
             info?.FileFormat is not null
                 ? new { type = BlackbirdPromptParser.ParseFileFormat(info.FileFormat) }
                 : null);
@@ -322,7 +322,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         }
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId);
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel());
         return new()
         {
             UserPrompt = userPrompt,
@@ -369,7 +369,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         }
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId);
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel());
 
         return new()
         {
@@ -417,7 +417,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         }
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId);
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel());
 
         return new()
         {
@@ -467,7 +467,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         }
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input, new { type = "json_object" });
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel(), input, new { type = "json_object" });
 
         try
         {
@@ -493,7 +493,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                            $"Return a JSON of the following structure: {{\"result\": [{{{string.Join(", ", input.Languages.Select(x => $"\"{x}\": \"\""))}}}].";
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, input.Content) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input, new { type = "json_object" });
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel(), input, new { type = "json_object" });
 
         List<Dictionary<string, string>> items = null;
         try
@@ -563,7 +563,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         userPrompt += "Localized text: ";
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input);
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel(), input);
 
         return new()
         {
@@ -597,7 +597,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         var xliffDocument = await DownloadXliffDocumentAsync(input.File);
 
         var systemPrompt = PromptBuilder.BuildSystemPrompt(string.IsNullOrEmpty(prompt));
-        var (translatedTexts, usage) = await ProcessTranslationUnits(prompt, xliffDocument, modelIdentifier.ModelId, systemPrompt,
+        var (translatedTexts, usage) = await ProcessTranslationUnits(prompt, xliffDocument, modelIdentifier.GetModel(), systemPrompt,
             bucketSize ?? 1500,
             glossary.Glossary, input.FilterGlossary ?? true);
 
@@ -703,7 +703,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 JsonConvert.SerializeObject(batch.Select(x => new { x.Id, x.Source, x.Target }).ToList()));
 
             var messages = new List<ChatMessageDto> { new(MessageRoles.System, PromptBuilder.DefaultSystemPrompt), new(MessageRoles.User, userPrompt) };
-            var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, new BaseChatRequest { Temperature = 0.1f }, ResponseFormats.GetQualityScoreXliffResponseFormat());
+            var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel(), new BaseChatRequest { Temperature = 0.1f }, ResponseFormats.GetQualityScoreXliffResponseFormat());
             usage += response.Usage;
             
             var choice = response.Choices.First();
@@ -830,7 +830,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         var result = await postEditService.PostEditXliffAsync(new PostEditInnerRequest
         {
-            ModelId = modelIdentifier.ModelId,
+            ModelId = modelIdentifier.GetModel(),
             Prompt = prompt,
             XliffFile = input.File,
             Glossary = glossary.Glossary,
@@ -923,7 +923,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         }
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId);
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel());
 
         return new()
         {
@@ -978,7 +978,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         }
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input, new { type = "json_object" });
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel(), input, new { type = "json_object" });
 
         try
         {
@@ -1033,7 +1033,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         }
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId);
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel());
 
         return new()
         {

@@ -88,7 +88,7 @@ public class AssistantActions : BaseActions
         {
             assistant_id = input.AssistantId,
             thread = new { messages = GenerateChatMessages(input.Message ?? string.Empty, fileIds) },
-            model = modelIdentifier.ModelId,
+            model = modelIdentifier.GetModel(),
         };
 
         var jsonBodySerialized = JsonConvert.SerializeObject(jsonBody, new JsonSerializerSettings
