@@ -193,7 +193,7 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
                 url = "/v1/chat/completions",
                 body = new
                 {
-                    model = request.ModelId,
+                    model = request.GetModel(),
                     messages = new object[]
                     {
                         new
