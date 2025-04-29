@@ -16,7 +16,6 @@ public class PopularStaticModelDataSourceHandler : IStaticDataSourceItemHandler
             new DataSourceItem("gpt-4.1", "gpt-4.1"),
             new DataSourceItem("gpt-4.1-nano", "gpt-4.1-nano"),
             new DataSourceItem("gpt-4.1-mini", "gpt-4.1-mini"),
-            new DataSourceItem("gpt-4o", "gpt-4o"),
             new DataSourceItem("o3", "o3"),
             new DataSourceItem("o4-mini", "o4-mini")
         };
