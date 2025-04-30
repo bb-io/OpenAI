@@ -242,7 +242,7 @@ public class PostEditService(
             var chatCompletionResult = await openaiService.ExecuteChatCompletionAsync(
                 messages,
                 modelId,
-                new BaseChatRequest { Temperature = 0.1f, MaximumTokens = userMaxTokens },
+                new BaseChatRequest { Temperature = modelId.Contains("gpt") ? 0.1f : 1f, MaximumTokens = userMaxTokens },
                 ResponseFormats.GetXliffResponseFormat());
 
             if (!chatCompletionResult.Success)

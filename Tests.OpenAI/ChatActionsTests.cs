@@ -16,7 +16,7 @@ public class ChatActionsTests : TestBase
     {
         var actions = new ChatActions(InvocationContext, FileManagementClient);
         var result = await actions.ChatMessageRequest(
-            new TextChatModelIdentifier { ModelId = "o3-mini" },
+            new TextChatModelIdentifier { ModelId = "o4-mini" },
             new ChatRequest { Message = "Hello!" },
             new GlossaryRequest());
 
@@ -49,7 +49,7 @@ public class ChatActionsTests : TestBase
     public async Task PostEditXLIFF_WithValidXlfFile_ProcessesSuccessfully()
     {
         var actions = new ChatActions(InvocationContext, FileManagementClient);
-        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o-mini" };
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "o4-mini" };
         var editRequest = new PostEditXliffRequest 
         { 
             File = new Blackbird.Applications.Sdk.Common.Files.FileReference { Name = "test.xlf" } 
