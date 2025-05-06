@@ -11,7 +11,7 @@ public class PromptBuilderService : IPromptBuilderService
 {
     public string GetPostEditSystemPrompt()
     {
-        return "## Localization Specialis\n" +
+        return "## Localization Specialist\n" +
                 "You are a professional translator specializing in post-editing XLIFF translations. " +
                 "Maintain a formal tone appropriate to content type. " +
                 "Focus solely on improving translations: correct errors, enhance fluency, ensure terminology consistency. " +
