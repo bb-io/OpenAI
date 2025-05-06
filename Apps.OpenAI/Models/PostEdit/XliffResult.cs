@@ -4,7 +4,7 @@ using Blackbird.Applications.Sdk.Common.Files;
 
 namespace Apps.OpenAI.Models.PostEdit;
 
-public class PostEditResult
+public class XliffResult
 {
     public FileReference File { get; set; }
     public UsageDto Usage { get; set; }

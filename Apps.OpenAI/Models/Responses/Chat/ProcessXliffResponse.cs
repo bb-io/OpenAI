@@ -4,7 +4,7 @@ using Blackbird.Applications.Sdk.Common;
 
 namespace Apps.OpenAI.Models.Responses.Chat;
 
-public class PostEditXliffResponse : TranslateXliffResponse
+public class ProcessXliffResponse : TranslateXliffResponse
 {
     [Display("Targets updated count")]
     public double TargetsUpdatedCount { get; set; }
@@ -24,7 +24,7 @@ public class PostEditXliffResponse : TranslateXliffResponse
     [Display("Locked segments exclude count")]
     public double LockedSegmentsExcludeCount { get; set; }
 
-    public PostEditXliffResponse(XliffResult postEditResult) 
+    public ProcessXliffResponse(XliffResult postEditResult) 
     {
         File = postEditResult.File;
         Usage = postEditResult.Usage;

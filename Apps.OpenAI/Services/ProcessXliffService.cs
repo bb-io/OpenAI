@@ -18,7 +18,7 @@ using DocumentFormat.OpenXml;
 
 namespace Apps.OpenAI.Services;
 
-public class PostEditService(
+public class ProcessXliffService(
     IXliffService xliffService,
     IGlossaryService glossaryService,
     IOpenAICompletionService openaiService,
@@ -26,9 +26,9 @@ public class PostEditService(
     IPromptBuilderService promptBuilderService,
     IFileManagementClient fileManagementClient)
 {
-    public async Task<XliffResult> PostEditXliffAsync(OpenAiXliffInnerRequest request)
+    public async Task<XliffResult> ProcessXliffAsync(OpenAiXliffInnerRequest request)
     {
-        var result = new XliffResult
+        var result = new XliffResult 
         {
             ErrorMessages = [],
             Usage = new UsageDto()
@@ -195,7 +195,7 @@ public class PostEditService(
                     options.Glossary, batch, options.FilterGlossary);
             }
 
-            var userPrompt = promptBuilderService.BuildPostEditUserPrompt(
+            var userPrompt = promptBuilderService.BuildProcessUserPrompt(
                 options.SourceLanguage,
                 options.TargetLanguage,
                 batch,
@@ -204,12 +204,12 @@ public class PostEditService(
 
             var messages = new List<ChatMessageDto>
             {
-                new(MessageRoles.System, promptBuilderService.GetPostEditSystemPrompt()),
+                new(MessageRoles.System, promptBuilderService.GetProcessSystemPrompt()),
                 new(MessageRoles.User, userPrompt)
             };
 
             var completionResult = await CallOpenAIAndProcessResponseAsync(
-                messages, options.ModelId, options.MaxRetryAttempts, options.MaxTokens);
+                messages, options);
 
             result.IsSuccess = completionResult.IsSuccess;
             result.Usage = completionResult.Usage;
@@ -226,7 +226,7 @@ public class PostEditService(
         }
     }
 
-    private async Task<OpenAICompletionResult> CallOpenAIAndProcessResponseAsync(List<ChatMessageDto> messages, string modelId, int maxRetryAttempts, int? userMaxTokens = null)
+    private async Task<OpenAICompletionResult> CallOpenAIAndProcessResponseAsync(List<ChatMessageDto> messages, BatchProcessingOptions options)
     {
         var errors = new List<string>();
         var translations = new List<TranslationEntity>();
@@ -235,19 +235,19 @@ public class PostEditService(
         int currentAttempt = 0;
         bool success = false;
 
-        while (!success && currentAttempt < maxRetryAttempts)
+        while (!success && currentAttempt < options.MaxRetryAttempts)
         {
             currentAttempt++;
             
             var chatCompletionResult = await openaiService.ExecuteChatCompletionAsync(
                 messages,
-                modelId,
-                new BaseChatRequest { Temperature = modelId.Contains("gpt") ? 0.1f : 1f, MaximumTokens = userMaxTokens },
+                options.ModelId,
+                new BaseChatRequest { MaximumTokens = options.MaxTokens },
                 ResponseFormats.GetXliffResponseFormat());
 
             if (!chatCompletionResult.Success)
             {
-                var errorMessage = $"Attempt {currentAttempt}/{maxRetryAttempts}: API call failed - {chatCompletionResult.Error ?? "Unknown error during OpenAI completion"}";
+                var errorMessage = $"Attempt {currentAttempt}/{options.MaxRetryAttempts}: API call failed - {chatCompletionResult.Error ?? "Unknown error during OpenAI completion"}";
                 errors.Add(errorMessage);
                 continue;
             }
@@ -258,7 +258,7 @@ public class PostEditService(
 
             if (choice.FinishReason == "length")
             {
-                errors.Add($"Attempt {currentAttempt}/{maxRetryAttempts}: The response from OpenAI was truncated. Try reducing the batch size.");
+                errors.Add($"Attempt {currentAttempt}/{options.MaxRetryAttempts}: The response from OpenAI was truncated. Try reducing the batch size.");
             }
 
             var deserializationResult = deserializationService.DeserializeResponse(content);
@@ -269,10 +269,10 @@ public class PostEditService(
             }
             else
             {
-                errors.Add($"Attempt {currentAttempt}/{maxRetryAttempts}: {deserializationResult.Error}");
+                errors.Add($"Attempt {currentAttempt}/{options.MaxRetryAttempts}: {deserializationResult.Error}");
             }
         }
-
+        
         return new OpenAICompletionResult(success, usage, errors, translations);
     }
 

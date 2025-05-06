@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Apps.OpenAI.Models.Entities;
 using Apps.OpenAI.Services.Abstract;
 using Blackbird.Applications.Sdk.Common.Exceptions;

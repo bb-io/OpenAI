@@ -30,10 +30,8 @@ using Apps.OpenAI.Models.Entities;
 using MoreLinq;
 using Apps.OpenAI.Models.Requests.Xliff;
 using Blackbird.Applications.Sdk.Common.Exceptions;
-using System.Xml.Serialization;
 using System.IO;
 using System.Xml.Linq;
-using Microsoft.AspNetCore.Http;
 using Apps.OpenAI.Services;
 using Apps.OpenAI.Models.PostEdit;
 
@@ -116,6 +114,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             TopP = input.TopP
         }, glossary);
     }
+
     private async Task<ChatCompletionDto> ExecuteChatCompletion(IEnumerable<object> messages, string model = "gpt-4-turbo-preview", BaseChatRequest input = null, object responseFormat = null)
     {
         var jsonBody = new
@@ -574,116 +573,48 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         };
     }
 
-    [Action("Process XLIFF file",
-        Description =
-            "Processes each translation unit in the XLIFF file according to the provided instructions (by default it just translates the source tags) and updates the target text for each unit. For now it supports only 1.2 version of XLIFF.")]
-    public async Task<TranslateXliffResponse> TranslateXliff([ActionParameter] TextChatModelIdentifier modelIdentifier,
+    [Action("Process XLIFF file", 
+        Description = "Processes each translation unit in the XLIFF file according to the provided instructions (by default it just translates the source tags) and updates the target text for each unit. For now it supports only 1.2 version of XLIFF.")]
+    public async Task<ProcessXliffResponse> TranslateXliff([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] TranslateXliffRequest input,
-        [ActionParameter,
-         Display("Prompt",
-             Description =
-                 "Specify the instruction to be applied to each source tag within a translation unit. For example, 'Translate text'")]
-        string? prompt,
+        [ActionParameter, Display("Additional instructions", Description = "Specify the instruction to be applied to each source tag within a translation unit. For example, 'Translate text'")] string? prompt,
         [ActionParameter] GlossaryRequest glossary,
-        [ActionParameter,
-         Display("Bucket size",
-             Description =
-                 "Specify the number of source texts to be translated at once. Default value: 1500. (See our documentation for an explanation)")]
-        int? bucketSize = 1500)
+        [ActionParameter, Display("Bucket size", Description = "Specify the number of source texts to be translated at once. Default value: 1500. (See our documentation for an explanation)")] int? bucketSize = 1500)
     {
-        var fileExtension = Path.GetExtension(input.File.Name);
+        var xliffProcessingService = new ProcessXliffService(new XliffService(FileManagementClient), 
+            new JsonGlossaryService(FileManagementClient),
+            new OpenAICompletionService(Client), 
+            new ResponseDeserializationService(),
+            new PromptBuilderService(), 
+            FileManagementClient);
 
-        await ValidateXliffFileStructure(input.File);
-        var xliffDocument = await DownloadXliffDocumentAsync(input.File);
-
-        var systemPrompt = PromptBuilder.BuildSystemPrompt(string.IsNullOrEmpty(prompt));
-        var (translatedTexts, usage) = await ProcessTranslationUnits(prompt, xliffDocument, modelIdentifier.GetModel(), systemPrompt,
-            bucketSize ?? 1500,
-            glossary.Glossary, input.FilterGlossary ?? true);
-
-        translatedTexts.ForEach(x =>
+        var result = await xliffProcessingService.ProcessXliffAsync(new OpenAiXliffInnerRequest
         {
-            var translationUnit = xliffDocument.TranslationUnits.FirstOrDefault(tu => tu.Id == x.TranslationId);
-            if (translationUnit != null)
-            {
-                if (input.AddMissingTrailingTags.HasValue && input.AddMissingTrailingTags == true)
-                {
-                    var sourceContent = translationUnit.Source;
-                    var targetContent = translationUnit.Target;
-
-                    var tagPattern = @"<(?<tag>\w+)([^>]*)>(?<content>.*)</\k<tag>>";
-                    var sourceMatch = Regex.Match(sourceContent, tagPattern, RegexOptions.Singleline);
-
-                    if (sourceMatch.Success)
-                    {
-                        var tagName = sourceMatch.Groups["tag"].Value;
-                        var tagAttributes = sourceMatch.Groups[2].Value;
-                        var openingTag = $"<{tagName}{tagAttributes}>";
-                        var closingTag = $"</{tagName}>";
-
-                        if (!targetContent.Contains(openingTag) && !targetContent.Contains(closingTag))
-                        {
-                            translationUnit.Target = openingTag + targetContent + closingTag;
-                        }
-                    }
-                    else
-                    {
-                        translationUnit.Target = x.TranslatedText;
-                    }
-                }
-                else
-                {
-                    translationUnit.Target = x.TranslatedText;
-                } 
-            }
+            ModelId = modelIdentifier.GetModel(),
+            Prompt = prompt,
+            XliffFile = input.File,
+            Glossary = glossary.Glossary,
+            BucketSize = bucketSize ?? 1500,
+            SourceLanguage = input.SourceLanguage,
+            TargetLanguage = input.TargetLanguage,
+            PostEditLockedSegments = input.UpdateLockedSegments ?? false,
+            AddMissingTrailingTags = input.AddMissingTrailingTags ?? false,
+            FilterGlossary = input.FilterGlossary ?? true,
+            NeverFail = input.NeverFail ?? false,
+            BatchRetryAttempts = input.BatchRetryAttempts ?? 2,
+            MaxTokens = input.MaxTokens,
+            DisableTagChecks = input.DisableTagChecks ?? false,
         });
 
-        var stream = xliffDocument.ToStream();
-        var fileReference = await fileManagementClient.UploadAsync(stream, input.File.ContentType, input.File.Name);
-        return new TranslateXliffResponse { File = fileReference, Usage = usage };
+        return new ProcessXliffResponse(result);
     }
-
-    private async Task ValidateXliffFileStructure(FileReference file)
-    {
-        var acceptedFileExtensions = new[] { ".xlf", ".xliff", ".txlf", ".mqxliff", ".mxliff" };
-        var fileExtension = Path.GetExtension(file.Name);
-        if (string.IsNullOrEmpty(fileExtension) || !acceptedFileExtensions.Contains(fileExtension.ToLower()))
-        {
-            throw new PluginMisconfigurationException("Wrong format file. Please upload file format .xlf or .xliff.");
-        }
-
-        using var stream = await fileManagementClient.DownloadAsync(file);
-        XDocument xdoc;
-        try
-        {
-            xdoc = XDocument.Load(stream);
-        }
-        catch (Exception)
-        {
-            throw new PluginMisconfigurationException("Error uploading XML. Please check your input file");
-        }
-
-
-        if (xdoc.Root == null || xdoc.Root.Name.LocalName != "xliff")
-        {
-            throw new PluginMisconfigurationException("Wrong format file. Expected XLIFF file  with root element <xliff>. Please check your file and try again");
-        }
-    }
-
 
     [Action("Get quality scores for XLIFF file",
         Description = "Gets segment and file level quality scores for XLIFF files")]
     public async Task<ScoreXliffResponse> ScoreXLIFF([ActionParameter] TextChatModelIdentifier modelIdentifier,
-        [ActionParameter] ScoreXliffRequest input, [ActionParameter,
-                                                    Display("Prompt",
-                                                        Description =
-                                                            "Add any linguistic criteria for quality evaluation")]
-        string? prompt,
-        [ActionParameter,
-         Display("Bucket size",
-             Description =
-                 "Specify the number of translation units to be processed at once. Default value: 1500. (See our documentation for an explanation)")]
-        int? bucketSize = 1500)
+        [ActionParameter] ScoreXliffRequest input, 
+        [ActionParameter, Display("Prompt", Description = "Add any linguistic criteria for quality evaluation")] string? prompt,
+        [ActionParameter, Display("Bucket size", Description = "Specify the number of translation units to be processed at once. Default value: 1500. (See our documentation for an explanation)")] int? bucketSize = 1500)
     {
         var xliffDocument = await DownloadXliffDocumentAsync(input.File);
         var criteriaPrompt = string.IsNullOrEmpty(prompt)
@@ -809,17 +740,10 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     [Action("Post-edit XLIFF file",
         Description = "Updates the targets of XLIFF 1.2 files")]
     public async Task<PostEditXliffResponse> PostEditXLIFF([ActionParameter] TextChatModelIdentifier modelIdentifier,
-        [ActionParameter] PostEditXliffRequest input, [ActionParameter,
-                                                       Display("Additional instructions",
-                                                           Description =
-                                                               "Additional instructions that will be added to the user prompt. Example: 'Be concise, use technical terms and avoid slang'")]
-        string? prompt,
+        [ActionParameter] PostEditXliffRequest input, 
+        [ActionParameter, Display("Additional instructions", Description = "Additional instructions that will be added to the user prompt. Example: 'Be concise, use technical terms and avoid slang'")] string? prompt,
         [ActionParameter] GlossaryRequest glossary,
-        [ActionParameter,
-         Display("Bucket size",
-             Description =
-                 "Specify the number of translation units to be processed at once. Default value: 1500. (See our documentation for an explanation)")]
-        int? bucketSize = 1500)
+        [ActionParameter, Display("Bucket size", Description = "Specify the number of translation units to be processed at once. Default value: 1500. (See our documentation for an explanation)")] int? bucketSize = 1500)
     {
         var postEditService = new PostEditService(new XliffService(FileManagementClient), 
             new JsonGlossaryService(FileManagementClient),
@@ -828,7 +752,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             new PromptBuilderService(), 
             FileManagementClient);
 
-        var result = await postEditService.PostEditXliffAsync(new PostEditInnerRequest
+        var result = await postEditService.PostEditXliffAsync(new OpenAiXliffInnerRequest
         {
             ModelId = modelIdentifier.GetModel(),
             Prompt = prompt,
@@ -1043,61 +967,6 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             Usage = response.Usage,
         };
     }
+    
     #endregion
-
-    private async Task<(List<TranslationEntity>, UsageDto)> ProcessTranslationUnits(string prompt,
-        XliffDocument xliff, string model,
-        string systemPrompt, int bucketSize, FileReference? glossary, bool filter)
-    {
-        var results = new List<TranslationEntity>();
-        var batches = xliff.TranslationUnits.Batch(bucketSize);
-
-        var usageDto = new UsageDto();
-        foreach (var batch in batches)
-        {
-            var json = JsonConvert.SerializeObject(batch.Select(x => new
-                { x.Id, x.Source }));
-            var userPrompt = PromptBuilder.BuildUserPrompt(prompt, xliff.SourceLanguage, xliff.TargetLanguage, json);
-
-            if (glossary != null)
-            {
-                var glossaryPromptPart = await GetGlossaryPromptPart(glossary, json, filter);
-                if (glossaryPromptPart != null)
-                {
-                    var glossaryPrompt =
-                        "Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
-                        "Ensure that the translation aligns with the glossary entries for the respective languages. " +
-                        "If a term has variations or synonyms, consider them and choose the most appropriate " +
-                        "translation to maintain consistency and precision. ";
-                    glossaryPrompt += glossaryPromptPart;
-                    userPrompt += glossaryPrompt;
-                }
-            }
-
-            var messages = new List<ChatMessageDto>
-            {
-                new(MessageRoles.System, systemPrompt),
-                new(MessageRoles.User, userPrompt)
-            };
-            
-            var response = await ExecuteChatCompletion(messages, model, new BaseChatRequest { Temperature = 0.1f }, responseFormat: ResponseFormats.GetXliffResponseFormat());
-            usageDto += response.Usage;
-            
-            var choice = response.Choices.First();
-            var content = choice.Message.Content;
-            if (choice.FinishReason == "length")
-            {
-                throw new PluginApplicationException($"The response from Open AI is too long and was cut off. " +
-                                                     $"To avoid this, try lowering the 'Bucket size' to reduce the length of the response.");
-            }
-            
-            TryCatchHelper.TryCatch(() =>
-                {
-                    var deserializedResponse = JsonConvert.DeserializeObject<TranslationEntities>(content);
-                    results.AddRange(deserializedResponse.Translations);
-                }, $"Failed to deserialize the response from OpenAI, try again later. Response: {content}");
-        }
-
-        return (results, usageDto);
-    }
 }

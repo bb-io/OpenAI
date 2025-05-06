@@ -27,9 +27,4 @@
 	<ItemGroup>
 		<EmbeddedResource CopyToOutputDirectory="Always" Include="image\icon.png" />
 	</ItemGroup>
-	<ItemGroup>
-	  <Content Include="..\README.md">
-	    <Link>README.md</Link>
-	  </Content>
-	</ItemGroup>
 </Project>

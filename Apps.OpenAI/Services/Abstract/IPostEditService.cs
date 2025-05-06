@@ -6,6 +6,6 @@ namespace Apps.OpenAI.Services.Abstract;
 
 public interface IPostEditService
 {
-    Task<PostEditResult> PostEditXliffAsync(PostEditInnerRequest request);
+    Task<XliffResult> PostEditXliffAsync(OpenAiXliffInnerRequest request);
     int GetModifiedSegmentsCount(Dictionary<string, string> original, Dictionary<string, string> updated);
 }
