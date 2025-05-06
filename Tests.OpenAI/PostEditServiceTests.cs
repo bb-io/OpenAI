@@ -36,7 +36,7 @@ public class PostEditServiceTests : TestBase
     public async Task PostEditXliffAsync_WithValidRequest_ReturnsSuccessfulResult()
     {
         // Arrange
-        var request = new PostEditInnerRequest
+        var request = new OpenAiXliffInnerRequest
         {
             ModelId = ModelId,
             XliffFile = _xliffFile,
@@ -71,7 +71,7 @@ public class PostEditServiceTests : TestBase
     public async Task PostEditXliffAsync_WithGlossary_UsesGlossaryForTranslation()
     {
         // Arrange
-        var request = new PostEditInnerRequest
+        var request = new OpenAiXliffInnerRequest
         {
             ModelId = ModelId,
             XliffFile = _xliffFile,
@@ -106,7 +106,7 @@ public class PostEditServiceTests : TestBase
         var customPrompt = "Please ensure that all technical terms are translated accurately. " +
                           "Keep the translations concise and clear.";
 
-        var request = new PostEditInnerRequest
+        var request = new OpenAiXliffInnerRequest
         {
             ModelId = ModelId,
             XliffFile = _xliffFile,
@@ -133,7 +133,7 @@ public class PostEditServiceTests : TestBase
     public async Task PostEditXliffAsync_WithLowBatchSize_ProcessesAllSegments()
     {
         // Arrange
-        var request = new PostEditInnerRequest
+        var request = new OpenAiXliffInnerRequest
         {
             ModelId = ModelId,
             XliffFile = _xliffFile,
@@ -160,7 +160,7 @@ public class PostEditServiceTests : TestBase
     public async Task PostEditXliffAsync_WithNeverFailFalse_ThrowsExceptionOnError()
     {
         // Arrange
-        var request = new PostEditInnerRequest
+        var request = new OpenAiXliffInnerRequest
         {
             ModelId = ModelId,
             XliffFile = _xliffFile,

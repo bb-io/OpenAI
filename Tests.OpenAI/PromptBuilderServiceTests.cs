@@ -20,7 +20,7 @@ public class PromptBuilderServiceTests : TestBase
     public void GetSystemPrompt_ReturnsCorrectPrompt()
     {
         // Act
-        var result = _promptBuilderService.GetSystemPrompt();
+        var result = _promptBuilderService.GetPostEditSystemPrompt();
         
         Console.WriteLine(result);
 
@@ -43,7 +43,7 @@ public class PromptBuilderServiceTests : TestBase
         var glossaryPrompt = "Use 'monde' for 'world'.";
         
         // Act
-        var result = _promptBuilderService.BuildUserPrompt(
+        var result = _promptBuilderService.BuildPostEditUserPrompt(
             sourceLanguage,
             targetLanguage,
             batch,
@@ -79,7 +79,7 @@ public class PromptBuilderServiceTests : TestBase
         };
         
         // Act
-        var result = _promptBuilderService.BuildUserPrompt(
+        var result = _promptBuilderService.BuildPostEditUserPrompt(
             sourceLanguage,
             targetLanguage,
             batch,

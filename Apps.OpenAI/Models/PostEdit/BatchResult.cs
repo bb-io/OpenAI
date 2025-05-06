@@ -4,7 +4,7 @@ using Apps.OpenAI.Models.Entities;
 
 namespace Apps.OpenAI.Models.PostEdit;
 
-public class PostEditBatchResult
+public class BatchResult
 {
     public List<TranslationEntity> UpdatedTranslations { get; set; } = new();
     public UsageDto Usage { get; set; } = new();

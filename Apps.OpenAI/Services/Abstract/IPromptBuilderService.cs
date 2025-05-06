@@ -4,9 +4,18 @@ namespace Apps.OpenAI.Services.Abstract;
 
 public interface IPromptBuilderService
 {
-    string GetSystemPrompt();
+    string GetPostEditSystemPrompt();
+
+    string GetProcessSystemPrompt();
     
-    string BuildUserPrompt(
+    string BuildPostEditUserPrompt(
+        string sourceLanguage,
+        string targetLanguage,
+        TranslationUnit[] batch,
+        string? additionalPrompt,
+        string? glossaryPrompt);
+    
+    string BuildProcessUserPrompt(
         string sourceLanguage,
         string targetLanguage,
         TranslationUnit[] batch,

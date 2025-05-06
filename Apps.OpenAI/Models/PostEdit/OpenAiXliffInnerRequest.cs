@@ -2,7 +2,7 @@ using Blackbird.Applications.Sdk.Common.Files;
 
 namespace Apps.OpenAI.Models.PostEdit;
 
-public class PostEditInnerRequest
+public class OpenAiXliffInnerRequest
 {
     public string ModelId { get; set; } = string.Empty;
     public string? Prompt { get; set; }
