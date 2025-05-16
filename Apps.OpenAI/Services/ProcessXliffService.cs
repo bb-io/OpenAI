@@ -28,7 +28,7 @@ public class ProcessXliffService(
 {
     public async Task<XliffResult> ProcessXliffAsync(OpenAiXliffInnerRequest request)
     {
-        var result = new XliffResult 
+        var result = new XliffResult
         {
             ErrorMessages = [],
             Usage = new UsageDto()

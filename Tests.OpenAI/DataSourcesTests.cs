@@ -1,11 +1,12 @@
-﻿using Apps.OpenAI.DataSourceHandlers.ModelDataSourceHandlers;
+﻿using Apps.OpenAI.DataSourceHandlers;
+using Apps.OpenAI.DataSourceHandlers.ModelDataSourceHandlers;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 using Tests.OpenAI.Base;
 
 namespace Tests.OpenAI;
 
 [TestClass]
-public class ModelDataSourceHandlerTests : TestBase
+public class DataSourceHandlerTests : TestBase
 {
     [TestMethod]
     public async Task GetDataAsync_ForTextChatModels_ReturnsNonEmptyCollection()
@@ -41,6 +42,20 @@ public class ModelDataSourceHandlerTests : TestBase
     {
         var handler = new SpeechCreationModelDataSourceHandler(InvocationContext);
         var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
+
+        foreach (var item in data)
+        {
+            Console.WriteLine($"{item.Value}: {item.DisplayName}");
+        }
+
+        Assert.AreNotEqual(data.Count(), 0);
+    }
+
+    [TestMethod]
+    public async Task Locales()
+    {
+        var handler = new LocaleDataSourceHandler();
+        var data = handler.GetData();
 
         foreach (var item in data)
         {
