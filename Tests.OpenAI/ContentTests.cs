@@ -79,4 +79,23 @@ public class ContentTests : TestBase
 
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
+
+    [TestMethod]
+    public async Task Taus_edit()
+    {
+        var actions = new ContentActions(InvocationContext, FileManagementClient);
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4.1" };
+        var editRequest = new EditContentRequest
+        {
+            File = new FileReference { Name = "taus.xliff" },
+        };
+        string? systemMessage = null;
+        var glossaryRequest = new GlossaryRequest();
+
+        var result = await actions.EditContent(modelIdentifier, editRequest, systemMessage, glossaryRequest);
+        Assert.IsNotNull(result);
+        Assert.IsTrue(result.Content.Name.Contains("taus"));
+
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+    }
 }
