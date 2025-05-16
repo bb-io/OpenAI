@@ -19,6 +19,7 @@ using Blackbird.Xliff.Utils;
 using Blackbird.Xliff.Utils.Models;
 using Newtonsoft.Json;
 using RestSharp;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 
 namespace Apps.OpenAI.Actions;
 
@@ -81,7 +82,7 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
             var translationUnit = xliffDocument.TranslationUnits.Find(tu => tu.Id == batchRequest.CustomId);
             if (translationUnit == null)
             {
-                throw new InvalidOperationException(
+                throw new PluginApplicationException(
                     $"Translation unit with id {batchRequest.CustomId} not found in the XLIFF file.");
             }
 
@@ -140,7 +141,7 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
             var translationUnit = xliffDocument.TranslationUnits.Find(tu => tu.Id == batchRequest.CustomId);
             if (translationUnit == null)
             {
-                throw new InvalidOperationException(
+                throw new PluginApplicationException(
                     $"Translation unit with id {batchRequest.CustomId} not found in the XLIFF file.");
             }
 
@@ -152,7 +153,7 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
             else if (request.ThrowExceptionOnAnyUnexpectedResult.HasValue &&
                      request.ThrowExceptionOnAnyUnexpectedResult.Value)
             {
-                throw new InvalidOperationException(
+                throw new PluginApplicationException(
                     $"The quality score for translation unit with id {batchRequest.CustomId} is not a valid number. " +
                     $"Value: {batchRequest.Response.Body.Choices[0].Message.Content}");
             }
@@ -253,13 +254,13 @@ public class BatchActions(InvocationContext invocationContext, IFileManagementCl
     
         if (batch.Status != "completed")
         {
-            throw new InvalidOperationException(
+            throw new PluginApplicationException(
                 $"The batch process is not completed yet. Current status: {batch.Status}");
         }
         
         if(batch.Status == "failed")
         {
-            throw new InvalidOperationException(
+            throw new PluginApplicationException(
                 $"The batch process failed. Errors: {batch.Errors}");
         }
 
