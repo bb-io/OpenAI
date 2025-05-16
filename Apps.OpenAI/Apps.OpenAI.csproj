@@ -13,7 +13,7 @@
     <PackageReference Include="Blackbird.Applications.SDK.Extensions.FileManagement" Version="1.0.1" />
     <PackageReference Include="Blackbird.Applications.Sdk.Glossaries.Utils" Version="1.0.1" />
     <PackageReference Include="Blackbird.Applications.Sdk.Utils" Version="1.0.25" />
-    <PackageReference Include="Blackbird.Applications.Sdk.Xliff.Utils" Version="1.1.2">
+    <PackageReference Include="Blackbird.Applications.Sdk.Xliff.Utils" Version="1.1.3">
       <Aliases>XliffContent</Aliases>
     </PackageReference>
     <PackageReference Include="Blackbird.Xliff.Utils" Version="1.1.13" />
