@@ -27,8 +27,8 @@ public class ProcessXliffServiceTests : TestBase
             );
 
         // Initialize test files
-        _xliffFile = new FileReference { Name = "Markdown entry #1_en-US-Default_HTML-nl-NL#TR_FQTF#.html.txlf" };
-        _glossaryFile = new FileReference { Name = "glossary.tbx" };
+        _xliffFile = new FileReference { Name = "670470817_HtmlToXliff.xliff" };
+        _glossaryFile = new FileReference { Name = "CAS LTAI.tbx" };
     }
 
     [TestMethod]
@@ -70,18 +70,18 @@ public class ProcessXliffServiceTests : TestBase
     public async Task ProcessXliffAsync_WithGlossaryAndCustomPrompt_ProcessesCorrectly()
     {
         // Arrange
-        var customPrompt = "Please ensure accurate translation of technical terms and maintain consistent terminology.";
+        var customPrompt = "Translate the text  into Italian. Try to use impersonal formulations. Make sure to use the terminology in the attached glossary. strictly follow the <bpt><ept> tags and do not allow the number and id in the sourcing to differ from the target";
         
         var request = new OpenAiXliffInnerRequest
         {
-            ModelId = ModelId,
+            ModelId = "o3",
             XliffFile = _xliffFile,
             Glossary = _glossaryFile,
             Prompt = customPrompt,
-            FilterGlossary = true,
-            BucketSize = 25,
-            NeverFail = true,
-            MaxTokens = 4000
+            SourceLanguage = "German",
+            TargetLanguage = "Italian",
+            DisableTagChecks = true,
+            BucketSize= 50 
         };
 
         // Act

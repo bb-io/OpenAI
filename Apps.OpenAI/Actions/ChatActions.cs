@@ -288,25 +288,27 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     public async Task<EditResponse> PostEditRequest([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] PostEditRequest input, [ActionParameter] GlossaryRequest glossary)
     {
-        var systemPrompt =
+        return await ErrorHandler.ExecuteWithErrorHandlingAsync(async () =>
+        {
+            var systemPrompt =
             $"You are receiving a source text{(input.SourceLanguage != null ? $" written in {input.SourceLanguage} " : "")}" +
             $"that was translated by NMT into target text{(input.TargetLanguage != null ? $" written in {input.TargetLanguage}" : "")}. " +
             "Review the target text and respond with edits of the target text as necessary. If no edits required, respond with target text. " +
             $"{(input.TargetAudience != null ? $"The target audience is {input.TargetAudience}" : string.Empty)}";
 
 
-        if (glossary.Glossary != null)
-            systemPrompt +=
-                " Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
-                "Ensure that the translation aligns with the glossary entries for the respective languages. " +
-                "If a term has variations or synonyms, consider them and choose the most appropriate " +
-                "translation to maintain consistency and precision. If the translation already aligns " +
-                "with the glossary, no edits are required.";
+            if (glossary.Glossary != null)
+                systemPrompt +=
+                    " Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
+                    "Ensure that the translation aligns with the glossary entries for the respective languages. " +
+                    "If a term has variations or synonyms, consider them and choose the most appropriate " +
+                    "translation to maintain consistency and precision. If the translation already aligns " +
+                    "with the glossary, no edits are required.";
 
-        if (input.AdditionalPrompt != null)
-            systemPrompt = $"{systemPrompt} {input.AdditionalPrompt}";
+            if (input.AdditionalPrompt != null)
+                systemPrompt = $"{systemPrompt} {input.AdditionalPrompt}";
 
-        var userPrompt = @$"
+            var userPrompt = @$"
             Source text: 
             {input.SourceText}
 
@@ -314,21 +316,22 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             {input.TargetText}
         ";
 
-        if (glossary.Glossary != null)
-        {
-            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, input.SourceText, true);
-            if (glossaryPromptPart != null) userPrompt += glossaryPromptPart;
-        }
+            if (glossary.Glossary != null)
+            {
+                var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, input.SourceText, true);
+                if (glossaryPromptPart != null) userPrompt += glossaryPromptPart;
+            }
 
-        var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel());
-        return new()
-        {
-            UserPrompt = userPrompt,
-            SystemPrompt = systemPrompt,
-            EditText = response.Choices.First().Message.Content,
-            Usage = response.Usage,
-        };
+            var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
+            var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel());
+            return new EditResponse
+            {
+                UserPrompt = userPrompt,
+                SystemPrompt = systemPrompt,
+                EditText = response.Choices.First().Message.Content,
+                Usage = response.Usage,
+            };
+        });
     }
 
     [Action("Get translation issues",
