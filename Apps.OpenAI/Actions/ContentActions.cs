@@ -120,63 +120,66 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
     [ActionParameter] GlossaryRequest glossary,
     [ActionParameter, Display("Bucket size", Description = "Specify the number of source texts to be translated at once. Default value: 1500. (See our documentation for an explanation)")] int? bucketSize = 1500)
     {
-
-        var result = new ContentProcessingEditResult();
-        var stream = await fileManagementClient.DownloadAsync(input.File);
-        var content = await FileGroup.TryParse(stream);
-
-        var segments = content.IterateSegments();
-        result.TotalSegmentsCount = segments.Count();
-        segments = segments.Where(x => !x.Ignorable && x.State == SegmentState.Translated);
-        result.TotalEditable = segments.Count();
-
-        var idSegments = segments.Select((x, i) => new { Id = i + 1, Value = x }).ToDictionary(x => x.Id.ToString(), x => x.Value);
-        var batches = BatchWithIds(idSegments, bucketSize ?? 1500);
-
-        var batchOptions = new BatchProcessingOptions(
-                modelIdentifier.GetModel(),
-                content.SourceLanguage,
-                content.TargetLanguage,
-                prompt,
-                glossary.Glossary,
-                true,
-                3,
-                null);
-
-        var batchProcessingResult = await ProcessAllBatchesAsync(batches, batchOptions, false, true);
-
-        result.ProcessedBatchesCount = batchProcessingResult.BatchesProcessed;
-        result.Usage = SumUsageFromResults(batchProcessingResult.Usages);
-
-        IdentifyDuplicateTranslationIdsAndLogErrors(batchProcessingResult);
-
-        var updatedCount = 0;
-        foreach (var batchResult in batchProcessingResult.Results)
+        return await ErrorHandler.ExecuteWithErrorHandlingAsync(async () =>
         {
-            Segment segment = null;
-            idSegments.TryGetValue(batchResult.TranslationId, out segment);
-            if (segment == null) continue;
+            var result = new ContentProcessingEditResult();
+            var stream = await fileManagementClient.DownloadAsync(input.File);
+            var content = await FileGroup.TryParse(stream);
 
-            if (segment.State != SegmentState.Translated || string.IsNullOrEmpty(batchResult.TranslatedText))
+            var segments = content.IterateSegments();
+            result.TotalSegmentsCount = segments.Count();
+            segments = segments.Where(x => !x.Ignorable && x.State == SegmentState.Translated);
+            result.TotalEditable = segments.Count();
+
+            var idSegments = segments.Select((x, i) => new { Id = i + 1, Value = x }).ToDictionary(x => x.Id.ToString(), x => x.Value);
+            var batches = BatchWithIds(idSegments, bucketSize ?? 1500);
+
+            var batchOptions = new BatchProcessingOptions(
+                    modelIdentifier.GetModel(),
+                    content.SourceLanguage,
+                    content.TargetLanguage,
+                    prompt,
+                    glossary.Glossary,
+                    true,
+                    3,
+                    null);
+
+            var batchProcessingResult = await ProcessAllBatchesAsync(batches, batchOptions, false, true);
+
+            result.ProcessedBatchesCount = batchProcessingResult.BatchesProcessed;
+            result.Usage = SumUsageFromResults(batchProcessingResult.Usages);
+
+            IdentifyDuplicateTranslationIdsAndLogErrors(batchProcessingResult);
+
+            var updatedCount = 0;
+            foreach (var batchResult in batchProcessingResult.Results)
             {
-                continue;
+                Segment segment = null;
+                idSegments.TryGetValue(batchResult.TranslationId, out segment);
+                if (segment == null) continue;
+
+                if (segment.State != SegmentState.Translated || string.IsNullOrEmpty(batchResult.TranslatedText))
+                {
+                    continue;
+                }
+
+                if (segment.GetTarget() != batchResult.TranslatedText)
+                {
+                    updatedCount++;
+                    segment.SetTarget(batchResult.TranslatedText, TagParsing.Html); // Update tagparsing setting for other content types
+                    segment.State = SegmentState.Reviewed;
+                }
             }
 
-            if (segment.GetTarget() != batchResult.TranslatedText)
-            {
-                updatedCount++;
-                segment.SetTarget(batchResult.TranslatedText, TagParsing.Html); // Update tagparsing setting for other content types
-                segment.State = SegmentState.Reviewed;
-            }
-        }
+            result.TargetsUpdatedCount = updatedCount;
 
-        result.TargetsUpdatedCount = updatedCount;
+            var streamResult = Xliff2Serializer.Serialize(content).ToStream();
+            var fileName = input.File.Name.EndsWith("xliff") || input.File.Name.EndsWith("xlf") ? input.File.Name : input.File.Name + ".xliff";
+            result.Content = await fileManagementClient.UploadAsync(streamResult, "application/xliff+xml", fileName);
 
-        var streamResult = Xliff2Serializer.Serialize(content).ToStream();
-        var fileName = input.File.Name.EndsWith("xliff") || input.File.Name.EndsWith("xlf") ? input.File.Name : input.File.Name + ".xliff";
-        result.Content = await fileManagementClient.UploadAsync(streamResult, "application/xliff+xml", fileName);
+            return result;
+        });
 
-        return result;
     }
 
     private void IdentifyDuplicateTranslationIdsAndLogErrors(BatchProcessingResult result)
