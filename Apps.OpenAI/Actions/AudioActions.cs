@@ -19,7 +19,7 @@ using RestSharp;
 
 namespace Apps.OpenAI.Actions;
 
-[ActionList]
+[ActionList("Audio")]
 public class AudioActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : BaseActions(invocationContext, fileManagementClient)
 {

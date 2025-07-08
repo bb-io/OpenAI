@@ -17,25 +17,26 @@ using Tests.OpenAI.Base;
 namespace Tests.OpenAI;
 
 [TestClass]
-public class ContentTests : TestBase
+public class TranslationTests : TestBase
 {
     [TestMethod]
     public async Task Translate_html()
     {
-        var actions = new ContentActions(InvocationContext, FileManagementClient);
+        var actions = new TranslationActions(InvocationContext, FileManagementClient);
         var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o" };
         var translateRequest = new TranslateContentRequest
         {
             File = new FileReference { Name = "contentful.html" },
             SourceLanguage = "en-US",
             TargetLanguage = "nl",
+            OutputFileHandling = "original",
         };
         string? systemMessage = null;
         var glossaryRequest = new GlossaryRequest();
 
         var result = await actions.TranslateContent(modelIdentifier, translateRequest, systemMessage, glossaryRequest);
         Assert.IsNotNull(result);
-        Assert.IsTrue(result.Content.Name.Contains("contentful"));
+        Assert.IsTrue(result.File.Name.Contains("contentful"));
 
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
@@ -43,7 +44,7 @@ public class ContentTests : TestBase
     [TestMethod]
     public async Task Translate_xliff()
     {
-        var actions = new ContentActions(InvocationContext, FileManagementClient);
+        var actions = new TranslationActions(InvocationContext, FileManagementClient);
         var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o" };
         var translateRequest = new TranslateContentRequest
         {
@@ -56,45 +57,7 @@ public class ContentTests : TestBase
 
         var result = await actions.TranslateContent(modelIdentifier, translateRequest, systemMessage, glossaryRequest);
         Assert.IsNotNull(result);
-        Assert.IsTrue(result.Content.Name.Contains("contentful"));
-
-        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
-    }
-
-    [TestMethod]
-    public async Task Edit_xliff()
-    {
-        var actions = new ContentActions(InvocationContext, FileManagementClient);
-        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o" };
-        var editRequest = new EditContentRequest
-        {
-            File = new FileReference { Name = "contentful.html.xliff" },
-        };
-        string? systemMessage = null;
-        var glossaryRequest = new GlossaryRequest();
-
-        var result = await actions.EditContent(modelIdentifier, editRequest, systemMessage, glossaryRequest);
-        Assert.IsNotNull(result);
-        Assert.IsTrue(result.Content.Name.Contains("contentful"));
-
-        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
-    }
-
-    [TestMethod]
-    public async Task Taus_edit()
-    {
-        var actions = new ContentActions(InvocationContext, FileManagementClient);
-        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4.1" };
-        var editRequest = new EditContentRequest
-        {
-            File = new FileReference { Name = "taus.xliff" },
-        };
-        string? systemMessage = null;
-        var glossaryRequest = new GlossaryRequest();
-
-        var result = await actions.EditContent(modelIdentifier, editRequest, systemMessage, glossaryRequest);
-        Assert.IsNotNull(result);
-        Assert.IsTrue(result.Content.Name.Contains("taus"));
+        Assert.IsTrue(result.File.Name.Contains("contentful"));
 
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }

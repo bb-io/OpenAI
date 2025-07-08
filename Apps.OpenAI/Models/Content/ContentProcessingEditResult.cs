@@ -1,26 +1,22 @@
 ﻿using Apps.OpenAI.Dtos;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Files;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Blackbird.Applications.SDK.Blueprints.Interfaces.Edit;
 
 namespace Apps.OpenAI.Models.Content;
-public class ContentProcessingEditResult
+public class ContentProcessingEditResult : IEditFileOutput
 {
-    public FileReference Content { get; set; }
+    public FileReference File { get; set; }
     public UsageDto Usage { get; set; } = new UsageDto();
 
     [Display("Total segments")]
     public int TotalSegmentsCount { get; set; }
 
-    [Display("Editable segments")]
-    public int TotalEditable { get; set; }
+    [Display("Reviewed segments")]
+    public int TotalSegmentsReviewed { get; set; }
 
-    [Display("Targets updated")]
-    public int TargetsUpdatedCount { get; set; }
+    [Display("Edited segments")]
+    public int TotalSegmentsUpdated { get; set; }
 
     [Display("Processed batches")]
     public int ProcessedBatchesCount { get; set; }

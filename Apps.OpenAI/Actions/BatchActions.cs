@@ -23,7 +23,7 @@ using Blackbird.Applications.Sdk.Common.Exceptions;
 
 namespace Apps.OpenAI.Actions;
 
-[ActionList]
+[ActionList("Batch processing")]
 public class BatchActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : BaseActions(invocationContext, fileManagementClient)
 {

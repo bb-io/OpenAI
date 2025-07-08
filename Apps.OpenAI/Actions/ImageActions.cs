@@ -16,7 +16,7 @@ using RestSharp;
 
 namespace Apps.OpenAI.Actions;
 
-[ActionList]
+[ActionList("Images")]
 public class ImageActions : BaseActions
 {
     public ImageActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
