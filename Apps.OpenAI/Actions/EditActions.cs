@@ -122,8 +122,10 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         {
             var targetContent = content.Target();
             result.File = await fileManagementClient.UploadAsync(targetContent.Serialize().ToStream(), targetContent.OriginalMediaType, targetContent.OriginalName);
-        }
-        result.File = await fileManagementClient.UploadAsync(content.Serialize().ToStream(), MediaTypes.Xliff, content.XliffFileName);
+        } else
+        {
+            result.File = await fileManagementClient.UploadAsync(content.Serialize().ToStream(), MediaTypes.Xliff, content.XliffFileName);
+        }        
 
         return result;
     }

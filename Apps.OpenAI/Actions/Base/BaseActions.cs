@@ -130,7 +130,7 @@ public abstract class BaseActions : OpenAIInvocable
         return await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
     }
 
-    protected async Task<string> IdentifySourceLanguage([ActionParameter] TextChatModelIdentifier modelIdentifier, string content)
+    protected async Task<string> IdentifySourceLanguage(TextChatModelIdentifier modelIdentifier, string content)
     {
         var systemPrompt = "You are a linguist. Identify the language of the following text. Your response should be in the BCP 47 (language) or (language-country). You respond with the language only, not other text is required.";
 
