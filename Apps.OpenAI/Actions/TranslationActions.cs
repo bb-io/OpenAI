@@ -44,9 +44,13 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         var stream = await fileManagementClient.DownloadAsync(input.File);
         var content = await Transformation.Parse(stream, input.File.Name);
         content.SourceLanguage ??= input.SourceLanguage;
-        content.TargetLanguage ??= input.TargetLanguage;
-        if (content.SourceLanguage == null) throw new PluginMisconfigurationException("The source language is not defined yet. Please assign the source language in this action.");
+        content.TargetLanguage ??= input.TargetLanguage;        
         if (content.TargetLanguage == null) throw new PluginMisconfigurationException("The target language is not defined yet. Please assign the target language in this action.");
+
+        if (content.SourceLanguage == null)
+        {
+            content.SourceLanguage = await IdentifySourceLanguage(modelIdentifier, content.Source().GetPlaintext());
+        }
 
         var batchProcessingService = new BatchProcessingService(Client, FileManagementClient);
         var batchOptions = new BatchProcessingOptions(

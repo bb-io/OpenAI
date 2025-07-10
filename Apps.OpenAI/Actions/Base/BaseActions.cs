@@ -20,6 +20,10 @@ using Newtonsoft.Json.Serialization;
 using Newtonsoft.Json;
 using RestSharp;
 using System.Collections.Generic;
+using Apps.OpenAI.Constants;
+using Apps.OpenAI.Models.Identifiers;
+using Apps.OpenAI.Models.Responses.Chat;
+using Blackbird.Applications.Sdk.Common;
 
 namespace Apps.OpenAI.Actions.Base;
 
@@ -124,5 +128,18 @@ public abstract class BaseActions : OpenAIInvocable
         request.AddJsonBody(jsonBodySerialized);
 
         return await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+    }
+
+    protected async Task<string> IdentifySourceLanguage([ActionParameter] TextChatModelIdentifier modelIdentifier, string content)
+    {
+        var systemPrompt = "You are a linguist. Identify the language of the following text. Your response should be in the BCP 47 (language) or (language-country). You respond with the language only, not other text is required.";
+
+        var snippet = content.Length > 200 ? content.Substring(0, 300) : content;
+        var userPrompt = snippet + ". The BCP 47 language code: ";
+
+        var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel());
+
+        return response.Choices.First().Message.Content;
     }
 }

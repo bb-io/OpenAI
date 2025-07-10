@@ -10,5 +10,5 @@ public class EditContentRequest : IEditFileInput
     public FileReference File { get; set; }
 
     [Display("Output file handling", Description = "Determine the format of the output file. The default Blackbird behavior is to convert to XLIFF for future steps."), StaticDataSource(typeof(ProcessFileFormatHandler))]
-    public string OutputFileHandling { get; set; }
+    public string? OutputFileHandling { get; set; }
 }

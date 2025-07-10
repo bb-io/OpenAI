@@ -23,11 +23,10 @@ public class TranslationTests : TestBase
     public async Task Translate_html()
     {
         var actions = new TranslationActions(InvocationContext, FileManagementClient);
-        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o" };
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4.1" };
         var translateRequest = new TranslateContentRequest
         {
             File = new FileReference { Name = "contentful.html" },
-            SourceLanguage = "en-US",
             TargetLanguage = "nl",
             OutputFileHandling = "original",
         };
@@ -45,11 +44,10 @@ public class TranslationTests : TestBase
     public async Task Translate_xliff()
     {
         var actions = new TranslationActions(InvocationContext, FileManagementClient);
-        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o" };
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4.1" };
         var translateRequest = new TranslateContentRequest
         {
             File = new FileReference { Name = "contentful.html.xliff" },
-            SourceLanguage = "en-US",
             TargetLanguage = "nl",
         };
         string? systemMessage = null;
@@ -66,7 +64,7 @@ public class TranslationTests : TestBase
     public async Task TranslateText_WithSerbianLocale_ReturnsLocalizedText()
     {
         var actions = new TranslationActions(InvocationContext, FileManagementClient);
-        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o" };
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4.1" };
         var localizeRequest = new LocalizeTextRequest
         {
             Text = "Develop and implement an HR strategy that drives organizational productivity and supports company's business goals. Design and oversee processes that promote team efficiency and operational effectiveness while reducing complexity and redundancies.",
