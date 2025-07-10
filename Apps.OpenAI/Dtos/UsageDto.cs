@@ -1,5 +1,9 @@
 ﻿using Blackbird.Applications.Sdk.Common;
+using DocumentFormat.OpenXml.Bibliography;
 using Newtonsoft.Json;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Apps.OpenAI.Dtos
 {
@@ -25,6 +29,13 @@ namespace Apps.OpenAI.Dtos
                 CompletionTokens = u1.CompletionTokens + u2.CompletionTokens,
                 TotalTokens = u1.TotalTokens + u2.TotalTokens,
             };
+        }
+
+        public static UsageDto Zero => new() { CompletionTokens = 0, TotalTokens = 0, PromptTokens = 0 };
+
+        public static UsageDto Sum(IEnumerable<UsageDto> usages)
+        {
+            return usages.Aggregate(Zero, (acc, x) => acc + x);
         }
     }    
 }

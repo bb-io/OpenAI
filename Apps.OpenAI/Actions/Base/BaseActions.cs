@@ -14,6 +14,16 @@ using Blackbird.Xliff.Utils;
 using Blackbird.Xliff.Utils.Extensions;
 using System.Xml;
 using Blackbird.Applications.Sdk.Common.Exceptions;
+using Apps.OpenAI.Dtos;
+using Apps.OpenAI.Models.Requests.Chat;
+using Newtonsoft.Json.Serialization;
+using Newtonsoft.Json;
+using RestSharp;
+using System.Collections.Generic;
+using Apps.OpenAI.Constants;
+using Apps.OpenAI.Models.Identifiers;
+using Apps.OpenAI.Models.Responses.Chat;
+using Blackbird.Applications.Sdk.Common;
 
 namespace Apps.OpenAI.Actions.Base;
 
@@ -92,5 +102,44 @@ public abstract class BaseActions : OpenAIInvocable
         }
 
         return xliffDocument;
+    }
+
+    protected async Task<ChatCompletionDto> ExecuteChatCompletion(IEnumerable<object> messages, string model = "gpt-4-turbo-preview", BaseChatRequest input = null, object responseFormat = null)
+    {
+        var jsonBody = new
+        {
+            model,
+            Messages = messages,
+            max_completion_tokens = input?.MaximumTokens,
+            top_p = input?.TopP ?? 1,
+            presence_penalty = input?.PresencePenalty ?? 0,
+            frequency_penalty = input?.FrequencyPenalty ?? 0,
+            temperature = input?.Temperature ?? 1,
+            response_format = responseFormat,
+        };
+
+        var jsonBodySerialized = JsonConvert.SerializeObject(jsonBody, new JsonSerializerSettings
+        {
+            ContractResolver = new CamelCasePropertyNamesContractResolver(),
+            NullValueHandling = NullValueHandling.Ignore,
+        });
+
+        var request = new OpenAIRequest("/chat/completions", Method.Post);
+        request.AddJsonBody(jsonBodySerialized);
+
+        return await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+    }
+
+    protected async Task<string> IdentifySourceLanguage([ActionParameter] TextChatModelIdentifier modelIdentifier, string content)
+    {
+        var systemPrompt = "You are a linguist. Identify the language of the following text. Your response should be in the BCP 47 (language) or (language-country). You respond with the language only, not other text is required.";
+
+        var snippet = content.Length > 200 ? content.Substring(0, 300) : content;
+        var userPrompt = snippet + ". The BCP 47 language code: ";
+
+        var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel());
+
+        return response.Choices.First().Message.Content;
     }
 }

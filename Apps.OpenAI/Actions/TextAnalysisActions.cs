@@ -15,7 +15,7 @@ using TiktokenSharp;
 
 namespace Apps.OpenAI.Actions;
 
-[ActionList]
+[ActionList("Text analysis")]
 public class TextAnalysisActions : BaseActions
 {
     public TextAnalysisActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)

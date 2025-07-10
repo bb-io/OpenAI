@@ -1,0 +1,361 @@
+<xliff srcLang="en" trgLang="nl" version="2.2" xmlns:mda="urn:oasis:names:tc:xliff:metadata:2.0" xmlns="urn:oasis:names:tc:xliff:document:2.2">
+  <file id="f1">
+    <mda:metadata>
+      <mda:metaGroup category="blackbird">
+        <mda:meta type="original-media-type">text/html</mda:meta>
+      </mda:metaGroup>
+    </mda:metadata>
+    <skeleton href="contentful.html">&lt;html&gt;
+  &lt;head&gt;
+    &lt;meta name="blackbird-entry-id" content="5746dLKTkEZjOQX21HX2KI" /&gt;
+    &lt;meta name="blackbird-locale" content="en-US" /&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div data-contentful-entry-id="5746dLKTkEZjOQX21HX2KI"&gt;
+      &lt;h1 data-contentful-field-type="Symbol" data-contentful-field-id="title"&gt;The Loire Valley&lt;/h1&gt;
+      &lt;div
+        data-contentful-field-type="Array"
+        data-contentful-field-id="content"
+        data-contentful-link-type="Entry"
+        data-contentful-link-ids="4avSNl953GJYUmIZ8cJg6S,Tp9LF4pw5n3ydWs58YvOc"
+        data-contentful-localized="True"
+      &gt;&lt;/div&gt;
+      &lt;div
+        data-contentful-field-type="Link"
+        data-contentful-field-id="footer"
+        data-contentful-link-type="Entry"
+        data-contentful-link-id="6eZfQFZIjT5p5uHqYqMGQZ"
+        data-contentful-localized="True"
+      &gt;&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div data-contentful-entry-id="6eZfQFZIjT5p5uHqYqMGQZ"&gt;
+      &lt;h1 data-contentful-field-type="Symbol" data-contentful-field-id="title"&gt;
+        Ready to Discover the Magic of the Loire Valley for Yourself?
+      &lt;/h1&gt;
+      &lt;div data-contentful-field-type="RichText" data-contentful-field-id="text"&gt;
+        &lt;p&gt;
+          Embark on an unforgettable journey through France's most enchanting countryside. Wander through majestic
+          châteaux, savor the finest Loire wines, and lose yourself in picturesque villages. Whether you're a history
+          buff, a wine enthusiast, or simply a lover of beautiful landscapes, the Loire Valley offers a travel
+          experience unlike any other.
+        &lt;/p&gt;
+        &lt;p&gt;
+          &lt;strong&gt;Book your Loire Valley adventure today and step into a world where fairytales come to life! &lt;/strong&gt;
+        &lt;/p&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div data-contentful-entry-id="4avSNl953GJYUmIZ8cJg6S"&gt;
+      &lt;h1 data-contentful-field-type="Symbol" data-contentful-field-id="title"&gt;
+        A Day in the Heart of Loire: Châteaux and Vineyards
+      &lt;/h1&gt;
+      &lt;div data-contentful-field-type="RichText" data-contentful-field-id="text"&gt;
+        &lt;p&gt;
+          &lt;strong&gt;Morning: Château de Chambord&lt;/strong&gt; Begin your day with a visit to the legendary Château de
+          Chambord, a masterpiece of French Renaissance architecture. This sprawling castle, with its 400 rooms, iconic
+          double-helix staircase, and forested grounds, was designed for King Francis I as a hunting lodge. Wander the
+          grand halls and rooftop terraces, where you’ll find sweeping views of the Loire landscape. Arrive early to
+          enjoy the castle’s peaceful grandeur before the crowds arrive.
+        &lt;/p&gt;
+        &lt;p&gt;
+          &lt;strong&gt;Midday: Lunch in Blois&lt;/strong&gt; Just a short drive away, the town of Blois offers a taste of
+          quintessential Loire Valley charm. Explore its medieval center, winding alleyways, and the regal Château de
+          Blois, known for its eclectic mix of architectural styles. For lunch, stop by a local bistro where you can
+          savor Loire specialties like goat cheese tartine or rillettes. Pair it with a glass of crisp Sancerre wine,
+          cultivated just a few miles away.
+        &lt;/p&gt;
+        &lt;p&gt;
+          &lt;strong&gt;Afternoon: Amboise and the Legacy of Leonardo da Vinci&lt;/strong&gt; Head to the Château d’Amboise, perched
+          dramatically over the Loire River, once home to kings and visionaries alike. Stroll through royal apartments,
+          visit the Gothic chapel where Leonardo da Vinci is buried, and soak in panoramic views of the river and town
+          below. Just up the hill, the Clos Lucé mansion was Da Vinci’s residence for his final years. Inside, you’ll
+          find intricate models of his inventions, bringing the genius of the Renaissance to life.
+        &lt;/p&gt;
+        &lt;p&gt;You can read more about the Loire valley in this book:&lt;/p&gt;
+        &lt;p&gt;
+          &lt;span&gt;&lt;/span
+          &gt;&lt;a
+            id="embedded-entry-inline_3MvZ2M38zOBdztgQJAzw0B"
+            href="https://app.contentful.com/spaces/12ktqqmw656e/entries/3MvZ2M38zOBdztgQJAzw0B"
+          &gt;&lt;/a
+          &gt;&lt;span&gt;&lt;/span&gt;
+        &lt;/p&gt;
+        &lt;br /&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div data-contentful-entry-id="3MvZ2M38zOBdztgQJAzw0B"&gt;
+      &lt;div data-contentful-field-type="RichText" data-contentful-field-id="description"&gt;
+        &lt;p&gt;
+          Embark on a journey through &lt;i&gt;France Unveiled: A Journey Through Culture, Cuisine, and Countryside&lt;/i&gt;, a
+          unique travel guide that weaves together the romantic charm of Paris, the sun-soaked allure of Provence, and
+          the vineyard-laden trails of Bordeaux. This guide goes beyond the usual tourist stops to introduce you to
+          hidden villages, local markets, and timeworn chateaux where history and modern French life blend seamlessly.
+        &lt;/p&gt;
+        &lt;p&gt;
+          Whether sipping coffee in a quiet Marais café, wandering through medieval streets in Alsace, or savoring fresh
+          seafood along the Côte d'Azur, &lt;i&gt;France Unveiled&lt;/i&gt; offers insights, local tips, and immersive experiences
+          for travelers who want to explore like a local. Packed with detailed itineraries, insider recommendations, and
+          stories that bring each region to life, this guide will help you uncover the heart of France—from its iconic
+          sites to its best-kept secrets.
+        &lt;/p&gt;
+        &lt;p&gt;
+          &lt;i
+            &gt;Perfect for first-time visitors and seasoned Francophiles alike, this guide will make every trip
+            unforgettable&lt;/i
+          &gt;
+        &lt;/p&gt;
+      &lt;/div&gt;
+      &lt;img
+        src="https://images.ctfassets.net/12ktqqmw656e/7jS4PhCf07nFGDbM2Xj5fT/513a21df5f6493964373bf152a6fd2bb/tower.jfif"
+        data-contentful-field-type="Link"
+        data-contentful-field-id="file"
+        data-contentful-link-type="Asset"
+        data-contentful-link-id="7jS4PhCf07nFGDbM2Xj5fT"
+        alt="Eiffel tower"
+      /&gt;
+      &lt;h1 data-contentful-field-type="Symbol" data-contentful-field-id="title"&gt;
+        France Unveiled: A Journey Through Culture, Cuisine, and Countryside
+      &lt;/h1&gt;
+    &lt;/div&gt;
+    &lt;div data-contentful-entry-id="Tp9LF4pw5n3ydWs58YvOc"&gt;
+      &lt;h1 data-contentful-field-type="Symbol" data-contentful-field-id="title"&gt;Exploring Loire Valley Wines&lt;/h1&gt;
+      &lt;div data-contentful-field-type="RichText" data-contentful-field-id="text"&gt;
+        &lt;p&gt;
+          The Loire Valley is known for its diverse wine offerings, from crisp whites to delicate reds. To experience
+          the region’s viniculture, stop by a local winery in the Vouvray or Chinon area, where family-run vineyards
+          offer tastings and tours. Here, you can sample Loire’s famous Chenin Blancs, earthy Cabernet Francs, and
+          refreshing Rosés, often accompanied by local cheeses and bread. It’s a truly immersive way to connect with the
+          region’s rich agricultural traditions and taste the terroir of the Loire Valley.
+        &lt;/p&gt;
+        &lt;h3&gt;&lt;strong&gt;Local Tips for Exploring the Loire Valley&lt;/strong&gt;&lt;/h3&gt;
+        &lt;ul&gt;
+          &lt;li&gt;
+            &lt;p&gt;&lt;strong&gt;Best Time to Visit:&lt;/strong&gt;&lt;/p&gt;
+            &lt;p&gt;
+              Spring and autumn offer pleasant weather and fewer crowds, while summer brings the region to life with
+              festivals and outdoor concerts.
+            &lt;/p&gt;
+          &lt;/li&gt;
+          &lt;li&gt;
+            &lt;p&gt;&lt;strong&gt;Getting Around:&lt;/strong&gt;&lt;/p&gt;
+            &lt;p&gt;
+              Renting a bike is a great way to explore the scenic Loire à Vélo cycling routes, which connect many of the
+              region’s major sights.
+            &lt;/p&gt;
+          &lt;/li&gt;
+          &lt;li&gt;
+            &lt;p&gt;&lt;strong&gt;Hidden Gem:&lt;/strong&gt;&lt;/p&gt;
+            &lt;p&gt;
+              Don’t miss the lesser-known Château de Villandry, celebrated for its Renaissance gardens. Spend a serene
+              afternoon wandering through its maze of perfectly manicured flowerbeds, orchards, and ornamental vegetable
+              plots.
+            &lt;/p&gt;
+          &lt;/li&gt;
+        &lt;/ul&gt;
+        &lt;br /&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</skeleton>
+    <unit id="u1" name="/html[1]/body[1]/div[1]/h1[1]">
+      <segment state="translated">
+        <source>The Loire Valley</source>
+        <target>De Loiredal</target>
+      </segment>
+    </unit>
+    <unit id="u2" name="/html[1]/body[1]/div[2]/h1[1]">
+      <segment state="translated">
+        <source>Ready to Discover the Magic of the Loire Valley for Yourself?</source>
+        <target>Klaar om de magie van de Loire-vallei zelf te ontdekken?</target>
+      </segment>
+    </unit>
+    <unit id="u3" name="/html[1]/body[1]/div[2]/div[1]/p[1]">
+      <segment state="translated">
+        <source>Embark on an unforgettable journey through France's most enchanting countryside. Wander through majestic châteaux, savor the finest Loire wines, and lose yourself in picturesque villages. Whether you're a history buff, a wine enthusiast, or simply a lover of beautiful landscapes, the Loire Valley offers a travel experience unlike any other.</source>
+        <target>Ga op een onvergetelijke reis door het meest betoverende landschap van Frankrijk. Dwaal door majestueuze kastelen, proef de beste Loire-wijnen en verlies jezelf in pittoreske dorpjes. Of u nu van geschiedenis houdt, wijnliefhebber bent of gewoon van prachtige landschappen houdt, de Loire-vallei biedt een reiservaring zoals geen ander.</target>
+      </segment>
+    </unit>
+    <unit id="u4" name="/html[1]/body[1]/div[2]/div[1]/p[2]">
+      <segment state="translated">
+        <source>
+          <sc id="1" dataRef="d1" />Book your Loire Valley adventure today and step into a world where fairytales come to life!<ec dataRef="d2" /></source>
+        <target>
+          <sc id="2" dataRef="d1" />Boek vandaag nog je avontuur in de Loiredal en stap in een wereld waar sprookjes tot leven komen!<ec dataRef="d2" /></target>
+      </segment>
+      <originalData>
+        <data id="d1">&lt;strong&gt;</data>
+        <data id="d2">&lt;/strong&gt;</data>
+      </originalData>
+    </unit>
+    <unit id="u5" name="/html[1]/body[1]/div[3]/h1[1]">
+      <segment state="translated">
+        <source>A Day in the Heart of Loire: Châteaux and Vineyards</source>
+        <target>Een dag in het hart van de Loire: kastelen en wijngaarden</target>
+      </segment>
+    </unit>
+    <unit id="u6" name="/html[1]/body[1]/div[3]/div[1]/p[1]">
+      <segment state="translated">
+        <source>
+          <sc id="1" dataRef="d1" />Morning: Château de Chambord<ec dataRef="d2" />Begin your day with a visit to the legendary Château de Chambord, a masterpiece of French Renaissance architecture. This sprawling castle, with its 400 rooms, iconic double-helix staircase, and forested grounds, was designed for King Francis I as a hunting lodge. Wander the grand halls and rooftop terraces, where you’ll find sweeping views of the Loire landscape. Arrive early to enjoy the castle’s peaceful grandeur before the crowds arrive.</source>
+        <target>
+          <sc id="2" dataRef="d1" />Ochtend: Château de ChambordBegin<ec dataRef="d2" />je dag met een bezoek aan het legendarische Château de Chambord, een meesterwerk van de Franse renaissance-architectuur. Dit uitgestrekte kasteel, met zijn 400 kamers, iconische dubbele spiraalvormige trap en beboste terrein, werd ontworpen voor koning Frans I als jachthuis. Dwaal door de grote zalen en dakterrassen, waar je een prachtig uitzicht over het Loire-landschap hebt. Kom vroeg aan om te genieten van de vredige grandeur van het kasteel voordat de menigte arriveert.</target>
+      </segment>
+      <originalData>
+        <data id="d1">&lt;strong&gt;</data>
+        <data id="d2">&lt;/strong&gt;</data>
+      </originalData>
+    </unit>
+    <unit id="u7" name="/html[1]/body[1]/div[3]/div[1]/p[2]">
+      <segment state="translated">
+        <source>
+          <sc id="1" dataRef="d1" />Midday: Lunch in Blois<ec dataRef="d2" />Just a short drive away, the town of Blois offers a taste of quintessential Loire Valley charm. Explore its medieval center, winding alleyways, and the regal Château de Blois, known for its eclectic mix of architectural styles. For lunch, stop by a local bistro where you can savor Loire specialties like goat cheese tartine or rillettes. Pair it with a glass of crisp Sancerre wine, cultivated just a few miles away.</source>
+        <target>
+          <sc id="2" dataRef="d1" />S Middags: Lunch in BloisHet<ec dataRef="d2" />stadje Blois ligt op een klein eindje rijden en biedt een voorproefje van de typische charme van de Loire-vallei. Verken het middeleeuwse centrum, de kronkelende steegjes en het vorstelijke Château de Blois, bekend om zijn eclectische mix van bouwstijlen. Stop voor de lunch bij een plaatselijke bistro waar je kunt genieten van Loire-specialiteiten zoals tartine met geitenkaas of rillettes. Combineer dit met een glas knisperende Sancerre wijn, die slechts een paar kilometer verderop wordt verbouwd.</target>
+      </segment>
+      <originalData>
+        <data id="d1">&lt;strong&gt;</data>
+        <data id="d2">&lt;/strong&gt;</data>
+      </originalData>
+    </unit>
+    <unit id="u8" name="/html[1]/body[1]/div[3]/div[1]/p[3]">
+      <segment state="translated">
+        <source>
+          <sc id="1" dataRef="d1" />Afternoon: Amboise and the Legacy of Leonardo da Vinci<ec dataRef="d2" />Head to the Château d’Amboise, perched dramatically over the Loire River, once home to kings and visionaries alike. Stroll through royal apartments, visit the Gothic chapel where Leonardo da Vinci is buried, and soak in panoramic views of the river and town below. Just up the hill, the Clos Lucé mansion was Da Vinci’s residence for his final years. Inside, you’ll find intricate models of his inventions, bringing the genius of the Renaissance to life.</source>
+        <target>
+          <sc id="2" dataRef="d1" />Namiddag: Amboise en de nalatenschap van Leonardo da VinciGa naar<ec dataRef="d2" />het Château d'Amboise, dat dramatisch boven de rivier de Loire uittorent en ooit de thuisbasis was van koningen en visionairs. Wandel door de koninklijke appartementen, bezoek de gotische kapel waar Leonardo da Vinci begraven ligt en geniet van het panoramische uitzicht op de rivier en de stad. Iets hoger op de heuvel ligt het herenhuis Clos Lucé waar Da Vinci zijn laatste jaren woonde. Binnen vind je ingewikkelde modellen van zijn uitvindingen, die het genie van de Renaissance tot leven brengen.</target>
+      </segment>
+      <originalData>
+        <data id="d1">&lt;strong&gt;</data>
+        <data id="d2">&lt;/strong&gt;</data>
+      </originalData>
+    </unit>
+    <unit id="u9" name="/html[1]/body[1]/div[3]/div[1]/p[4]">
+      <segment state="translated">
+        <source>You can read more about the Loire valley in this book:</source>
+        <target>Je kunt meer lezen over de Loirevallei in dit boek:</target>
+      </segment>
+    </unit>
+    <unit id="u10" name="/html[1]/body[1]/div[4]/div[1]/p[1]">
+      <segment state="translated">
+        <source>Embark on a journey through<sc id="1" dataRef="d1" />France Unveiled: A Journey Through Culture, Cuisine, and Countryside<ec dataRef="d2" />, a unique travel guide that weaves together the romantic charm of Paris, the sun-soaked allure of Provence, and the vineyard-laden trails of Bordeaux. This guide goes beyond the usual tourist stops to introduce you to hidden villages, local markets, and timeworn chateaux where history and modern French life blend seamlessly.</source>
+        <target>Ga op reis metFrance<sc id="2" dataRef="d1" />Unveiled: Een reis door cultuur, keuken en platteland<ec dataRef="d2" />, een unieke reisgids die de romantische charme van Parijs, de zonovergoten allure van de Provence en de met wijngaarden bezaaide paden van Bordeaux met elkaar verweeft. Deze gids gaat verder dan de gebruikelijke toeristische stops en laat je kennismaken met verborgen dorpjes, lokale markten en eeuwenoude kastelen waar geschiedenis en het moderne Franse leven naadloos in elkaar overgaan.</target>
+      </segment>
+      <originalData>
+        <data id="d1">&lt;i&gt;</data>
+        <data id="d2">&lt;/i&gt;</data>
+      </originalData>
+    </unit>
+    <unit id="u11" name="/html[1]/body[1]/div[4]/div[1]/p[2]">
+      <segment state="translated">
+        <source>Whether sipping coffee in a quiet Marais café, wandering through medieval streets in Alsace, or savoring fresh seafood along the Côte d'Azur,<sc id="1" dataRef="d1" />France Unveiled<ec dataRef="d2" />offers insights, local tips, and immersive experiences for travelers who want to explore like a local. Packed with detailed itineraries, insider recommendations, and stories that bring each region to life, this guide will help you uncover the heart of France—from its iconic sites to its best-kept secrets.</source>
+        <target>Of je nu koffie drinkt in een rustig café in de Marais, door middeleeuwse straatjes slentert in de Elzas of verse zeevruchten proeft aan de Côte d'Azur<sc id="2" dataRef="d1" />, France Unveiled biedt<ec dataRef="d2" />inzichten, lokale tips en meeslepende ervaringen voor reizigers die willen verkennen als een local. Deze gids zit boordevol gedetailleerde reisroutes, aanbevelingen van insiders en verhalen die elke regio tot leven brengen. Zo ontdek je het hart van Frankrijk, van de iconische bezienswaardigheden tot de best bewaarde geheimen.</target>
+      </segment>
+      <originalData>
+        <data id="d1">&lt;i&gt;</data>
+        <data id="d2">&lt;/i&gt;</data>
+      </originalData>
+    </unit>
+    <unit id="u12" name="/html[1]/body[1]/div[4]/div[1]/p[3]">
+      <segment state="translated">
+        <source>
+          <sc id="1" dataRef="d1" />Perfect for first-time visitors and seasoned Francophiles alike, this guide will make every trip unforgettable<ec dataRef="d2" /></source>
+        <target>
+          <sc id="2" dataRef="d1" />Deze gids is perfect voor zowel beginnende bezoekers als doorgewinterde francofielen en zal elke reis onvergetelijk maken<ec dataRef="d2" /></target>
+      </segment>
+      <originalData>
+        <data id="d1">&lt;i&gt;</data>
+        <data id="d2">&lt;/i&gt;</data>
+      </originalData>
+    </unit>
+    <unit id="u13" name="/html[1]/body[1]/div[4]/img[1]/@alt[1]">
+      <segment state="translated">
+        <source>Eiffel tower</source>
+        <target>Eiffeltoren</target>
+      </segment>
+    </unit>
+    <unit id="u14" name="/html[1]/body[1]/div[4]/h1[1]">
+      <segment state="translated">
+        <source>France Unveiled: A Journey Through Culture, Cuisine, and Countryside</source>
+        <target>Frankrijk Ontsluierd: Een reis door cultuur, keuken en platteland</target>
+      </segment>
+    </unit>
+    <unit id="u15" name="/html[1]/body[1]/div[5]/h1[1]">
+      <segment state="translated">
+        <source>Exploring Loire Valley Wines</source>
+        <target>Ontdek de Loire-wijnen</target>
+      </segment>
+    </unit>
+    <unit id="u16" name="/html[1]/body[1]/div[5]/div[1]/p[1]">
+      <segment state="translated">
+        <source>The Loire Valley is known for its diverse wine offerings, from crisp whites to delicate reds. To experience the region’s viniculture, stop by a local winery in the Vouvray or Chinon area, where family-run vineyards offer tastings and tours. Here, you can sample Loire’s famous Chenin Blancs, earthy Cabernet Francs, and refreshing Rosés, often accompanied by local cheeses and bread. It’s a truly immersive way to connect with the region’s rich agricultural traditions and taste the terroir of the Loire Valley.</source>
+        <target>De Loirevallei staat bekend om zijn gevarieerde wijnaanbod, van frisse witte wijnen tot delicate rode wijnen. Om de wijnbouw van de regio te ervaren, kunt u langsgaan bij een lokale wijnmakerij in de omgeving van Vouvray of Chinon, waar familiebedrijven wijnproeverijen en rondleidingen aanbieden. Hier kunt u de beroemde Chenin Blancs, aardse Cabernet Francs en verfrissende Rosés van de Loire proeven, vaak vergezeld van lokale kazen en brood. Het is echt een meeslepende manier om in contact te komen met de rijke landbouwtradities van de regio en het terroir van de Loirevallei te proeven.</target>
+      </segment>
+    </unit>
+    <unit id="u17" name="/html[1]/body[1]/div[5]/div[1]/h3[1]">
+      <segment state="translated">
+        <source>
+          <sc id="1" dataRef="d1" />Local Tips for Exploring the Loire Valley<ec dataRef="d2" /></source>
+        <target>
+          <sc id="2" dataRef="d1" />Lokale tips om de Loire-vallei te verkennen<ec dataRef="d2" /></target>
+      </segment>
+      <originalData>
+        <data id="d1">&lt;strong&gt;</data>
+        <data id="d2">&lt;/strong&gt;</data>
+      </originalData>
+    </unit>
+    <unit id="u18" name="/html[1]/body[1]/div[5]/div[1]/ul[1]/li[1]/p[1]">
+      <segment state="translated">
+        <source>
+          <sc id="1" dataRef="d1" />Best Time to Visit:<ec dataRef="d2" /></source>
+        <target>
+          <sc id="2" dataRef="d1" />Beste tijd voor een bezoek:<ec dataRef="d2" /></target>
+      </segment>
+      <originalData>
+        <data id="d1">&lt;strong&gt;</data>
+        <data id="d2">&lt;/strong&gt;</data>
+      </originalData>
+    </unit>
+    <unit id="u19" name="/html[1]/body[1]/div[5]/div[1]/ul[1]/li[1]/p[2]">
+      <segment state="translated">
+        <source>Spring and autumn offer pleasant weather and fewer crowds, while summer brings the region to life with festivals and outdoor concerts.</source>
+        <target>De lente en herfst bieden aangenaam weer en minder mensenmassa's, terwijl de zomer de regio tot leven brengt met festivals en openluchtconcerten.</target>
+      </segment>
+    </unit>
+    <unit id="u20" name="/html[1]/body[1]/div[5]/div[1]/ul[1]/li[2]/p[1]">
+      <segment state="translated">
+        <source>
+          <sc id="1" dataRef="d1" />Getting Around:<ec dataRef="d2" /></source>
+        <target>
+          <sc id="2" dataRef="d1" />Vervoer:<ec dataRef="d2" /></target>
+      </segment>
+      <originalData>
+        <data id="d1">&lt;strong&gt;</data>
+        <data id="d2">&lt;/strong&gt;</data>
+      </originalData>
+    </unit>
+    <unit id="u21" name="/html[1]/body[1]/div[5]/div[1]/ul[1]/li[2]/p[2]">
+      <segment state="translated">
+        <source>Renting a bike is a great way to explore the scenic Loire à Vélo cycling routes, which connect many of the region’s major sights.</source>
+        <target>Een fiets huren is een geweldige manier om de schilderachtige Loire à Vélo-fietsroutes te verkennen, die veel van de belangrijkste bezienswaardigheden in de regio met elkaar verbinden.</target>
+      </segment>
+    </unit>
+    <unit id="u22" name="/html[1]/body[1]/div[5]/div[1]/ul[1]/li[3]/p[1]">
+      <segment state="translated">
+        <source>
+          <sc id="1" dataRef="d1" />Hidden Gem:<ec dataRef="d2" /></source>
+        <target>
+          <sc id="2" dataRef="d1" />Verborgen parel:<ec dataRef="d2" /></target>
+      </segment>
+      <originalData>
+        <data id="d1">&lt;strong&gt;</data>
+        <data id="d2">&lt;/strong&gt;</data>
+      </originalData>
+    </unit>
+    <unit id="u23" name="/html[1]/body[1]/div[5]/div[1]/ul[1]/li[3]/p[2]">
+      <segment state="translated">
+        <source>Don’t miss the lesser-known Château de Villandry, celebrated for its Renaissance gardens. Spend a serene afternoon wandering through its maze of perfectly manicured flowerbeds, orchards, and ornamental vegetable plots.</source>
+        <target>Mis het minder bekende Château de Villandry niet, beroemd om zijn renaissancetuinen. Breng een serene middag door met een wandeling door het doolhof van perfect onderhouden bloemperken, boomgaarden en sierlijke groentetuinen.</target>
+      </segment>
+    </unit>
+  </file>
+</xliff>

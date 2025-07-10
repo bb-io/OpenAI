@@ -61,32 +61,36 @@ Do you have a cool use case that we can turn into an action? Let us know!
 - **Chat** given a chat message, returns a response. You can optionally add a system prompt and/or an image. Also you can add collection of texts and it will be added to the prompt along with the message. Also you can optionally add Glossary as well. Useful if you want to add collection of messages to the prompt.
 - **Chat with system prompt** the same as above except that the system prompt is mandatory.
 
-### Assistant
+### Translation
 
-- **Message assistant** sends a message to a pre-configured assistant. It will execute the assistant and return its message. The assistant action can accept up to 10 files as input. **Note**: If you want to read the attached files make sure your assistant has _Retrieval_ enabled.
+- **Translate** translate file content retrieved from a CMS or file storage. The output can be used in compatible Blackbird interoperable actions.
+- **Translate text** given a text and a locale, tries to create a localized version of the text.
 
-### Localization (pre-engineered)
+### Editing
 
-- **Post-edit MT** given a source segment and NMT translated target segment, responds with a post-edited version of the target segment taking into account typical NMT mistakes.
+- **Edit** Edit a translation. This action assumes you have previously translated content in Blackbird through any translation action. Only looks at translated segments and will change the segment state to reviewed.
+- **Edit Text** given a source segment and translated target segment, responds with an edited version of the target segment taking into account typical mistakes.
+
+### Review
+
 - **Get translation issues** given a source segment and NMT translated target segment, highlights potential translation issues. Can be used to prepopulate TMS segment comments.
 - **Get MQM report** performs an LQA Analysis of the translation. The result will be in the MQM framework form. The dimensions are: terminology, accuracy, linguistic conventions, style, locale conventions, audience appropriateness, design and markup. The input consists of the source and translated text. Optionally one can add languages and a description of the target audience.
 - **Get MQM dimension values** uses the same input and prompt as 'Get MQM report'. However, in this action the scores are returned as individual numbers so that they can be used in decisions. Also returns the proposed translation.
-- **Translate text** given a text and a locale, tries to create a localized version of the text.
 
-- **Get localizable content from image** retrieves localizable content from given image.
+### Repurposing
 
-### Content repurposing
+- **Summarize** summarizes files and content (Blackbird interoperable) for different target audiences, languages, tone of voices and platforms.
+- **Summarize text** summarizes text for different target audiences, languages, tone of voices and platforms.
+- **Repurpose** repurpose files and content (Blackbird interoperable) for different target audiences, languages, tone of voices and platforms.
+- **Repurpose text** repurpose text for different target audiences, languages, tone of voices and platforms.
 
-All actions can take: Target audience, locale, glossary, tone of voice and any additional prompts
+> Summarize actions extracts a shorter variant of the original text while repurpose actions do not significantly change the length of the content.
 
-- **Repurpose content** repurposes content to a specific target audience.
-- **Summarize content** creates a summary of content.
-
-### Glossary extraction
+### Glossaries
 
 - **Extract glossary** extracts a glossary (.tbx) from any (multilingual) content. You can use this in well in conjunction with other apps that take glossaries.
 
-### Audiovisual
+### Audio
 
 - **Create transcription** transcribes the supported audiovisual file formats into a textual response.
 - **Create English translation** same as above but automatically translated into English.
@@ -95,13 +99,14 @@ All actions can take: Target audience, locale, glossary, tone of voice and any a
 ### Images
 
 - **Generate image** use DALL-E to generate an image based on a prompt.
+- **Get localizable content from image** retrieves localizable content from given image.
 
-### Other
+### Text analysis
 
 - **Create embedding** create a vectorized embedding of a text. Useful in combination with vector databases like Pinecone in order to store large sets of data.
 - **Tokenize text** turn a text into tokens. Uses Tiktoken under the hood.
 
-### XLIFF operations
+### XLIFF operations (To be deprecated, use the corresponding (Edit, Review, Translate, etc.) actions instead)
 
 All XLIFF actions supports 1.2 and 2.1 versions of the XLIFF format, since these are the most common versions used in the industry, but if you need support for other versions, please reach out to us and we will consider adding support for them.
 
@@ -180,24 +185,26 @@ For most actions we show the default "Model" dropdown with the most popular mode
 
 XLIFF files can contain a lot of segments. Each action takes your segments and sends them to OpenAI for processing. It's possible that the amount of segments is so high that the prompt exceeds to model's context window or that the model takes longer than Blackbird actions are allowed to take. This is why we have introduced the bucket size parameter. You can tweak the bucket size parameter to determine how many segments to send to OpenAI at once. This will allow you to split the workload into different OpenAI calls. The trade-off is that the same context prompt needs to be send along with each request (which increases the tokens used). From experiments we have found that a bucket size of 1500 is sufficient for gpt-4o. That's why 1500 is the default bucket size, however other models may require different bucket sizes.
 
-## Eggs
-
-Check downloadable workflow prototypes featuring this app that you can import to your Nests [here](https://docs.blackbird.io/eggs/tms-to-llm/). 
-
 ## Batch processing
+
+> The current batch actions are not fully transitioned to Blackbird interoperable mode yet.
 
 You can use batch (async) actions to process large XLIFF files. The batch action will return a `batch` object that you can use to check the status of the processing by using Batch ID.
 
-- **(Batch) Process XLIFF file** - Asynchronously process each translation unit in the XLIFF file according to the provided instructions (by default it just translates the source tags) and updates the target text for each unit. 
-- **(Batch) Post-edit XLIFF file** - Asynchronously post-edit the target text of each translation unit in the XLIFF file according to the provided instructions and updates the target text for each unit.
-- **(Batch) Get Quality Scores for XLIFF file** - Asynchronously get quality scores for each translation unit in the XLIFF file.
+- **(Batch) Process** - Asynchronously process each translation unit in the XLIFF file according to the provided instructions (by default it just translates the source tags) and updates the target text for each unit. 
+- **(Batch) Post-edit** - Asynchronously post-edit the target text of each translation unit in the XLIFF file according to the provided instructions and updates the target text for each unit.
+- **(Batch) Get Quality Scores for** - Asynchronously get quality scores for each translation unit in the XLIFF file.
 
 To get the results of the batch processing, you can use the following actions:
 
-- **Get results of the batch process** - Get the results of the batch process. This action is suitable only for processing and post-editing XLIFF file and should be called after the batch process is completed.
-- **Get quality scores results** - Get the quality scores results of the batch process. This action is suitable only for getting quality scores for XLIFF file and should be called after the batch process is completed.
+- **(Batch) Get process results** - Get the results of the batch process. This action is suitable only for processing and post-editing XLIFF file and should be called after the batch process is completed.
+- **(Batch) Get quality results** - Get the quality scores results of the batch process. This action is suitable only for getting quality scores for XLIFF file and should be called after the batch process is completed.
 
 Note, that you should specify the correct original XLIFF file in `Original XLIFF` input. It will help us to construct the correct XLIFF file with updated target segments.
+
+## Eggs
+
+Check downloadable workflow prototypes featuring this app that you can import to your Nests [here](https://docs.blackbird.io/eggs/tms-to-llm/). 
 
 ### Limitations
 
@@ -222,7 +229,6 @@ This simple example how OpenAI can be used to communicate with the Blackbird Sla
 
 In the future we can add actions for:
 
-- Files
 - Moderation
 - Fine-tuning
 
@@ -230,7 +236,7 @@ Let us know if you're interested!
 
 ## Actions limitations
 
-- For every action maximum allowed timeout are 300 seconds (5 minutes). If the action takes longer than 300 seconds, it will be terminated. Based on our experience, even complex actions should take less than 5 minutes. But if you have a use case that requires more time, let us know.
+- For every action maximum allowed timeout are 600 seconds (10 minutes). If the action takes longer than 600 seconds, it will be terminated. Based on our experience, even complex actions should take less than 10 minutes. But if you have a use case that requires more time, let us know.
 
 > OpenAI is sometimes prone to errors. If your Flight fails at an OpenAI step, please check https://status.openai.com/history first to see if there is a known incident or error communicated by OpenAI. If there are no known errors or incidents, please feel free to report it to Blackbird Support.
 

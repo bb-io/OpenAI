@@ -1,18 +1,14 @@
-extern alias XliffContent;
-
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Apps.OpenAI.Services.Abstract;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Converters;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using Blackbird.Xliff.Utils.Models;
+using Blackbird.Filters.Transformations;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using XliffContent::Blackbird.Xliff.Utils.Models.Content;
 
 namespace Apps.OpenAI.Services;
 

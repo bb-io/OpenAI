@@ -1,8 +1,9 @@
 ﻿using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.SDK.Blueprints.Interfaces.Edit;
 
 namespace Apps.OpenAI.Models.Requests.Chat;
 
-public class PostEditRequest
+public class PostEditRequest : IEditTextInput
 {
     [Display("Source text")]
     public string SourceText { get; set; }
