@@ -61,4 +61,28 @@ public class TranslationTests : TestBase
 
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
+
+    [TestMethod]
+    public async Task TranslateText_WithSerbianLocale_ReturnsLocalizedText()
+    {
+        var actions = new TranslationActions(InvocationContext, FileManagementClient);
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o" };
+        var localizeRequest = new LocalizeTextRequest
+        {
+            Text = "Develop and implement an HR strategy that drives organizational productivity and supports company's business goals. Design and oversee processes that promote team efficiency and operational effectiveness while reducing complexity and redundancies.",
+            TargetLanguage = "sr-Latn-RS"
+        };
+
+        var glossaryRequest = new GlossaryRequest();
+
+        var result = await actions.LocalizeText(modelIdentifier, localizeRequest, glossaryRequest);
+
+        Assert.IsNotNull(result);
+        Assert.IsNotNull(result.TranslatedText);
+        Console.WriteLine("Original: " + localizeRequest.Text);
+        Console.WriteLine("Localized: " + result.TranslatedText);
+
+        // Additional validation to ensure response is not empty and contains Serbian characters
+        Assert.IsTrue(result.TranslatedText.Length > 0);
+    }
 }

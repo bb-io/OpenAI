@@ -14,6 +14,12 @@ using Blackbird.Xliff.Utils;
 using Blackbird.Xliff.Utils.Extensions;
 using System.Xml;
 using Blackbird.Applications.Sdk.Common.Exceptions;
+using Apps.OpenAI.Dtos;
+using Apps.OpenAI.Models.Requests.Chat;
+using Newtonsoft.Json.Serialization;
+using Newtonsoft.Json;
+using RestSharp;
+using System.Collections.Generic;
 
 namespace Apps.OpenAI.Actions.Base;
 
@@ -92,5 +98,31 @@ public abstract class BaseActions : OpenAIInvocable
         }
 
         return xliffDocument;
+    }
+
+    protected async Task<ChatCompletionDto> ExecuteChatCompletion(IEnumerable<object> messages, string model = "gpt-4-turbo-preview", BaseChatRequest input = null, object responseFormat = null)
+    {
+        var jsonBody = new
+        {
+            model,
+            Messages = messages,
+            max_completion_tokens = input?.MaximumTokens,
+            top_p = input?.TopP ?? 1,
+            presence_penalty = input?.PresencePenalty ?? 0,
+            frequency_penalty = input?.FrequencyPenalty ?? 0,
+            temperature = input?.Temperature ?? 1,
+            response_format = responseFormat,
+        };
+
+        var jsonBodySerialized = JsonConvert.SerializeObject(jsonBody, new JsonSerializerSettings
+        {
+            ContractResolver = new CamelCasePropertyNamesContractResolver(),
+            NullValueHandling = NullValueHandling.Ignore,
+        });
+
+        var request = new OpenAIRequest("/chat/completions", Method.Post);
+        request.AddJsonBody(jsonBodySerialized);
+
+        return await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
     }
 }

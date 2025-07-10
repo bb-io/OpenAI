@@ -21,6 +21,9 @@ using Blackbird.Filters.Extensions;
 using Blackbird.Filters.Enums;
 using Blackbird.Filters.Constants;
 using Blackbird.Applications.SDK.Blueprints;
+using Apps.OpenAI.Models.Responses.Chat;
+using Apps.OpenAI.Utils;
+using Apps.OpenAI.Constants;
 
 namespace Apps.OpenAI.Actions;
 
@@ -29,7 +32,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 {
 
     [BlueprintActionDefinition(BlueprintAction.EditFile)]
-    [Action("Edit", Description = "[Experimental] Edit a content file. Only supports XLIFF input (received from any action that returns bilingual).")]
+    [Action("Edit", Description = "Edit a translation. This action assumes you have previously translated content in Blackbird through any translation action.")]
     public async Task<ContentProcessingEditResult> EditContent([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] EditContentRequest input,
         [ActionParameter, Display("Additional instructions", Description = "Specify additional instructions to be applied to the translation. For example, 'Cater to an older audience.'")] string? prompt,
@@ -123,5 +126,53 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         result.File = await fileManagementClient.UploadAsync(content.Serialize().ToStream(), MediaTypes.Xliff, content.XliffFileName);
 
         return result;
+    }
+
+    [BlueprintActionDefinition(BlueprintAction.EditText)]
+    [Action("Edit text", Description = "Review translated text and generate an edited version")]
+    public async Task<EditResponse> PostEditRequest([ActionParameter] TextChatModelIdentifier modelIdentifier,
+    [ActionParameter] PostEditRequest input, [ActionParameter] GlossaryRequest glossary)
+    {
+        var systemPrompt =
+            $"You are receiving a source text{(input.SourceLanguage != null ? $" written in {input.SourceLanguage} " : "")}" +
+            $"that was translated into target text{(input.TargetLanguage != null ? $" written in {input.TargetLanguage}" : "")}. " +
+            "Review the target text and respond with edits of the target text as necessary. If no edits required, respond with target text. " +
+            $"{(input.TargetAudience != null ? $"The target audience is {input.TargetAudience}" : string.Empty)}";
+
+
+        if (glossary.Glossary != null)
+            systemPrompt +=
+                " Enhance the target text by incorporating relevant terms from our glossary where applicable. " +
+                "Ensure that the translation aligns with the glossary entries for the respective languages. " +
+                "If a term has variations or synonyms, consider them and choose the most appropriate " +
+                "translation to maintain consistency and precision. If the translation already aligns " +
+                "with the glossary, no edits are required.";
+
+        if (input.AdditionalPrompt != null)
+            systemPrompt = $"{systemPrompt} {input.AdditionalPrompt}";
+
+        var userPrompt = @$"
+            Source text: 
+            {input.SourceText}
+
+            Target text: 
+            {input.TargetText}
+        ";
+
+        if (glossary.Glossary != null)
+        {
+            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, input.SourceText, true);
+            if (glossaryPromptPart != null) userPrompt += glossaryPromptPart;
+        }
+
+        var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel());
+        return new EditResponse
+        {
+            UserPrompt = userPrompt,
+            SystemPrompt = systemPrompt,
+            EditedText = response.Choices.First().Message.Content,
+            Usage = response.Usage,
+        };
     }
 }

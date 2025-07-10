@@ -1,16 +1,21 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
 using Apps.OpenAI.Api;
+using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Identifiers;
+using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Models.Requests.Image;
+using Apps.OpenAI.Models.Responses.Chat;
 using Apps.OpenAI.Models.Responses.Image;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using RestSharp;
 
@@ -70,5 +75,36 @@ public class ImageActions : BaseActions
         var filename = (input.OutputImageName ?? "image") + ".png";
         var file = await FileManagementClient.UploadAsync(stream, "image/png", filename);
         return new() { Image = file };
+    }
+
+    [Action("Get localizable content from image", Description = "Retrieve localizable content from image.")]
+    public async Task<ChatResponse> GetLocalizableContentFromImage(
+        [ActionParameter] ImageChatModelIdentifier modelIdentifier,
+        [ActionParameter] GetLocalizableContentFromImageRequest input)
+    {
+        var prompt = "Your objective is to conduct optical character recognition (OCR) to identify and extract any " +
+                     "localizable content present in the image. Respond with the text found in the image, if any. " +
+                     "If no localizable content is detected, provide an empty response.";
+
+        var fileStream = await FileManagementClient.DownloadAsync(input.Image);
+        var fileBytes = await fileStream.GetByteData();
+        var messages = new List<ChatImageMessageDto>
+            {
+                new(MessageRoles.User, new List<ChatImageMessageContentDto>
+                {
+                    new ChatImageMessageTextContentDto("text", prompt),
+                    new ChatImageMessageImageContentDto("image_url", new ImageUrlDto(
+                        $"data:{input.Image.ContentType};base64,{Convert.ToBase64String(fileBytes)}"))
+                })
+            };
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input);
+
+        return new()
+        {
+            SystemPrompt = prompt,
+            UserPrompt = "",
+            Message = response.Choices.First().Message.Content,
+            Usage = response.Usage,
+        };
     }
 }

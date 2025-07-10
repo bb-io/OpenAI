@@ -21,6 +21,8 @@ using Blackbird.Filters.Extensions;
 using Blackbird.Filters.Enums;
 using Blackbird.Filters.Constants;
 using Blackbird.Applications.SDK.Blueprints;
+using Apps.OpenAI.Constants;
+using Apps.OpenAI.Models.Responses.Chat;
 
 namespace Apps.OpenAI.Actions;
 
@@ -134,5 +136,47 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
 
         return result;
     }
-    
+
+    [BlueprintActionDefinition(BlueprintAction.TranslateText)]
+    [Action("Translate text", Description = "Localize the text provided.")]
+    public async Task<TranslateTextResponse> LocalizeText([ActionParameter] TextChatModelIdentifier modelIdentifier,
+        [ActionParameter] LocalizeTextRequest input, [ActionParameter] GlossaryRequest glossary)
+    {
+        var systemPrompt = "You are a text localizer. Localize the provided text for the specified locale while " +
+                           "preserving the original text structure. Respond with localized text.";
+
+        var userPrompt = @$"
+                    Original text: {input.Text}
+                    Locale: {input.TargetLanguage} 
+                
+                    ";
+
+        if (glossary.Glossary != null)
+        {
+            var glossaryPromptPart = await GetGlossaryPromptPart(glossary.Glossary, input.Text, true);
+            if (glossaryPromptPart != null)
+            {
+                userPrompt +=
+                    "\nEnhance the localized text by incorporating relevant terms from our glossary where applicable. " +
+                    "If you encounter terms from the glossary in the text, ensure that the localized text aligns " +
+                    "with the glossary entries for the respective languages. If a term has variations or synonyms, " +
+                    "consider them and choose the most appropriate translation from the glossary to maintain " +
+                    $"consistency and precision. {glossaryPromptPart}";
+            }
+        }
+
+        userPrompt += "Localized text: ";
+
+        var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel(), input);
+
+        return new()
+        {
+            SystemPrompt = systemPrompt,
+            UserPrompt = userPrompt,
+            TranslatedText = response.Choices.First().Message.Content,
+            Usage = response.Usage,
+        };
+    }
+
 }
