@@ -8,6 +8,7 @@ using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Chat;
+using Apps.OpenAI.Models.Requests.Content;
 using Apps.OpenAI.Models.Responses.Chat;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
@@ -32,10 +33,10 @@ public class RepurposeActions(InvocationContext invocationContext, IFileManageme
 
     [Action("Summarize", Description = "Summarizes content for different target audiences, languages, tone of voices and platforms. Summary extracts a shorter variant of the original text.")]
     public async Task<RepurposeResponse> CreateContentSummary([ActionParameter] TextChatModelIdentifier modelIdentifier,
-        [ActionParameter] [Display("Content")] FileReference file, [ActionParameter] RepurposeRequest input, [ActionParameter] GlossaryRequest glossary)
+        [ActionParameter] ContentRequest file, [ActionParameter] RepurposeRequest input, [ActionParameter] GlossaryRequest glossary)
     {
-        var stream = await fileManagementClient.DownloadAsync(file);
-        var transformation = await Transformation.Parse(stream, file.Name);
+        var stream = await fileManagementClient.DownloadAsync(file.File);
+        var transformation = await Transformation.Parse(stream, file.File.Name);
 
         var text = transformation.Target().GetPlaintext();
         if (string.IsNullOrWhiteSpace(text))
@@ -54,11 +55,11 @@ public class RepurposeActions(InvocationContext invocationContext, IFileManageme
 
     [Action("Repurpose", Description = "Repurpose content for different target audiences, languages, tone of voices and platforms. Repurpose does not significantly change the length of the content.")]
     public async Task<RepurposeResponse> RepurposeContentFromFile([ActionParameter] TextChatModelIdentifier modelIdentifier, 
-        [ActionParameter][Display("Content")] FileReference file, [ActionParameter] RepurposeRequest input, [ActionParameter] GlossaryRequest glossary)
+        [ActionParameter] ContentRequest file, [ActionParameter] RepurposeRequest input, [ActionParameter] GlossaryRequest glossary)
     {
         {
-            var stream = await fileManagementClient.DownloadAsync(file);
-            var transformation = await Transformation.Parse(stream, file.Name);
+            var stream = await fileManagementClient.DownloadAsync(file.File);
+            var transformation = await Transformation.Parse(stream, file.File.Name);
 
             var text = transformation.Target().GetPlaintext();
             if (string.IsNullOrWhiteSpace(text))
