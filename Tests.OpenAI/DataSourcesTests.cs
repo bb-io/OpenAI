@@ -52,6 +52,20 @@ public class DataSourceHandlerTests : TestBase
     }
 
     [TestMethod]
+    public async Task GetDataAsync_ForAssistantModels_ReturnsNonEmptyCollection()
+    {
+        var handler = new AssistantsDataSourceHandler(InvocationContext);
+        var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
+
+        foreach (var item in data)
+        {
+            Console.WriteLine($"{item.Value}: {item.DisplayName}");
+        }
+
+        Assert.AreNotEqual(data.Count(), 0);
+    }
+
+    [TestMethod]
     public async Task Locales()
     {
         var handler = new LocaleDataSourceHandler();
