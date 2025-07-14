@@ -14,7 +14,7 @@ namespace Apps.OpenAI.DataSourceHandlers
 {
     public class AssistantsDataSourceHandler : BaseInvocable, IAsyncDataSourceItemHandler
     {
-        private const string Beta = "assistants=v1";
+        private const string Beta = "assistants=v2";
 
         public AssistantsDataSourceHandler(InvocationContext invocationContext) : base(invocationContext)
         {
