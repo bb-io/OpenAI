@@ -14,7 +14,7 @@ namespace Apps.OpenAI.Utils
             }
             catch (Exception ex)
             {
-                if (IsMissingSrcLangError(ex))
+                if (IsError(ex))
                     throw new PluginMisconfigurationException(ex.Message);
 
                 throw new PluginApplicationException(ex.Message);
@@ -29,7 +29,7 @@ namespace Apps.OpenAI.Utils
             }
             catch (Exception ex)
             {
-                if (IsMissingSrcLangError(ex))
+                if (IsError(ex))
                     throw new PluginMisconfigurationException(ex.Message);
 
                 throw new PluginApplicationException(ex.Message);
@@ -44,14 +44,14 @@ namespace Apps.OpenAI.Utils
             }
             catch (Exception ex)
             {
-                if (IsMissingSrcLangError(ex))
+                if (IsError(ex))
                     throw new PluginMisconfigurationException(ex.Message);
 
                 throw new PluginApplicationException(ex.Message);
             }
         }
 
-        private static bool IsMissingSrcLangError(Exception ex)
+        private static bool IsError(Exception ex)
         {
             return ex.Message.Contains("srcLang attribute is required", StringComparison.OrdinalIgnoreCase)
                 && ex.Message.Contains("xliff", StringComparison.OrdinalIgnoreCase);
