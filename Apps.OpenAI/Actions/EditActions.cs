@@ -43,7 +43,8 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         var batchSize = bucketSize ?? 1500;
         var result = new ContentProcessingEditResult();
         var stream = await fileManagementClient.DownloadAsync(input.File);
-        var content = await Transformation.Parse(stream, input.File.Name);
+
+        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(()=>Transformation.Parse(stream, input.File.Name));
 
         var batchProcessingService = new BatchProcessingService(Client, FileManagementClient);
         var batchOptions = new BatchProcessingOptions(
