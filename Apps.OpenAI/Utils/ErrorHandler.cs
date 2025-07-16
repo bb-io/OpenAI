@@ -54,7 +54,8 @@ namespace Apps.OpenAI.Utils
         private static bool IsError(Exception ex)
         {
             return ex.Message.Contains("srcLang attribute is required", StringComparison.OrdinalIgnoreCase)
-                && ex.Message.Contains("xliff", StringComparison.OrdinalIgnoreCase);
+                || ex.Message.Contains("xliff", StringComparison.OrdinalIgnoreCase)
+                || ex.Message.Contains("Namespace Manager or XsltContext needed", StringComparison.OrdinalIgnoreCase);
         }
     }
 }
