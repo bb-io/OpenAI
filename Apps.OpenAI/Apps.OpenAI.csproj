@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
 	  <Product>OpenAI</Product>
 	  <Description>Creating safe artificial general intelligence that benefits all of humanity</Description>
-	  <Version>2.7.2</Version>
+	  <Version>2.7.3</Version>
 	  <AssemblyName>Apps.OpenAI</AssemblyName>
   </PropertyGroup>
 
@@ -13,7 +13,7 @@
     <PackageReference Include="Blackbird.Applications.SDK.Extensions.FileManagement" Version="1.0.1" />
     <PackageReference Include="Blackbird.Applications.Sdk.Glossaries.Utils" Version="1.0.1" />
     <PackageReference Include="Blackbird.Applications.Sdk.Utils" Version="1.0.25" />
-    <PackageReference Include="Blackbird.Filters" Version="1.1.8" />
+    <PackageReference Include="Blackbird.Filters" Version="1.1.9" />
     <PackageReference Include="Blackbird.Xliff.Utils" Version="1.1.13" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Features" Version="5.0.17" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
