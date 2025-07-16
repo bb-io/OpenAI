@@ -23,6 +23,7 @@ using Blackbird.Filters.Constants;
 using Blackbird.Applications.SDK.Blueprints;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Models.Responses.Chat;
+using Apps.OpenAI.Utils;
 
 namespace Apps.OpenAI.Actions;
 
@@ -42,7 +43,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         var batchSize = bucketSize ?? 1500;
         var result = new ContentProcessingResult();
         var stream = await fileManagementClient.DownloadAsync(input.File);
-        var content = await Transformation.Parse(stream, input.File.Name);
+        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => Transformation.Parse(stream, input.File.Name));
         content.SourceLanguage ??= input.SourceLanguage;
         content.TargetLanguage ??= input.TargetLanguage;        
         if (content.TargetLanguage == null) throw new PluginMisconfigurationException("The target language is not defined yet. Please assign the target language in this action.");
@@ -103,7 +104,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
             return allResults;
         }
 
-        var segments = content.GetSegments();
+        var segments = ErrorHandler.ExecuteWithErrorHandling(() => content.GetSegments());
         result.TotalSegmentsCount = segments.Count();
         segments = segments.Where(x => !x.IsIgnorbale && x.IsInitial);
         result.TotalTranslatable = segments.Count();
