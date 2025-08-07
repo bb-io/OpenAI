@@ -47,7 +47,7 @@ public class TranslationTests : TestBase
         var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4.1" };
         var translateRequest = new TranslateContentRequest
         {
-            File = new FileReference { Name = "contentful.html.xliff" },
+            File = new FileReference { Name = "category_7000039521.xml" },
             TargetLanguage = "nl",
         };
         string? systemMessage = null;

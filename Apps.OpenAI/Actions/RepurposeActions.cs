@@ -10,6 +10,7 @@ using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Models.Requests.Content;
 using Apps.OpenAI.Models.Responses.Chat;
+using Apps.OpenAI.Utils;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Files;
@@ -36,7 +37,7 @@ public class RepurposeActions(InvocationContext invocationContext, IFileManageme
         [ActionParameter] ContentRequest file, [ActionParameter] RepurposeRequest input, [ActionParameter] GlossaryRequest glossary)
     {
         var stream = await fileManagementClient.DownloadAsync(file.File);
-        var transformation = await Transformation.Parse(stream, file.File.Name);
+        var transformation = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => Transformation.Parse(stream, file.File.Name));
 
         var text = transformation.Target().GetPlaintext();
         if (string.IsNullOrWhiteSpace(text))
