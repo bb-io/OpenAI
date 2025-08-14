@@ -6,7 +6,7 @@ Blackbird is the new automation backbone for the language technology industry. B
 
 <!-- begin docs -->
 
-This OpenAI app in Blackbird grants you access to all API endpoints and models that OpenAI has to offer from completion, chat, edit to DALL-E image generation and Whisper.
+This OpenAI app in Blackbird grants you access to all API endpoints and models that OpenAI has to offer from completion, chat, edit to DALL-E image generation and Whisper. The app supports all models available in the OpenAI API, including the latest models like gpt-5, gpt-5-nano, gpt-4.1, o3
 
 ## Before setting up
 
@@ -38,6 +38,7 @@ All textual actions have the following optional input values in order to modify 
 - top_p
 - Presence penalty
 - Frequency penalty
+- Reasoning effort
 
 For more in-depth information about most actions consult the [OpenAI API reference](https://platform.openai.com/docs/api-reference).
 
