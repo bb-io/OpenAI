@@ -1,7 +1,5 @@
 ﻿using Blackbird.Applications.Sdk.Common;
-using DocumentFormat.OpenXml.Bibliography;
 using Newtonsoft.Json;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 

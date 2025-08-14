@@ -37,6 +37,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         [ActionParameter] TranslateContentRequest input,
         [ActionParameter, Display("Additional instructions", Description = "Specify additional instructions to be applied to the translation. For example, 'Cater to an older audience.'")] string? prompt,
         [ActionParameter] GlossaryRequest glossary,
+        [ActionParameter] ReasoningEffortRequest reasoningEffortRequest,
         [ActionParameter, Display("Bucket size", Description = "Specify the number of source texts to be translated at once. Default value: 1500. (See our documentation for an explanation)")] int? bucketSize = null)
     {
         var neverFail = false;
@@ -62,7 +63,8 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
             glossary.Glossary,
             true,
             3,
-            null);
+            null,
+            reasoningEffortRequest.ReasoningEffort);
 
         var errors = new List<string>();
         var usages = new List<UsageDto>();
@@ -146,8 +148,9 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
 
     [BlueprintActionDefinition(BlueprintAction.TranslateText)]
     [Action("Translate text", Description = "Localize the text provided.")]
-    public async Task<TranslateTextResponse> LocalizeText([ActionParameter] TextChatModelIdentifier modelIdentifier,
-        [ActionParameter] LocalizeTextRequest input, [ActionParameter] GlossaryRequest glossary)
+    public async Task<TranslateTextResponse> LocalizeText([ActionParameter] TextChatModelIdentifier modelIdentifier, 
+        [ActionParameter] LocalizeTextRequest input, 
+        [ActionParameter] GlossaryRequest glossary)
     {
         var systemPrompt = "You are a text localizer. Localize the provided text for the specified locale while " +
                            "preserving the original text structure. Respond with localized text.";

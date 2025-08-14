@@ -16,8 +16,14 @@ public class ChatActionsTests : TestBase
     {
         var actions = new ChatActions(InvocationContext, FileManagementClient);
         var result = await actions.ChatMessageRequest(
-            new TextChatModelIdentifier { ModelId = "o4-mini" },
-            new ChatRequest { Message = "Hello!" },
+            new TextChatModelIdentifier 
+            { 
+                ModelId = "gpt-5"
+            },
+            new ChatRequest
+            {
+                Message = "Who are you? State your model (are you GPT5?), creator, and your main responsibilities."
+            },
             new GlossaryRequest());
 
         Console.WriteLine(result.Message);

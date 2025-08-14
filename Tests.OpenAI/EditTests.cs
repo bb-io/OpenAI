@@ -28,10 +28,14 @@ public class EditTests : TestBase
         {
             File = new FileReference { Name = "contentful.html.xlf" },
         };
+        var reasoningEffortRequest = new ReasoningEffortRequest
+        {
+            ReasoningEffort = "low"
+        };
         string? systemMessage = null;
         var glossaryRequest = new GlossaryRequest();
 
-        var result = await actions.EditContent(modelIdentifier, editRequest, systemMessage, glossaryRequest);
+        var result = await actions.EditContent(modelIdentifier, editRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
         Assert.IsNotNull(result);
         Assert.IsTrue(result.File.Name.Contains("contentful"));
 
@@ -47,10 +51,14 @@ public class EditTests : TestBase
         {
             File = new FileReference { Name = "taus.xliff" },
         };
+        var reasoningEffortRequest = new ReasoningEffortRequest
+        {
+            ReasoningEffort = "low"
+        };
         string? systemMessage = null;
         var glossaryRequest = new GlossaryRequest();
 
-        var result = await actions.EditContent(modelIdentifier, editRequest, systemMessage, glossaryRequest);
+        var result = await actions.EditContent(modelIdentifier, editRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
         Assert.IsNotNull(result);
 
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));

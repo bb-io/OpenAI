@@ -30,10 +30,14 @@ public class TranslationTests : TestBase
             TargetLanguage = "nl",
             OutputFileHandling = "original",
         };
+        var reasoningEffortRequest = new ReasoningEffortRequest
+        {
+            ReasoningEffort = "low"
+        };
         string? systemMessage = null;
         var glossaryRequest = new GlossaryRequest();
 
-        var result = await actions.TranslateContent(modelIdentifier, translateRequest, systemMessage, glossaryRequest);
+        var result = await actions.TranslateContent(modelIdentifier, translateRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
         Assert.IsNotNull(result);
         Assert.IsTrue(result.File.Name.Contains("contentful"));
 
@@ -50,10 +54,14 @@ public class TranslationTests : TestBase
             File = new FileReference { Name = "category_7000039521.xml" },
             TargetLanguage = "nl",
         };
+        var reasoningEffortRequest = new ReasoningEffortRequest
+        {
+            ReasoningEffort = "low"
+        };
         string? systemMessage = null;
         var glossaryRequest = new GlossaryRequest();
 
-        var result = await actions.TranslateContent(modelIdentifier, translateRequest, systemMessage, glossaryRequest);
+        var result = await actions.TranslateContent(modelIdentifier, translateRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
         Assert.IsNotNull(result);
         Assert.IsTrue(result.File.Name.Contains("contentful"));
 

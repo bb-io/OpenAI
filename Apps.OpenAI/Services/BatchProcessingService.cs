@@ -80,7 +80,6 @@ public class BatchProcessingService(OpenAIClient openAIClient, IFileManagementCl
 
         int currentAttempt = 0;
         bool success = false;
-
         while (!success && currentAttempt < options.MaxRetryAttempts)
         {
             currentAttempt++;
@@ -88,7 +87,7 @@ public class BatchProcessingService(OpenAIClient openAIClient, IFileManagementCl
             var chatCompletionResult = await openaiService.ExecuteChatCompletionAsync(
                 messages,
                 options.ModelId,
-                new BaseChatRequest { MaximumTokens = options.MaxTokens },
+                new BaseChatRequest { MaximumTokens = options.MaxTokens, ReasoningEffort = options.ReasoningEffort},
                 ResponseFormats.GetXliffResponseFormat());
 
             if (!chatCompletionResult.Success)

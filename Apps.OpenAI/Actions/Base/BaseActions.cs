@@ -106,26 +106,38 @@ public abstract class BaseActions : OpenAIInvocable
 
     protected async Task<ChatCompletionDto> ExecuteChatCompletion(IEnumerable<object> messages, string model = "gpt-4-turbo-preview", BaseChatRequest input = null, object responseFormat = null)
     {
-        var jsonBody = new
+        var jsonDictionary = new Dictionary<string, object>
         {
-            model,
-            Messages = messages,
-            max_completion_tokens = input?.MaximumTokens,
-            top_p = input?.TopP ?? 1,
-            presence_penalty = input?.PresencePenalty ?? 0,
-            frequency_penalty = input?.FrequencyPenalty ?? 0,
-            temperature = input?.Temperature ?? 1,
-            response_format = responseFormat,
+            { "model", model },
+            { "messages", messages },
+            { "top_p", input?.TopP ?? 1 },
+            { "presence_penalty", input?.PresencePenalty ?? 0 },
+            { "frequency_penalty", input?.FrequencyPenalty ?? 0 }
         };
+        
+        if(input?.Temperature != null && !model.Contains("gpt-5"))
+        {
+            jsonDictionary.Add("temperature", input.Temperature);
+        }
+        
+        if (input?.MaximumTokens != null)
+        {
+            jsonDictionary.Add("max_completion_tokens", input.MaximumTokens);
+        }
+        
+        if (input?.ReasoningEffort != null)
+        {
+            jsonDictionary.Add("reasoning_effort", input.ReasoningEffort);
+        }
 
-        var jsonBodySerialized = JsonConvert.SerializeObject(jsonBody, new JsonSerializerSettings
+        var jsonBodySerialized = JsonConvert.SerializeObject(jsonDictionary, new JsonSerializerSettings
         {
             ContractResolver = new CamelCasePropertyNamesContractResolver(),
             NullValueHandling = NullValueHandling.Ignore,
         });
 
-        var request = new OpenAIRequest("/chat/completions", Method.Post);
-        request.AddJsonBody(jsonBodySerialized);
+        var request = new OpenAIRequest("/chat/completions", Method.Post)
+            .AddJsonBody(jsonBodySerialized);
 
         return await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
     }
