@@ -12,7 +12,7 @@ public class ReasoningEffortDataSourceHandler : IStaticDataSourceItemHandler
         [
             new("low", "Low"),
             new("medium", "Medium"),
-            new("high", "High"),
+            new("high", "High")
         ];
     }
 }
