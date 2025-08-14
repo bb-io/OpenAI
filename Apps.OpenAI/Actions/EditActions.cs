@@ -37,6 +37,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         [ActionParameter] EditContentRequest input,
         [ActionParameter, Display("Additional instructions", Description = "Specify additional instructions to be applied to the translation. For example, 'Cater to an older audience.'")] string? prompt,
         [ActionParameter] GlossaryRequest glossary,
+        [ActionParameter] ReasoningEffortRequest reasoningEffortRequest,
         [ActionParameter, Display("Bucket size", Description = "Specify the number of source texts to be edited at once. Default value: 1500. (See our documentation for an explanation)")] int? bucketSize = null)
     {
         var neverFail = false;
@@ -55,7 +56,8 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             glossary.Glossary,
             true,
             3,
-            null);
+            null,
+            reasoningEffortRequest.ReasoningEffort);
 
         var errors = new List<string>();
         var usages = new List<UsageDto>();
@@ -134,7 +136,8 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     [BlueprintActionDefinition(BlueprintAction.EditText)]
     [Action("Edit text", Description = "Review translated text and generate an edited version")]
     public async Task<EditResponse> PostEditRequest([ActionParameter] TextChatModelIdentifier modelIdentifier,
-    [ActionParameter] PostEditRequest input, [ActionParameter] GlossaryRequest glossary)
+        [ActionParameter] PostEditRequest input, 
+        [ActionParameter] GlossaryRequest glossary)
     {
         var systemPrompt =
             $"You are receiving a source text{(input.SourceLanguage != null ? $" written in {input.SourceLanguage} " : "")}" +
@@ -169,7 +172,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         }
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel());
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel(), new() { ReasoningEffort = input.ReasoningEffort});
         return new EditResponse
         {
             UserPrompt = userPrompt,

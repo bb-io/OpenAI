@@ -10,4 +10,5 @@ public record BatchProcessingOptions(
     FileReference? Glossary,
     bool FilterGlossary,
     int MaxRetryAttempts,
-    int? MaxTokens);
+    int? MaxTokens,
+    string? ReasoningEffort);

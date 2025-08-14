@@ -53,7 +53,8 @@ public class ProcessXliffService(
                 request.Glossary,
                 request.FilterGlossary ?? true,
                 request.BatchRetryAttempts ?? 3,
-                request.MaxTokens);
+                request.MaxTokens,
+                null);
 
             var batchProcessingResult = await ProcessAllBatchesAsync(
                 batches,

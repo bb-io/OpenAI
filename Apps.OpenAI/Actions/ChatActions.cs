@@ -14,7 +14,6 @@ using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
-using MoreLinq;
 
 namespace Apps.OpenAI.Actions;
 
@@ -40,6 +39,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 modelIdentifier.ModelId = "gpt-4-vision-preview";
             }
         }
+        
         var messages = await GenerateChatMessages(input, glossary);
         var completeMessage = string.Empty;
         var usage = new UsageDto();
@@ -57,8 +57,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 break;
             }
 
-            messages.Append(new ChatMessageDto(MessageRoles.Assistant, response.Choices.First().Message.Content));
-            messages.Append(new ChatMessageDto(MessageRoles.User, "Continue your latest message, it was too long."));
+            messages.Add(new ChatMessageDto(MessageRoles.Assistant, response.Choices.First().Message.Content));
+            messages.Add(new ChatMessageDto(MessageRoles.User, "Continue your latest message, it was too long."));
             counter += 1;
         }
 
@@ -94,24 +94,25 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         }, glossary);
     }
 
-    private async Task<IEnumerable<BaseChatMessageDto>> GenerateChatMessages(ChatRequest input, GlossaryRequest? request)
+    private async Task<List<BaseChatMessageDto>> GenerateChatMessages(ChatRequest input, GlossaryRequest? request)
     {
         var messages = new List<BaseChatMessageDto>();
-
         if (input.SystemPrompt != null)
+        {
             messages.Add(new ChatMessageDto(MessageRoles.System, input.SystemPrompt));
+        }
 
         if (input.File != null)
         {
             var fileStream = await FileManagementClient.DownloadAsync(input.File);
             var fileBytes = await fileStream.GetByteData();
             if (input.SystemPrompt != null)
+            {
                 messages.Add(new ChatMessageDto(MessageRoles.System, input.SystemPrompt));
-
-
+            }
+            
             if (input.File.ContentType.StartsWith("audio") || input.File.Name.EndsWith("wav") || input.File.Name.EndsWith("mp3"))
             {
-
                 messages.Add(new ChatAudioMessageDto(MessageRoles.User, new List<ChatAudioMessageContentDto>
                 {
 
@@ -128,7 +129,6 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                         $"data:{input.File.ContentType};base64,{Convert.ToBase64String(fileBytes)}"))
                 }));
             }
-            
         }
         else
         {
@@ -140,8 +140,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                     stringBuilder.AppendLine(message);
                 }
 
-                var prompt =
-                    $"{input.Message}; Parameters that you should use (they can be in json format): {stringBuilder}";
+                var prompt = $"{input.Message}; Parameters that you should use (they can be in json format): {stringBuilder}";
                 messages.Add(new ChatMessageDto(MessageRoles.User, prompt));
             }
             else
@@ -154,7 +153,9 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         {
             var glossaryPromptPart = await GetGlossaryPromptPart(request.Glossary, input.Message, true);
             if (glossaryPromptPart != null)
+            {
                 messages.Add(new ChatMessageDto(MessageRoles.User, $"Glossary: {glossaryPromptPart}"));
+            }
         }
 
         return messages;

@@ -24,19 +24,32 @@ public class OpenAICompletionService(OpenAIClient openAIClient) : IOpenAIComplet
         BaseChatRequest request,
         object? responseFormat = null)
     {
-        var jsonBody = new
+        var jsonDictionary = new Dictionary<string, object>
         {
-            model = modelId,
-            Messages = messages,
-            max_completion_tokens = request?.MaximumTokens,
-            top_p = request?.TopP ?? 1,
-            presence_penalty = request?.PresencePenalty ?? 0,
-            frequency_penalty = request?.FrequencyPenalty ?? 0,
-            temperature = request?.Temperature ?? 1,
-            response_format = responseFormat
+            { "model", modelId },
+            { "messages", messages },
+            { "top_p", request?.TopP ?? 1 },
+            { "presence_penalty", request?.PresencePenalty ?? 0 },
+            { "frequency_penalty", request?.FrequencyPenalty ?? 0 },
+            { "response_format", responseFormat }
         };
+        
+        if(request?.Temperature != null && !modelId.Contains("gpt-5"))
+        {
+            jsonDictionary.Add("temperature", request.Temperature);
+        }
+        
+        if (request?.MaximumTokens != null)
+        {
+            jsonDictionary.Add("max_completion_tokens", request.MaximumTokens);
+        }
+        
+        if (request?.ReasoningEffort != null && modelId.Contains("gpt-5"))
+        {
+            jsonDictionary.Add("reasoning_effort", request.ReasoningEffort);
+        }
 
-        var jsonBodySerialized = JsonConvert.SerializeObject(jsonBody, new JsonSerializerSettings
+        var jsonBodySerialized = JsonConvert.SerializeObject(jsonDictionary, new JsonSerializerSettings
         {
             ContractResolver = new CamelCasePropertyNamesContractResolver(),
             NullValueHandling = NullValueHandling.Ignore,

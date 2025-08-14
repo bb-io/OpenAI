@@ -5,7 +5,7 @@ using Blackbird.Applications.SDK.Blueprints.Interfaces.Edit;
 
 namespace Apps.OpenAI.Models.Requests.Chat;
 
-public class PostEditRequest : IEditTextInput
+public class PostEditRequest : ReasoningEffortRequest, IEditTextInput
 {
     [Display("Source text")]
     public string SourceText { get; set; }
