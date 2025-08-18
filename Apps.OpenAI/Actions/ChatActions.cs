@@ -14,6 +14,10 @@ using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
+using Blackbird.Filters.Content;
+using Blackbird.Filters.Transformations;
+using Blackbird.Filters.Xliff.Xliff2;
+using Blackbird.Filters.Coders;
 
 namespace Apps.OpenAI.Actions;
 
@@ -106,10 +110,6 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         {
             var fileStream = await FileManagementClient.DownloadAsync(input.File);
             var fileBytes = await fileStream.GetByteData();
-            if (input.SystemPrompt != null)
-            {
-                messages.Add(new ChatMessageDto(MessageRoles.System, input.SystemPrompt));
-            }
             
             if (input.File.ContentType.StartsWith("audio") || input.File.Name.EndsWith("wav") || input.File.Name.EndsWith("mp3"))
             {
@@ -120,7 +120,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                     new ChatAudioMessageAudioContentDto("input_audio", new InputAudio(){Format = input.File.Name.Substring(input.File.Name.Length-3).ToLower(),Data = Convert.ToBase64String(fileBytes) })
                 }));
             }
-            if (input.File.ContentType.StartsWith("image") || input.File.Name.EndsWith("png") || input.File.Name.EndsWith("jpg") || input.File.Name.EndsWith("jpeg") || input.File.Name.EndsWith("webp") || input.File.Name.EndsWith("gif"))
+            else if (input.File.ContentType.StartsWith("image") || input.File.Name.EndsWith("png") || input.File.Name.EndsWith("jpg") || input.File.Name.EndsWith("jpeg") || input.File.Name.EndsWith("webp") || input.File.Name.EndsWith("gif"))
             {
                 messages.Add(new ChatImageMessageDto(MessageRoles.User, new List<ChatImageMessageContentDto>
                 {
@@ -128,6 +128,25 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                     new ChatImageMessageImageContentDto("image_url", new ImageUrlDto(
                         $"data:{input.File.ContentType};base64,{Convert.ToBase64String(fileBytes)}"))
                 }));
+            }
+            else
+            {
+                var content = Encoding.UTF8.GetString(fileBytes);
+
+                CodedContent codedContent;
+                if (Xliff2Serializer.IsXliff2(content))
+                {
+                    var transformation = Transformation.Parse(content, input.File.Name);
+                    codedContent = transformation.Target();
+                }
+                else
+                {
+                    codedContent = CodedContent.Parse(content, input.File.Name);
+                }
+
+                var text = codedContent.GetPlaintext();
+                messages.Add(new ChatMessageDto(MessageRoles.User, input.Message));
+                messages.Add(new ChatMessageDto(MessageRoles.User, $"File content:\r\n{text}"));
             }
         }
         else
