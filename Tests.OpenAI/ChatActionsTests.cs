@@ -31,6 +31,29 @@ public class ChatActionsTests : TestBase
     }
 
     [TestMethod]
+    public async Task ChatMessageRequest_WithHtmlFile_ReturnsValidResponse()
+    {
+        var actions = new ChatActions(InvocationContext, FileManagementClient);
+        var result = await actions.ChatMessageRequest(
+            new TextChatModelIdentifier
+            {
+                ModelId = "gpt-5"
+            },
+            new ChatRequest
+            {
+                Message = "Give a couple of SEO keywords",
+                File = new Blackbird.Applications.Sdk.Common.Files.FileReference { 
+                    Name = "contentful.html",
+                    ContentType = "text/html"
+                }
+            },
+            new GlossaryRequest());
+
+        Console.WriteLine(result.Message);
+        Assert.IsNotNull(result.Message);
+    }
+
+    [TestMethod]
     public async Task ChatMessageRequest_WithAudioFile_ReturnsValidResponse()
     {
         var actions = new ChatActions(InvocationContext, FileManagementClient);
