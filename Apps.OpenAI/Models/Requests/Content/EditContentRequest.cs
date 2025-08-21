@@ -5,6 +5,7 @@ using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.SDK.Blueprints.Interfaces.Edit;
 
 namespace Apps.OpenAI.Models.Requests.Content;
+
 public class EditContentRequest : IEditFileInput
 {
     public FileReference File { get; set; }
