@@ -23,12 +23,11 @@ public class TranslationTests : TestBase
     public async Task Translate_html()
     {
         var actions = new TranslationActions(InvocationContext, FileManagementClient);
-        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4.1" };
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5" };
         var translateRequest = new TranslateContentRequest
         {
             File = new FileReference { Name = "contentful.html" },
-            TargetLanguage = "nl",
-            OutputFileHandling = "original",
+            TargetLanguage = "nl"
         };
         var reasoningEffortRequest = new ReasoningEffortRequest
         {
@@ -48,11 +47,11 @@ public class TranslationTests : TestBase
     public async Task Translate_xliff()
     {
         var actions = new TranslationActions(InvocationContext, FileManagementClient);
-        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4.1" };
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5" };
         var translateRequest = new TranslateContentRequest
         {
-            File = new FileReference { Name = "category_7000039521.xml" },
-            TargetLanguage = "nl",
+            File = new FileReference { Name = "contentful12.xliff" },
+            TargetLanguage = "nl"
         };
         var reasoningEffortRequest = new ReasoningEffortRequest
         {
