@@ -24,6 +24,7 @@ using Blackbird.Applications.SDK.Blueprints;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Models.Responses.Chat;
 using Apps.OpenAI.Utils;
+using Blackbird.Filters.Xliff.Xliff1;
 
 namespace Apps.OpenAI.Actions;
 
@@ -138,7 +139,13 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         {
             var targetContent = content.Target();
             result.File = await fileManagementClient.UploadAsync(targetContent.Serialize().ToStream(), targetContent.OriginalMediaType, targetContent.OriginalName);
-        } else
+        } 
+        else if (input.OutputFileHandling == "xliff1")
+        {
+            var xliff1String = Xliff1Serializer.Serialize(content);
+            result.File = await fileManagementClient.UploadAsync(xliff1String.ToStream(), MediaTypes.Xliff, content.XliffFileName);
+        }
+        else
         {
             result.File = await fileManagementClient.UploadAsync(content.Serialize().ToStream(), MediaTypes.Xliff, content.XliffFileName);
         }       
