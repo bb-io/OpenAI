@@ -344,7 +344,7 @@ public class DeprecatedXliffActions(InvocationContext invocationContext, IFileMa
         }
         catch
         {
-            throw new Exception(
+            throw new PluginApplicationException(
                 "Something went wrong parsing the output from OpenAI, most likely due to a hallucination!");
         }
     }
