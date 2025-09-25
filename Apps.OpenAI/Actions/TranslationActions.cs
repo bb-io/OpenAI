@@ -22,6 +22,8 @@ using Blackbird.Filters.Enums;
 using Blackbird.Filters.Constants;
 using Blackbird.Applications.SDK.Blueprints;
 using Apps.OpenAI.Constants;
+using Apps.OpenAI.Models.Requests.Background;
+using Apps.OpenAI.Models.Responses.Background;
 using Apps.OpenAI.Models.Responses.Chat;
 using Apps.OpenAI.Utils;
 using Blackbird.Filters.Xliff.Xliff1;
@@ -31,7 +33,6 @@ namespace Apps.OpenAI.Actions;
 [ActionList("Translation")]
 public class TranslationActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : BaseActions(invocationContext, fileManagementClient)
 {
-
     [BlueprintActionDefinition(BlueprintAction.TranslateFile)]
     [Action("Translate", Description = "Translate file content retrieved from a CMS or file storage. The output can be used in compatible actions.")]
     public async Task<ContentProcessingResult> TranslateContent([ActionParameter] TextChatModelIdentifier modelIdentifier,
@@ -151,6 +152,84 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         }       
 
         return result;
+    }
+    
+    [Action("Translate in background", Description = "Start background translation process for a file. This action will return a batch ID that can be used to download the results later.")]
+    public async Task<BackgroundProcessingResponse> TranslateInBackground([ActionParameter] StartBackgroundProcessRequest startBackgroundProcessRequest)
+    {
+        var stream = await fileManagementClient.DownloadAsync(startBackgroundProcessRequest.File);
+        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => Transformation.Parse(stream, startBackgroundProcessRequest.File.Name));
+        
+        content.SourceLanguage ??= startBackgroundProcessRequest.SourceLanguage;
+        content.TargetLanguage ??= startBackgroundProcessRequest.TargetLanguage;
+        
+        if (content.TargetLanguage == null) 
+            throw new PluginMisconfigurationException("The target language is not defined yet. Please assign the target language in this action.");
+
+        if (content.SourceLanguage == null)
+        {
+            content.SourceLanguage = await IdentifySourceLanguage(startBackgroundProcessRequest, content.Source().GetPlaintext());
+        }
+
+        var segments = ErrorHandler.ExecuteWithErrorHandling(() => content.GetSegments());
+        segments = segments.Where(x => !x.IsIgnorbale && x.IsInitial).ToList();
+
+        var batchRequests = new List<object>();
+        foreach (var segment in segments)
+        {
+            var userPrompt = $"Source text: {segment.GetSource()}";
+            
+            if (startBackgroundProcessRequest.Glossary != null)
+            {
+                var glossaryPromptPart = await GetGlossaryPromptPart(startBackgroundProcessRequest.Glossary, segment.GetSource(), true);
+                if (!string.IsNullOrEmpty(glossaryPromptPart))
+                {
+                    userPrompt += glossaryPromptPart;
+                }
+            }
+
+            var additionalInstructions = startBackgroundProcessRequest.AdditionalInstructions;
+            var systemPrompt = $"Translate the following text from {content.SourceLanguage} to {content.TargetLanguage}. " +
+                              "Preserve the original format, tags, and structure. " +
+                              $"{(additionalInstructions != null ? $"Additional instructions: {additionalInstructions}" : "")}";
+
+            var batchRequest = new
+            {
+                custom_id = segment.Id,
+                method = "POST",
+                url = "/v1/chat/completions",
+                body = new
+                {
+                    model = startBackgroundProcessRequest.GetModel(),
+                    messages = new object[]
+                    {
+                        new
+                        {
+                            role = "system",
+                            content = systemPrompt
+                        },
+                        new
+                        {
+                            role = "user",
+                            content = userPrompt
+                        }
+                    }
+                }
+            };
+
+            batchRequests.Add(batchRequest);
+        }
+
+        var batchResponse = await CreateBatchAsync(batchRequests);
+        content.MetaData.Add(new Metadata("background-type", "translate") { Category = [Meta.Categories.Blackbird]});
+        return new BackgroundProcessingResponse
+        {
+            BatchId = batchResponse.Id,
+            Status = batchResponse.Status,
+            CreatedAt = batchResponse.CreatedAt,
+            ExpectedCompletionTime = batchResponse.ExpectedCompletionTime,
+            TransformationFile = await fileManagementClient.UploadAsync(content.Serialize().ToStream(), MediaTypes.Xliff, content.XliffFileName)
+        };
     }
 
     [BlueprintActionDefinition(BlueprintAction.TranslateText)]

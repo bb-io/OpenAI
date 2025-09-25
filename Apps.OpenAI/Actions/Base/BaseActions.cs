@@ -22,23 +22,19 @@ using RestSharp;
 using System.Collections.Generic;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Models.Identifiers;
+using Apps.OpenAI.Models.Responses.Batch;
 using Apps.OpenAI.Models.Responses.Chat;
 using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Utils.Extensions.Http;
 
 namespace Apps.OpenAI.Actions.Base;
 
-public abstract class BaseActions : OpenAIInvocable
+public abstract class BaseActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
+    : OpenAIInvocable(invocationContext)
 {
-    protected readonly OpenAIClient Client;
-    protected readonly IFileManagementClient FileManagementClient;
+    protected readonly OpenAIClient Client = new(invocationContext.AuthenticationCredentialsProviders);
+    protected readonly IFileManagementClient FileManagementClient = fileManagementClient;
 
-    protected BaseActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
-        : base(invocationContext)
-    {
-        Client = new OpenAIClient(invocationContext.AuthenticationCredentialsProviders);
-        FileManagementClient = fileManagementClient;
-    }
-    
     protected async Task<string> GetGlossaryPromptPart(FileReference glossary, string sourceContent, bool filter)
     {
         if(!glossary.Name.EndsWith(".tbx", StringComparison.OrdinalIgnoreCase))
@@ -153,5 +149,36 @@ public abstract class BaseActions : OpenAIInvocable
         var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel());
 
         return response.Choices.First().Message.Content;
+    }
+    
+    protected async Task<BatchResponse> CreateBatchAsync(List<object> requests)
+    {
+        using var memoryStream = new MemoryStream();
+        await using var streamWriter = new StreamWriter(memoryStream, Encoding.Default);
+        foreach (var requestObj in requests)
+        {
+            var json = JsonConvert.SerializeObject(requestObj);
+            await streamWriter.WriteLineAsync(json);
+        }
+
+        await streamWriter.FlushAsync();
+        memoryStream.Position = 0;
+
+        var bytes = memoryStream.ToArray();
+
+        var uploadFileRequest = new OpenAIRequest("/files", Method.Post)
+            .AddFile("file", bytes, $"{Guid.NewGuid()}.jsonl", "application/jsonl")
+            .AddParameter("purpose", "batch");
+        var file = await Client.ExecuteWithErrorHandling<FileDto>(uploadFileRequest);
+
+        var createBatchRequest = new OpenAIRequest("/batches", Method.Post)
+            .WithJsonBody(new
+            {
+                input_file_id = file.Id,
+                endpoint = "/v1/chat/completions",
+                completion_window = "24h",
+            });
+        
+        return await Client.ExecuteWithErrorHandling<BatchResponse>(createBatchRequest);
     }
 }
