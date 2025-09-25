@@ -65,18 +65,29 @@ Do you have a cool use case that we can turn into an action? Let us know!
 ### Translation
 
 - **Translate** translate file content retrieved from a CMS or file storage. The output can be used in compatible Blackbird interoperable actions.
+- **Translate in background** similar to the previous action, except that this creates a long running process in the background not blocking your parallel actions. Use in conjunction with a checkpoint to download the result file of this long running background job.
 - **Translate text** given a text and a locale, tries to create a localized version of the text.
 
 ### Editing
 
 - **Edit** Edit a translation. This action assumes you have previously translated content in Blackbird through any translation action. Only looks at translated segments and will change the segment state to reviewed.
+- **Edit in background** similar to the previous action, except that this creates a long running process in the background not blocking your parallel actions. Use in conjunction with a checkpoint to download the result file of this long running background job.
 - **Edit Text** given a source segment and translated target segment, responds with an edited version of the target segment taking into account typical mistakes.
+
+### Reporting
+
+- **Create MQM report** Perform an LQA Analysis of a translated XLIFF file. The result will be a text in the MQM framework form.
+- **Create MQM report in background** similar to the previous action, except that this creates a long running process in the background not blocking your parallel actions. Use in conjunction with a checkpoint to download the result of this long running background job.
 
 ### Review
 
 - **Get translation issues** given a source segment and NMT translated target segment, highlights potential translation issues. Can be used to prepopulate TMS segment comments.
-- **Get MQM report** performs an LQA Analysis of the translation. The result will be in the MQM framework form. The dimensions are: terminology, accuracy, linguistic conventions, style, locale conventions, audience appropriateness, design and markup. The input consists of the source and translated text. Optionally one can add languages and a description of the target audience.
 - **Get MQM dimension values** uses the same input and prompt as 'Get MQM report'. However, in this action the scores are returned as individual numbers so that they can be used in decisions. Also returns the proposed translation.
+
+### Background
+
+- **Download background file** use this action to get the output file when doing a translation or edit in the background.
+- **Get background result** use this action to get the output text when generating an MQM report in the backgorund.
 
 ### Repurposing
 
@@ -182,23 +193,6 @@ Here is an example bird for processing XLIFF files:
 
 XLIFF files can contain a lot of segments. Each action takes your segments and sends them to OpenAI for processing. It's possible that the amount of segments is so high that the prompt exceeds to model's context window or that the model takes longer than Blackbird actions are allowed to take. This is why we have introduced the bucket size parameter. You can tweak the bucket size parameter to determine how many segments to send to OpenAI at once. This will allow you to split the workload into different OpenAI calls. The trade-off is that the same context prompt needs to be send along with each request (which increases the tokens used). From experiments we have found that a bucket size of 1500 is sufficient for gpt-4o. That's why 1500 is the default bucket size, however other models may require different bucket sizes.
 
-## Batch processing
-
-> The current batch actions are not fully transitioned to Blackbird interoperable mode yet.
-
-You can use batch (async) actions to process large XLIFF files. The batch action will return a `batch` object that you can use to check the status of the processing by using Batch ID.
-
-- **(Batch) Process** - Asynchronously process each translation unit in the XLIFF file according to the provided instructions (by default it just translates the source tags) and updates the target text for each unit. 
-- **(Batch) Post-edit** - Asynchronously post-edit the target text of each translation unit in the XLIFF file according to the provided instructions and updates the target text for each unit.
-- **(Batch) Get Quality Scores for** - Asynchronously get quality scores for each translation unit in the XLIFF file.
-
-To get the results of the batch processing, you can use the following actions:
-
-- **(Batch) Get process results** - Get the results of the batch process. This action is suitable only for processing and post-editing XLIFF file and should be called after the batch process is completed.
-- **(Batch) Get quality results** - Get the quality scores results of the batch process. This action is suitable only for getting quality scores for XLIFF file and should be called after the batch process is completed.
-
-Note, that you should specify the correct original XLIFF file in `Original XLIFF` input. It will help us to construct the correct XLIFF file with updated target segments.
-
 ## Eggs
 
 Check downloadable workflow prototypes featuring this app that you can import to your Nests [here](https://docs.blackbird.io/eggs/tms-to-llm/). 
@@ -211,10 +205,16 @@ Check downloadable workflow prototypes featuring this app that you can import to
 
 You have 2 options here:
 
-1. You can use the `On batch finished` event trigger to get notified when the batch process is completed. But note, that this is a polling trigger and it will check the status of the batch process based on the interval you set.
+1. You can use the `On background job finished` event trigger to get notified when the batch process is completed. But note, that this is a polling trigger and it will check the status of the batch process based on the interval you set.
 2. Use the `Delay` operator to wait for a certain amount of time before checking the status of the batch process. This is a more straightforward way to check the status of the batch process.
 
-We recommend using the `On batch finished` event trigger as it is more efficient for checking the status of the batch process.
+We recommend using the `On background job finished` event trigger as it is more efficient for checking the status of the batch process.
+
+## Events
+
+### Background
+
+- **On background job finished** triggered when an OpenAI batch job reaches a terminal state (completed/failed/cancelled).
 
 ## Example
 

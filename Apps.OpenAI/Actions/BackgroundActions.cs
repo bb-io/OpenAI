@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
 using Apps.OpenAI.Api;
@@ -8,6 +9,7 @@ using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Requests.Background;
 using Apps.OpenAI.Models.Responses.Background;
 using Apps.OpenAI.Models.Responses.Batch;
+using Apps.OpenAI.Models.Responses.Review;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
@@ -128,6 +130,79 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
             TotalSegmentsCount = totalSegments,
             ProcessedSegmentsCount = processedCount,
             UpdatedSegmentsCount = updatedCount,
+            BatchStatus = batchResponse.Status
+        };
+    }
+    
+    [Action("Get background result", 
+        Description = "Get the MQM report results from a background batch process")]
+    public async Task<MqmBackgroundResponse> GetMqmReportFromBackground(
+        [ActionParameter] BackgroundDownloadRequest request)
+    {
+        var batchRequests = await GetBatchRequestsAsync(request.BatchId);
+        var batchResponse = await GetBatchStatusAsync(request.BatchId);
+        
+        if (batchResponse.Status != "completed")
+        {
+            throw new PluginApplicationException(
+                $"The batch process is not completed yet. Current status: {batchResponse.Status}");
+        }
+        
+        var stream = await fileManagementClient.DownloadAsync(request.TransformationFile);
+        var content = await Transformation.Parse(stream, request.TransformationFile.Name);
+        var segments = content.GetSegments().Where(x => !x.IsIgnorbale && x.State == SegmentState.Translated).ToList();
+        
+        var usage = new UsageDto();
+        var combinedReport = new StringBuilder();
+        var segmentReports = new List<SegmentMqmReport>();
+        
+        foreach (var batchRequest in batchRequests)
+        {
+            var index = int.TryParse(batchRequest.CustomId, out var idx) ? idx : 
+                throw new PluginApplicationException($"Invalid CustomId '{batchRequest.CustomId}' in batch request. Expected an integer value.");
+            
+            var segment = segments.Count > index ? segments[index] : null;
+            if (segment == null)
+            {
+                throw new PluginApplicationException($"Segment with index {index} not found in the content file.");
+            }
+            
+            var sourceText = segment.GetSource();
+            var targetText = segment.GetTarget();
+            var mqmReport = batchRequest.Response.Body.Choices[0].Message.Content;
+            
+            combinedReport.AppendLine($"Source: {sourceText}");
+            combinedReport.AppendLine($"Translation: {targetText}");
+            combinedReport.AppendLine("MQM Report:");
+            combinedReport.AppendLine(mqmReport);
+            combinedReport.AppendLine(new string('-', 50));
+            combinedReport.AppendLine();
+            
+            segmentReports.Add(new SegmentMqmReport 
+            {
+                SourceText = sourceText,
+                TargetText = targetText, 
+                MqmReport = mqmReport
+            });
+            
+            if (batchRequest.Response.Body.Usage != null)
+            {
+                usage += new UsageDto
+                {
+                    PromptTokens = batchRequest.Response.Body.Usage.PromptTokens,
+                    CompletionTokens = batchRequest.Response.Body.Usage.CompletionTokens,
+                    TotalTokens = batchRequest.Response.Body.Usage.TotalTokens
+                };
+            }
+        }
+        
+        return new MqmBackgroundResponse
+        {
+            CombinedReport = combinedReport.ToString(),
+            SegmentReports = segmentReports,
+            Usage = usage,
+            ProcessedSegments = segmentReports.Count,
+            TotalSegments = segments.Count,
             BatchStatus = batchResponse.Status
         };
     }
