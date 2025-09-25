@@ -46,11 +46,13 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
         var stream = await fileManagementClient.DownloadAsync(request.TransformationFile);
         var transformation = await Transformation.Parse(stream, request.TransformationFile.Name);
         var backgroundType = transformation.MetaData.FirstOrDefault(x => x.Type == "background-type")?.Value;
+        var segments = content.GetSegments().Where(x => !x.IsIgnorbale && x.IsInitial).ToList();
         
         foreach (var batchRequest in batchRequests)
         {
             processedCount++;
-            var segment = content.GetSegments().FirstOrDefault(s => s.Id == batchRequest.CustomId);
+            var index = int.TryParse(batchRequest.CustomId, out var idx) ? idx : throw new PluginApplicationException($"Invalid CustomId '{batchRequest.CustomId}' in batch request. Expected an integer value. You probably provided the batch that was not created by Blackbird.");
+            var segment = segments.Count > index ? segments[index] : null;
             if (segment == null)
             {
                 throw new PluginApplicationException(

@@ -1,11 +1,13 @@
+using Apps.OpenAI.DataSourceHandlers;
 using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Files;
 
 namespace Apps.OpenAI.Models.Requests.Background;
 
 public class BackgroundDownloadRequest
 {
-    [Display("Batch ID")]
+    [Display("Batch ID"), DataSource(typeof(BatchDataSourceHandler))]
     public string BatchId { get; set; }
     
     [Display("Transformation file")]

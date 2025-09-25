@@ -153,12 +153,12 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         segments = segments.Where(x => !x.IsIgnorbale && x.State == SegmentState.Translated).ToList();
 
         var batchRequests = new List<object>();
-        foreach (var segment in segments)
+        foreach (var pair in segments.Select((Segment, Index) => new { Segment, Index }))
         {
-            var sourceText = segment.GetSource();
-            var targetText = segment.GetTarget();
+            var sourceText = pair.Segment.GetSource();
+            var targetText = pair.Segment.GetTarget();
             
-            var userPrompt = $"Source text: {sourceText}\nTarget text: {targetText}";
+            var userPrompt = $"Source text: {sourceText};\nTarget text: {targetText};";
             
             if (processRequest.Glossary != null)
             {
@@ -176,7 +176,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
             var batchRequest = new
             {
-                custom_id = segment.Id,
+                custom_id = pair.Index.ToString(),
                 method = "POST",
                 url = "/v1/chat/completions",
                 body = new
@@ -207,12 +207,14 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         }
 
         var batchResponse = await CreateBatchAsync(batchRequests);
+        content.MetaData.Add(new Metadata("background-type", "translate") { Category = [Meta.Categories.Blackbird]});
         return new BackgroundProcessingResponse
         {
             BatchId = batchResponse.Id,
             Status = batchResponse.Status,
             CreatedAt = batchResponse.CreatedAt,
-            ExpectedCompletionTime = batchResponse.ExpectedCompletionTime
+            ExpectedCompletionTime = batchResponse.ExpectedCompletionTime,
+            TransformationFile = await fileManagementClient.UploadAsync(content.Serialize().ToStream(), MediaTypes.Xliff, content.XliffFileName)
         };
     }
     

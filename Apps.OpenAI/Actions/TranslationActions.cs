@@ -175,13 +175,13 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         segments = segments.Where(x => !x.IsIgnorbale && x.IsInitial).ToList();
 
         var batchRequests = new List<object>();
-        foreach (var segment in segments)
+        foreach (var pair in segments.Select((segment, index) => new { Segment = segment, Index = index }))
         {
-            var userPrompt = $"Source text: {segment.GetSource()}";
+            var userPrompt = pair.Segment.GetSource();
             
             if (startBackgroundProcessRequest.Glossary != null)
             {
-                var glossaryPromptPart = await GetGlossaryPromptPart(startBackgroundProcessRequest.Glossary, segment.GetSource(), true);
+                var glossaryPromptPart = await GetGlossaryPromptPart(startBackgroundProcessRequest.Glossary, pair.Segment.GetSource(), true);
                 if (!string.IsNullOrEmpty(glossaryPromptPart))
                 {
                     userPrompt += glossaryPromptPart;
@@ -192,10 +192,10 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
             var systemPrompt = $"Translate the following text from {content.SourceLanguage} to {content.TargetLanguage}. " +
                               "Preserve the original format, tags, and structure. " +
                               $"{(additionalInstructions != null ? $"Additional instructions: {additionalInstructions}" : "")}";
-
+            
             var batchRequest = new
             {
-                custom_id = segment.Id,
+                custom_id = pair.Index.ToString(),
                 method = "POST",
                 url = "/v1/chat/completions",
                 body = new
