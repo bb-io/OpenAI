@@ -25,6 +25,12 @@ public class BatchResponse
 
     [Display("Completion window"), JsonProperty("completion_window")]
     public string CompletionWindow { get; set; } = string.Empty;
+    
+    [JsonProperty("created_at")]
+    public string CreatedAt { get; set; }
+    
+    [JsonProperty("expectedCompletionTime")]
+    public string ExpectedCompletionTime { get; set; }
 }
 
 public class BatchPaginationResponse

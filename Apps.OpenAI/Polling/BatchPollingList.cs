@@ -14,7 +14,7 @@ namespace Apps.OpenAI.Polling;
 [PollingEventList]
 public class BatchPollingList(InvocationContext invocationContext) : BaseActions(invocationContext, null!)
 {
-    [PollingEvent("On batch finished", "Triggered when a batch status is set to completed")]
+    [PollingEvent("On background job finished", "Triggered when an OpenAI batch job reaches a terminal state (completed/failed/cancelled).")]
     public async Task<PollingEventResponse<BatchMemory, BatchResponse>> OnBatchFinished(
         PollingEventRequest<BatchMemory> request,
         [PollingEventParameter] BatchIdentifier identifier)
@@ -34,7 +34,7 @@ public class BatchPollingList(InvocationContext invocationContext) : BaseActions
         
         var getBatchRequest = new OpenAIRequest($"/batches/{identifier.BatchId}", Method.Get);
         var batch = await Client.ExecuteWithErrorHandling<BatchResponse>(getBatchRequest);
-        var triggered = batch.Status == "completed" && !request.Memory.Triggered;
+        var triggered = (batch.Status == "completed" || batch.Status == "failed" || batch.Status == "cancelled") && !request.Memory.Triggered;
         return new()
         {
             FlyBird = triggered,

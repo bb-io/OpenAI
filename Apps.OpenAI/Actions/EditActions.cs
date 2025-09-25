@@ -24,6 +24,8 @@ using Blackbird.Applications.SDK.Blueprints;
 using Apps.OpenAI.Models.Responses.Chat;
 using Apps.OpenAI.Utils;
 using Apps.OpenAI.Constants;
+using Apps.OpenAI.Models.Requests.Background;
+using Apps.OpenAI.Models.Responses.Background;
 using Blackbird.Filters.Xliff.Xliff1;
 
 namespace Apps.OpenAI.Actions;
@@ -140,6 +142,82 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         return result;
     }
 
+    [Action("Edit in background", 
+        Description = "Start background editing process for a translated file. This action will return a batch ID that can be used to download the results later.")]
+    public async Task<BackgroundProcessingResponse> EditInBackground([ActionParameter] StartBackgroundProcessRequest processRequest)
+    {
+        var stream = await fileManagementClient.DownloadAsync(processRequest.File);
+        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => Transformation.Parse(stream, processRequest.File.Name));
+        
+        var segments = content.GetSegments();
+        segments = segments.GetSegmentsForEditing().ToList();
+
+        var batchRequests = new List<object>();
+        foreach (var pair in segments.Select((Segment, Index) => new { Segment, Index }))
+        {
+            var sourceText = pair.Segment.GetSource();
+            var targetText = pair.Segment.GetTarget();
+            
+            var userPrompt = $"Source text: {sourceText};\nTarget text: {targetText};";
+            
+            if (processRequest.Glossary != null)
+            {
+                var glossaryPromptPart = await GetGlossaryPromptPart(processRequest.Glossary, sourceText, true);
+                if (!string.IsNullOrEmpty(glossaryPromptPart))
+                {
+                    userPrompt += glossaryPromptPart;
+                }
+            }
+
+            var systemPrompt = "You are receiving a source text that was translated into target text. " +
+                              "Review the target text and respond with edits of the target text as necessary. " +
+                              "If no edits required, respond with the original target text. " +
+                              $"{(processRequest.AdditionalInstructions != null ? $"Additional instructions: {processRequest.AdditionalInstructions}" : "")}";
+
+            var batchRequest = new
+            {
+                custom_id = pair.Index.ToString(),
+                method = "POST",
+                url = "/v1/chat/completions",
+                body = new
+                {
+                    model = processRequest.GetModel(),
+                    messages = new object[]
+                    {
+                        new
+                        {
+                            role = "system",
+                            content = systemPrompt
+                        },
+                        new
+                        {
+                            role = "user",
+                            content = userPrompt
+                        }
+                    },
+                    temperature = 0.3,
+                    max_tokens = 4000,
+                    top_p = 1.0,
+                    frequency_penalty = 0.0,
+                    presence_penalty = 0.0
+                }
+            };
+
+            batchRequests.Add(batchRequest);
+        }
+
+        var batchResponse = await CreateBatchAsync(batchRequests);
+        content.MetaData.Add(new Metadata("background-type", "edit") { Category = [Meta.Categories.Blackbird]});
+        return new BackgroundProcessingResponse
+        {
+            BatchId = batchResponse.Id,
+            Status = batchResponse.Status,
+            CreatedAt = batchResponse.CreatedAt,
+            ExpectedCompletionTime = batchResponse.ExpectedCompletionTime,
+            TransformationFile = await fileManagementClient.UploadAsync(content.Serialize().ToStream(), MediaTypes.Xliff, content.XliffFileName)
+        };
+    }
+    
     [BlueprintActionDefinition(BlueprintAction.EditText)]
     [Action("Edit text", Description = "Review translated text and generate an edited version")]
     public async Task<EditResponse> PostEditRequest([ActionParameter] TextChatModelIdentifier modelIdentifier,

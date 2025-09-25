@@ -1,0 +1,61 @@
+<xliff srcLang="en-US" trgLang="nl-NL" version="2.2" xmlns:mda="urn:oasis:names:tc:xliff:metadata:2.0" xmlns="urn:oasis:names:tc:xliff:document:2.2">
+    <file id="f1">
+        <mda:metadata>
+            <mda:metaGroup category="blackbird">
+                <mda:meta type="original-name">The Hobbit, or There and Back Again_en-US.html</mda:meta>
+                <mda:meta type="original-media-type">text/html</mda:meta>
+                <mda:meta type="source-ucid">2QBrS8Ne2Tvysowtj3vROf</mda:meta>
+            </mda:metaGroup>
+        </mda:metadata>
+        <skeleton>&lt;html lang="en-US"&gt;&lt;head&gt;&lt;meta name="blackbird-entry-id" content="2QBrS8Ne2Tvysowtj3vROf"&gt;&lt;meta name="blackbird-locale" content="en-US"&gt;&lt;meta name="blackbird-ucid" content="2QBrS8Ne2Tvysowtj3vROf"&gt;&lt;/head&gt;&lt;body&gt;&lt;div data-contentful-entry-id="2QBrS8Ne2Tvysowtj3vROf"&gt;&lt;div data-contentful-field-type="RichText" data-contentful-field-id="description" data-blackbird-key="2QBrS8Ne2Tvysowtj3vROf-description"&gt;&lt;p&gt;&lt;strong&gt;&lt;i&gt;The Hobbit, or There and Back Again&lt;/i&gt;&lt;/strong&gt; is a &lt;a href="https://en.wikipedia.org/wiki/Children%27s_fantasy"&gt;children's fantasy&lt;/a&gt; novel by the English author &lt;a href="https://en.wikipedia.org/wiki/J._R._R._Tolkien"&gt;J. R. R. Tolkien&lt;/a&gt;. It was published in 1937 to wide critical acclaim, being nominated for the &lt;a href="https://en.wikipedia.org/wiki/Carnegie_Medal_(literary_award)"&gt;Carnegie Medal&lt;/a&gt; and awarded a prize from the &lt;a href="https://en.wikipedia.org/wiki/New_York_Herald_Tribune"&gt;&lt;i&gt;New York Herald Tribune&lt;/i&gt;&lt;/a&gt; for best juvenile fiction. It is recognized as a classic in children's literature and is one of the &lt;a href="https://en.wikipedia.org/wiki/List_of_best-selling_books"&gt;best-selling books of all time&lt;/a&gt;, with over 100 million copies sold.&lt;/p&gt;&lt;p&gt;&lt;i&gt;The Hobbit&lt;/i&gt; is set in &lt;a href="https://en.wikipedia.org/wiki/Middle-earth"&gt;Middle-earth&lt;/a&gt; and follows home-loving &lt;a href="https://en.wikipedia.org/wiki/Bilbo_Baggins"&gt;Bilbo Baggins&lt;/a&gt;, the titular &lt;a href="https://en.wikipedia.org/wiki/Hobbit"&gt;hobbit&lt;/a&gt; who joins the wizard &lt;a href="https://en.wikipedia.org/wiki/Gandalf"&gt;Gandalf&lt;/a&gt; and the thirteen &lt;a href="https://en.wikipedia.org/wiki/Dwarf_(Middle-earth)"&gt;dwarves&lt;/a&gt; of &lt;a href="https://en.wikipedia.org/wiki/List_of_The_Hobbit_characters#Thorin's_Company"&gt;Thorin's Company&lt;/a&gt; on a &lt;a href="https://en.wikipedia.org/wiki/Quests_in_Middle-earth"&gt;quest&lt;/a&gt; to reclaim the dwarves' home and treasure from the dragon &lt;a href="https://en.wikipedia.org/wiki/Smaug"&gt;Smaug&lt;/a&gt;. Bilbo's journey takes him from his peaceful rural surroundings into more sinister territory.&lt;/p&gt;&lt;/div&gt;&lt;div data-contentful-field-type="Link" data-contentful-field-id="file" data-blackbird-key="2QBrS8Ne2Tvysowtj3vROf-file" data-contentful-link-type="Asset" data-contentful-link-id="6mttyddB6YIuXbADVgubjD" data-contentful-localized="True"&gt;&lt;/div&gt;&lt;h1 data-contentful-field-type="Symbol" data-contentful-field-id="title" data-blackbird-key="2QBrS8Ne2Tvysowtj3vROf-title"&gt;The Hobbit, or There and Back Again&lt;/h1&gt;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;</skeleton>
+        <unit id="u1" name="/html[1]/body[1]/div[1]/div[1]/p[1]">
+            <segment state="translated">
+                <source>
+                    <sc id="1" dataRef="d1" />
+                    <sc id="2" dataRef="d2" />The Hobbit, or There and Back Again<ec dataRef="d3" /><ec dataRef="d4" /> is a <sc id="3" dataRef="d5" />children's fantasy<ec dataRef="d6" /> novel by the English author <sc id="4" dataRef="d7" />J. R. R. Tolkien<ec dataRef="d6" />. It was published in 1937 to wide critical acclaim, being nominated for the <sc id="5" dataRef="d8" />Carnegie Medal<ec dataRef="d6" /> and awarded a prize from the <sc id="6" dataRef="d9" /><sc id="7" dataRef="d2" />New York Herald Tribune<ec dataRef="d3" /><ec dataRef="d6" /> for best juvenile fiction. It is recognized as a classic in children's literature and is one of the <sc id="8" dataRef="d10" />best-selling books of all time<ec dataRef="d6" />, with over 100 million copies sold.</source>
+                <target>
+                    <sc id="9" dataRef="d1" />
+                    <sc id="10" dataRef="d2" />De Hobbit, of Daarheen en Weer Terug<ec dataRef="d3" /><ec dataRef="d4" /> is een <sc id="11" dataRef="d5" />kinderfantasieroman<ec dataRef="d6" /> van de Engelse auteur <sc id="12" dataRef="d7" />J. R. R. Tolkien<ec dataRef="d6" />. Het werd in 1937 gepubliceerd en kreeg lovende kritieken. Het boek werd genomineerd voor de <sc id="13" dataRef="d8" />Carnegie Medal<ec dataRef="d6" /> en bekroond met een prijs van de <sc id="14" dataRef="d9" /><sc id="15" dataRef="d2" />New York Herald Tribune<ec dataRef="d3" /><ec dataRef="d6" /> voor beste jeugdliteratuur. Het wordt erkend als een klassieker in de kinderliteratuur en is een van de <sc id="16" dataRef="d10" />meest verkochte boeken aller tijden<ec dataRef="d6" />, met meer dan 100 miljoen verkochte exemplaren.</target>
+            </segment>
+            <originalData>
+                <data id="d1">&lt;strong&gt;</data>
+                <data id="d2">&lt;i&gt;</data>
+                <data id="d3">&lt;/i&gt;</data>
+                <data id="d4">&lt;/strong&gt;</data>
+                <data id="d5">&lt;a href="https://en.wikipedia.org/wiki/Children%27s_fantasy"&gt;</data>
+                <data id="d6">&lt;/a&gt;</data>
+                <data id="d7">&lt;a href="https://en.wikipedia.org/wiki/J._R._R._Tolkien"&gt;</data>
+                <data id="d8">&lt;a href="https://en.wikipedia.org/wiki/Carnegie_Medal_(literary_award)"&gt;</data>
+                <data id="d9">&lt;a href="https://en.wikipedia.org/wiki/New_York_Herald_Tribune"&gt;</data>
+                <data id="d10">&lt;a href="https://en.wikipedia.org/wiki/List_of_best-selling_books"&gt;</data>
+            </originalData>
+        </unit>
+        <unit id="u2" name="/html[1]/body[1]/div[1]/div[1]/p[2]">
+            <segment state="translated">
+                <source>
+                    <sc id="1" dataRef="d1" />The Hobbit<ec dataRef="d2" /> is set in <sc id="2" dataRef="d3" />Middle-earth<ec dataRef="d4" /> and follows home-loving <sc id="3" dataRef="d5" />Bilbo Baggins<ec dataRef="d4" />, the titular <sc id="4" dataRef="d6" />hobbit<ec dataRef="d4" /> who joins the wizard <sc id="5" dataRef="d7" />Gandalf<ec dataRef="d4" /> and the thirteen <sc id="6" dataRef="d8" />dwarves<ec dataRef="d4" /> of <sc id="7" dataRef="d9" />Thorin's Company<ec dataRef="d4" /> on a <sc id="8" dataRef="d10" />quest<ec dataRef="d4" /> to reclaim the dwarves' home and treasure from the dragon <sc id="9" dataRef="d11" />Smaug<ec dataRef="d4" />. Bilbo's journey takes him from his peaceful rural surroundings into more sinister territory.</source>
+                <target>
+                    <sc id="10" dataRef="d1" />De Hobbit<ec dataRef="d2" /> speelt zich af in <sc id="11" dataRef="d3" />Midden-aarde<ec dataRef="d4" /> en volgt de huiselijke <sc id="12" dataRef="d5" />Bilbo Balings<ec dataRef="d4" />, de gelijknamige <sc id="13" dataRef="d6" />hobbit<ec dataRef="d4" /> die samen met de tovenaar <sc id="14" dataRef="d7" />Gandalf<ec dataRef="d4" /> en de dertien <sc id="15" dataRef="d8" />dwergen<ec dataRef="d4" /> uit <sc id="16" dataRef="d9" />Thorin's Gezelschap<ec dataRef="d4" /> op <sc id="17" dataRef="d10" />queeste<ec dataRef="d4" /> gaat om het huis en de schat van de dwergen terug te winnen van de draak <sc id="18" dataRef="d11" />Smaug<ec dataRef="d4" />. Bilbo's reis brengt hem van zijn vredige, landelijke omgeving naar meer sinistere gebieden.</target>
+            </segment>
+            <originalData>
+                <data id="d1">&lt;i&gt;</data>
+                <data id="d2">&lt;/i&gt;</data>
+                <data id="d3">&lt;a href="https://en.wikipedia.org/wiki/Middle-earth"&gt;</data>
+                <data id="d4">&lt;/a&gt;</data>
+                <data id="d5">&lt;a href="https://en.wikipedia.org/wiki/Bilbo_Baggins"&gt;</data>
+                <data id="d6">&lt;a href="https://en.wikipedia.org/wiki/Hobbit"&gt;</data>
+                <data id="d7">&lt;a href="https://en.wikipedia.org/wiki/Gandalf"&gt;</data>
+                <data id="d8">&lt;a href="https://en.wikipedia.org/wiki/Dwarf_(Middle-earth)"&gt;</data>
+                <data id="d9">&lt;a href="https://en.wikipedia.org/wiki/List_of_The_Hobbit_characters#Thorin's_Company"&gt;</data>
+                <data id="d10">&lt;a href="https://en.wikipedia.org/wiki/Quests_in_Middle-earth"&gt;</data>
+                <data id="d11">&lt;a href="https://en.wikipedia.org/wiki/Smaug"&gt;</data>
+            </originalData>
+        </unit>
+        <unit id="u3" name="/html[1]/body[1]/div[1]/h1[1]">
+            <segment state="translated">
+                <source>The Hobbit, or There and Back Again</source>
+                <target>De Hobbit, of Daarheen en Weer Terug</target>
+            </segment>
+        </unit>
+    </file>
+</xliff>
