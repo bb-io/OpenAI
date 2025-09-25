@@ -172,7 +172,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         }
 
         var segments = ErrorHandler.ExecuteWithErrorHandling(() => content.GetSegments());
-        segments = segments.Where(x => !x.IsIgnorbale && x.IsInitial).ToList();
+        segments = segments.GetSegmentsForTranslation().ToList();
 
         var batchRequests = new List<object>();
         foreach (var pair in segments.Select((segment, index) => new { Segment = segment, Index = index }))

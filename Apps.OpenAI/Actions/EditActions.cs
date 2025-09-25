@@ -150,7 +150,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => Transformation.Parse(stream, processRequest.File.Name));
         
         var segments = content.GetSegments();
-        segments = segments.Where(x => !x.IsIgnorbale && x.State == SegmentState.Translated).ToList();
+        segments = segments.GetSegmentsForEditing().ToList();
 
         var batchRequests = new List<object>();
         foreach (var pair in segments.Select((Segment, Index) => new { Segment, Index }))
@@ -207,7 +207,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         }
 
         var batchResponse = await CreateBatchAsync(batchRequests);
-        content.MetaData.Add(new Metadata("background-type", "translate") { Category = [Meta.Categories.Blackbird]});
+        content.MetaData.Add(new Metadata("background-type", "edit") { Category = [Meta.Categories.Blackbird]});
         return new BackgroundProcessingResponse
         {
             BatchId = batchResponse.Id,

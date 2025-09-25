@@ -14,8 +14,8 @@ public class BackgroundActionsTests : TestBase
         var actions = new BackgroundActions(InvocationContext, FileManagementClient);
         var downloadRequest = new BackgroundDownloadRequest
         {
-            BatchId = "batch_68d51188ee588190ba8587d150668bc0",
-            TransformationFile = new Blackbird.Applications.Sdk.Common.Files.FileReference { Name = "test.xlf" }
+            BatchId = "batch_68d52abe5dc481908c1c78739908e7ba",
+            TransformationFile = new Blackbird.Applications.Sdk.Common.Files.FileReference { Name = "The Hobbit, or There and Back Again_en-US.html.xlf" }
         };
         
         var result = await actions.DownloadContentFromBackground(downloadRequest);

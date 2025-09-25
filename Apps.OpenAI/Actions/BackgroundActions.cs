@@ -10,6 +10,7 @@ using Apps.OpenAI.Models.Requests.Background;
 using Apps.OpenAI.Models.Responses.Background;
 using Apps.OpenAI.Models.Responses.Batch;
 using Apps.OpenAI.Models.Responses.Review;
+using Apps.OpenAI.Utils;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
@@ -48,8 +49,14 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
         var stream = await fileManagementClient.DownloadAsync(request.TransformationFile);
         var transformation = await Transformation.Parse(stream, request.TransformationFile.Name);
         var backgroundType = transformation.MetaData.FirstOrDefault(x => x.Type == "background-type")?.Value;
-        var segments = content.GetSegments().Where(x => !x.IsIgnorbale && x.IsInitial).ToList();
-        
+
+        var segments = backgroundType switch
+        {
+            "translate" => content.GetSegments().GetSegmentsForTranslation().ToList(),
+            "edit" => content.GetSegments().GetSegmentsForEditing().ToList(),
+            _ => content.GetSegments().Where(x => !x.IsIgnorbale).ToList()
+        };
+
         foreach (var batchRequest in batchRequests)
         {
             processedCount++;
