@@ -26,6 +26,8 @@ using Apps.OpenAI.Models.Requests.Background;
 using Apps.OpenAI.Models.Responses.Background;
 using Apps.OpenAI.Models.Responses.Chat;
 using Apps.OpenAI.Utils;
+using Blackbird.Applications.Sdk.Glossaries.Utils.Converters;
+using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
 using Blackbird.Filters.Xliff.Xliff1;
 
 namespace Apps.OpenAI.Actions;
@@ -175,23 +177,36 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         segments = segments.GetSegmentsForTranslation().ToList();
 
         var batchRequests = new List<object>();
+        
+        Glossary? blackbirdGlossary = await ProcessGlossaryFromFile(startBackgroundProcessRequest.Glossary);
+        Dictionary<string, List<GlossaryEntry>>? glossaryLookup = null;
+        if (blackbirdGlossary != null)
+        {
+            glossaryLookup = CreateGlossaryLookup(blackbirdGlossary);
+        }
+        
+        var systemPromptBase = $"Translate the following text from {content.SourceLanguage} to {content.TargetLanguage}. " +
+                            "Preserve the original format, tags, and structure. ";
+                            
+        if (startBackgroundProcessRequest.AdditionalInstructions != null)
+        {
+            systemPromptBase += $"Additional instructions: {startBackgroundProcessRequest.AdditionalInstructions}";
+        }
+        
         foreach (var pair in segments.Select((segment, index) => new { Segment = segment, Index = index }))
         {
-            var userPrompt = pair.Segment.GetSource();
+            var sourceText = pair.Segment.GetSource();
+            var userPrompt = $"Source text: `{sourceText}`\n";
             
-            if (startBackgroundProcessRequest.Glossary != null)
+            var systemPrompt = systemPromptBase;
+            if (glossaryLookup != null)
             {
-                var glossaryPromptPart = await GetGlossaryPromptPart(startBackgroundProcessRequest.Glossary, pair.Segment.GetSource(), true);
+                var glossaryPromptPart = GetOptimizedGlossaryPromptPart(glossaryLookup, sourceText);
                 if (!string.IsNullOrEmpty(glossaryPromptPart))
                 {
                     userPrompt += glossaryPromptPart;
                 }
             }
-
-            var additionalInstructions = startBackgroundProcessRequest.AdditionalInstructions;
-            var systemPrompt = $"Translate the following text from {content.SourceLanguage} to {content.TargetLanguage}. " +
-                              "Preserve the original format, tags, and structure. " +
-                              $"{(additionalInstructions != null ? $"Additional instructions: {additionalInstructions}" : "")}";
             
             var batchRequest = new
             {

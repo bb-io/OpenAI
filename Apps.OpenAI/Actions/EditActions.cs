@@ -26,6 +26,7 @@ using Apps.OpenAI.Utils;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Models.Requests.Background;
 using Apps.OpenAI.Models.Responses.Background;
+using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
 using Blackbird.Filters.Xliff.Xliff1;
 
 namespace Apps.OpenAI.Actions;
@@ -152,27 +153,38 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         var segments = content.GetSegments();
         segments = segments.GetSegmentsForEditing().ToList();
 
+        Glossary? blackbirdGlossary = await ProcessGlossaryFromFile(processRequest.Glossary);
+        Dictionary<string, List<GlossaryEntry>>? glossaryLookup = null;
+        if (blackbirdGlossary != null)
+        {
+            glossaryLookup = CreateGlossaryLookup(blackbirdGlossary);
+        }
+
+        var systemPrompt = "You are receiving a source text that was translated into target text. " +
+                          "Review the target text and respond with edits of the target text as necessary. " +
+                          "If no edits required, respond with the original target text. ";
+                          
+        if (processRequest.AdditionalInstructions != null)
+        {
+            systemPrompt += $"Additional instructions: {processRequest.AdditionalInstructions}";
+        }
+
         var batchRequests = new List<object>();
-        foreach (var pair in segments.Select((Segment, Index) => new { Segment, Index }))
+        foreach (var pair in segments.Select((segment, index) => new { Segment = segment, Index = index }))
         {
             var sourceText = pair.Segment.GetSource();
             var targetText = pair.Segment.GetTarget();
             
             var userPrompt = $"Source text: {sourceText};\nTarget text: {targetText};";
             
-            if (processRequest.Glossary != null)
+            if (glossaryLookup != null)
             {
-                var glossaryPromptPart = await GetGlossaryPromptPart(processRequest.Glossary, sourceText, true);
+                var glossaryPromptPart = GetOptimizedGlossaryPromptPart(glossaryLookup, sourceText);
                 if (!string.IsNullOrEmpty(glossaryPromptPart))
                 {
                     userPrompt += glossaryPromptPart;
                 }
             }
-
-            var systemPrompt = "You are receiving a source text that was translated into target text. " +
-                              "Review the target text and respond with edits of the target text as necessary. " +
-                              "If no edits required, respond with the original target text. " +
-                              $"{(processRequest.AdditionalInstructions != null ? $"Additional instructions: {processRequest.AdditionalInstructions}" : "")}";
 
             var batchRequest = new
             {
