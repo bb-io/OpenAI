@@ -190,13 +190,18 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
                             
         if (startBackgroundProcessRequest.AdditionalInstructions != null)
         {
-            systemPromptBase += $"Additional instructions: {startBackgroundProcessRequest.AdditionalInstructions}";
+            systemPromptBase += $"Additional instructions: {startBackgroundProcessRequest.AdditionalInstructions}. ";
+        }
+        
+        if(glossaryLookup != null)
+        {
+            systemPromptBase += "Use the provided glossary to ensure accurate translations of specific terms.";
         }
         
         foreach (var pair in segments.Select((segment, index) => new { Segment = segment, Index = index }))
         {
             var sourceText = pair.Segment.GetSource();
-            var userPrompt = $"Source text: `{sourceText}`\n";
+            var userPrompt = sourceText;
             
             var systemPrompt = systemPromptBase;
             if (glossaryLookup != null)
@@ -204,7 +209,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
                 var glossaryPromptPart = GetOptimizedGlossaryPromptPart(glossaryLookup, sourceText);
                 if (!string.IsNullOrEmpty(glossaryPromptPart))
                 {
-                    userPrompt += glossaryPromptPart;
+                    userPrompt += "\n" + glossaryPromptPart;
                 }
             }
             

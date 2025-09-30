@@ -166,7 +166,12 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                           
         if (processRequest.AdditionalInstructions != null)
         {
-            systemPrompt += $"Additional instructions: {processRequest.AdditionalInstructions}";
+            systemPrompt += $"Additional instructions: {processRequest.AdditionalInstructions}. ";
+        }
+        
+        if(glossaryLookup != null)
+        {
+            systemPrompt += "Use the provided glossary to ensure accurate translations of specific terms.";
         }
 
         var batchRequests = new List<object>();
