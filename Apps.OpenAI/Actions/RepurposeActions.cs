@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
@@ -13,7 +12,7 @@ using Apps.OpenAI.Models.Responses.Chat;
 using Apps.OpenAI.Utils;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
-using Blackbird.Applications.Sdk.Common.Files;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Filters.Transformations;
@@ -27,10 +26,26 @@ public class RepurposeActions(InvocationContext invocationContext, IFileManageme
 {
     [Action("Summarize text",
         Description = "Summarizes text for different target audiences, languages, tone of voices and platforms. Summary extracts a shorter variant of the original text.")]
-    public async Task<RepurposeResponse> CreateSummary([ActionParameter] TextChatModelIdentifier modelIdentifier,
-        [ActionParameter] [Display("Text")] string content, [ActionParameter] RepurposeRequest input, [ActionParameter] GlossaryRequest glossary) =>
-        await HandleRepurposeRequest(
-            "You are a text summarizer. Generate a summary of the message of the user. Be very brief, concise and comprehensive.", modelIdentifier, content, input, glossary);
+    public async Task<RepurposeResponse> CreateSummary(
+        [ActionParameter] TextChatModelIdentifier modelIdentifier,
+        [ActionParameter] [Display("Text")] string content,
+        [ActionParameter] RepurposeRequest input,
+        [ActionParameter] GlossaryRequest glossary)
+    {
+        if (string.IsNullOrEmpty(modelIdentifier.ModelId) || string.IsNullOrEmpty(content))
+        {
+            throw new PluginMisconfigurationException(
+                $"These parameters are required and can't be empty: " +
+                $"{(string.IsNullOrEmpty(modelIdentifier.ModelId) ? "Model; " : "")}" +
+                $"{(string.IsNullOrEmpty(content) ? "Text; " : "")}"
+            );
+        }
+
+        return await HandleRepurposeRequest(
+            "You are a text summarizer. Generate a summary of the message of the user. Be very brief, concise and comprehensive.",
+            modelIdentifier, content, input, glossary
+        );
+    }        
 
     [Action("Summarize", Description = "Summarizes content for different target audiences, languages, tone of voices and platforms. Summary extracts a shorter variant of the original text.")]
     public async Task<RepurposeResponse> CreateContentSummary([ActionParameter] TextChatModelIdentifier modelIdentifier,
