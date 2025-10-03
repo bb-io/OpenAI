@@ -28,7 +28,7 @@ public class RepurposeActions(InvocationContext invocationContext, IFileManageme
         Description = "Summarizes text for different target audiences, languages, tone of voices and platforms. Summary extracts a shorter variant of the original text.")]
     public async Task<RepurposeResponse> CreateSummary(
         [ActionParameter] TextChatModelIdentifier modelIdentifier,
-        [ActionParameter][Display("Text")] string content,
+        [ActionParameter] [Display("Text")] string content,
         [ActionParameter] RepurposeRequest input,
         [ActionParameter] GlossaryRequest glossary)
     {
