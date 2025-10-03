@@ -1,5 +1,7 @@
 ﻿using Apps.OpenAI.Actions;
 using Apps.OpenAI.Models.Requests.Background;
+using Blackbird.Applications.Sdk.Common.Exceptions;
+using Blackbird.Applications.Sdk.Common.Files;
 using Newtonsoft.Json;
 using Tests.OpenAI.Base;
 
@@ -15,7 +17,7 @@ public class BackgroundActionsTests : TestBase
         var downloadRequest = new BackgroundDownloadRequest
         {
             BatchId = "batch_68d52abe5dc481908c1c78739908e7ba",
-            TransformationFile = new Blackbird.Applications.Sdk.Common.Files.FileReference { Name = "The Hobbit, or There and Back Again_en-US.html.xlf" }
+            TransformationFile = new FileReference { Name = "The Hobbit, or There and Back Again_en-US.html.xlf" }
         };
         
         var result = await actions.DownloadContentFromBackground(downloadRequest);
@@ -23,7 +25,27 @@ public class BackgroundActionsTests : TestBase
         Assert.IsNotNull(result);
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
-    
+
+    [TestMethod]
+    public async Task DownloadContentFromBackground_TooLongUri_Failure()
+    {
+        // Arrange
+        var actions = new BackgroundActions(InvocationContext, FileManagementClient);
+        var downloadRequest = new BackgroundDownloadRequest
+        {
+            BatchId = new string('a', 50000),
+            TransformationFile = new FileReference { Name = "The Hobbit, or There and Back Again_en-US.html.xlf" },
+        };
+
+        // Act
+        var ex = await Assert.ThrowsExceptionAsync<PluginApplicationException>(async () =>
+            await actions.DownloadContentFromBackground(downloadRequest)
+        );
+
+        // Assert
+        StringAssert.Contains(ex.Message, "URI Too Large");
+    }
+
     [TestMethod]
     public async Task GetMqmReportFromBackground_CompletedBatch_Success()
     {
@@ -31,7 +53,7 @@ public class BackgroundActionsTests : TestBase
         var downloadRequest = new BackgroundDownloadRequest
         {
             BatchId = "batch_68d524a2d59c8190a89421d2c37f195a",
-            TransformationFile = new Blackbird.Applications.Sdk.Common.Files.FileReference { Name = "mqm.xlf" }
+            TransformationFile = new FileReference { Name = "mqm.xlf" }
         };
         
         var result = await actions.GetMqmReportFromBackground(downloadRequest);

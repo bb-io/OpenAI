@@ -30,6 +30,12 @@ public class OpenAIClient : BlackBirdRestClient
         if (response.Content == null)
             throw new PluginApplicationException(response.ErrorMessage);
 
+        if (response.ContentType == "text/html")
+        {
+            string message = ExtractErrorMessageFromHtml(response.Content);
+            throw new PluginApplicationException(message);
+        }
+
         var error = JsonConvert.DeserializeObject<ErrorDtoWrapper>(response.Content, JsonSettings);
 
         if (response.StatusCode == HttpStatusCode.NotFound && error.Error.Type == "invalid_request_error")
@@ -41,5 +47,20 @@ public class OpenAIClient : BlackBirdRestClient
     protected async Task<T> ExecuteLongTimeRequest<T>(RestRequest request) where T : class
     {
         throw new NotImplementedException();
+    }
+
+    private static string ExtractErrorMessageFromHtml(string html)
+    {
+        var startTag = "<h1>";
+        var endTag = "</h1>";
+        var startIndex = html.IndexOf(startTag, StringComparison.OrdinalIgnoreCase);
+        var endIndex = html.IndexOf(endTag, StringComparison.OrdinalIgnoreCase);
+
+        if (startIndex >= 0 && endIndex > startIndex)
+        {
+            startIndex += startTag.Length;
+            return html.Substring(startIndex, endIndex - startIndex).Trim();
+        }
+        else return "HTML error response received";
     }
 }
