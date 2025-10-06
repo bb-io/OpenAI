@@ -2,16 +2,8 @@
 using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Models.Requests.Content;
-using Apps.OpenAI.Models.Requests.Xliff;
-using Apps.OpenAI.Services;
 using Blackbird.Applications.Sdk.Common.Files;
-using Blackbird.Xliff.Utils.Models;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Tests.OpenAI.Base;
 
 namespace Tests.OpenAI;
