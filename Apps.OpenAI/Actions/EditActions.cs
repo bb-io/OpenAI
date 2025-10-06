@@ -120,12 +120,6 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         {
             foreach (var (segment, translation) in results)
             {
-                var shouldTranslateFromState = segment.State == null || segment.State == SegmentState.Initial;
-                if (!shouldTranslateFromState || string.IsNullOrEmpty(translation.TranslatedText))
-                {
-                    continue;
-                }
-
                 if (segment.GetTarget() != translation.TranslatedText)
                 {
                     updatedCount++;
