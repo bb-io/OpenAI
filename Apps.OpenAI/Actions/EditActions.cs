@@ -61,15 +61,16 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             true,
             3,
             null,
-            reasoningEffortRequest.ReasoningEffort);
+            reasoningEffortRequest.ReasoningEffort,
+            content.Notes);
 
         var errors = new List<string>();
         var usages = new List<UsageDto>();
         int batchCounter = 0;
 
-        async Task<IEnumerable<TranslationEntity>> BatchTranslate(IEnumerable<Segment> batch)
+        async Task<IEnumerable<TranslationEntity>> BatchTranslate(IEnumerable<(Unit Unit, Segment Segment)> batch)
         {
-            var idSegments = batch.Select((x, i) => new { Id = i + 1, Value = x }).ToDictionary(x => x.Id.ToString(), x => x.Value);
+            var idSegments = batch.Select((x, i) => new { Id = i + 1, Value = x }).ToDictionary(x => x.Id.ToString(), x => x.Value.Segment);
             var allResults = new List<TranslationEntity>();
             batchCounter++;
             try
@@ -103,24 +104,32 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             return allResults;
         }
 
-        var segments = content.GetSegments();
-        result.TotalSegmentsCount = segments.Count();
-        segments = segments.Where(x => !x.IsIgnorbale && x.State == SegmentState.Translated);
+        var units = content.GetUnits();
+        var segments = units.SelectMany(x => x.Segments);
+        units = units.Where(x => x.State == SegmentState.Translated);
+        segments = units.SelectMany(x => x.Segments);
         result.TotalSegmentsReviewed = segments.Count();
 
-        var processedBatches = await segments.Batch(batchSize).Process(BatchTranslate);
+        var processedBatches = await units.Batch(batchSize).Process(BatchTranslate);
         result.ProcessedBatchesCount = batchCounter;
         result.Usage = UsageDto.Sum(usages);
 
         var updatedCount = 0;
-        foreach (var (segment, translation) in processedBatches)
+
+        foreach (var (unit, results) in processedBatches)
         {
-            if (segment.GetTarget() != translation.TranslatedText)
+            foreach (var (segment, translation) in results)
             {
-                updatedCount++;
-                segment.SetTarget(translation.TranslatedText);
+                if (segment.GetTarget() != translation.TranslatedText)
+                {
+                    updatedCount++;
+                    segment.SetTarget(translation.TranslatedText);
+                }
+                segment.State = SegmentState.Reviewed;
             }
-            segment.State = SegmentState.Reviewed;
+
+            unit.Provenance.Review.Tool = modelIdentifier.GetModel();
+            unit.Provenance.Review.ToolReference = $"https://openai.com/{modelIdentifier.GetModel()}";
         }
 
         result.TotalSegmentsUpdated = updatedCount;
@@ -149,8 +158,9 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     {
         var stream = await fileManagementClient.DownloadAsync(processRequest.File);
         var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => Transformation.Parse(stream, processRequest.File.Name));
-        
-        var segments = content.GetSegments();
+
+        var units = content.GetUnits();
+        var segments = units.SelectMany(x => x.Segments);
         segments = segments.GetSegmentsForEditing().ToList();
 
         Glossary? blackbirdGlossary = await ProcessGlossaryFromFile(processRequest.Glossary);

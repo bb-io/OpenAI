@@ -38,13 +38,15 @@ public class BatchProcessingService(OpenAIClient openAIClient, IFileManagementCl
                 options.TargetLanguage,
                 batch,
                 options.Prompt,
-                glossaryPrompt
+                glossaryPrompt,
+                options.Notes
                 ) : promptBuilderService.BuildProcessUserPrompt(
                 options.SourceLanguage,
                 options.TargetLanguage,
                 batch,
                 options.Prompt,
-                glossaryPrompt);
+                glossaryPrompt,
+                options.Notes);
 
             var messages = new List<ChatMessageDto>
             {

@@ -92,7 +92,8 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
             content.SourceLanguage = await IdentifySourceLanguage(request, content.Source().GetPlaintext());
         }
 
-        var segments = ErrorHandler.ExecuteWithErrorHandling(() => content.GetSegments());
+        var units = content.GetUnits();
+        var segments = units.SelectMany(x => x.Segments);
         segments = segments.Where(x => !x.IsIgnorbale && x.State == SegmentState.Translated).ToList();
 
         var batchRequests = new List<object>();
