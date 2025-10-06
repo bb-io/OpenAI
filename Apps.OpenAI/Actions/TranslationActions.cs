@@ -48,7 +48,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         var batchSize = bucketSize ?? 1500;
         var result = new ContentProcessingResult();
         var stream = await fileManagementClient.DownloadAsync(input.File);
-        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => Transformation.Parse(stream, input.File.Name));
+        var content = await Transformation.Parse(stream, input.File.Name);
         content.SourceLanguage ??= input.SourceLanguage;
         content.TargetLanguage ??= input.TargetLanguage;        
         if (content.TargetLanguage == null) throw new PluginMisconfigurationException("The target language is not defined yet. Please assign the target language in this action.");
@@ -68,15 +68,16 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
             true,
             3,
             null,
-            reasoningEffortRequest.ReasoningEffort);
+            reasoningEffortRequest.ReasoningEffort,
+            content.Notes);
 
         var errors = new List<string>();
         var usages = new List<UsageDto>();
         int batchCounter = 0;
 
-        async Task<IEnumerable<TranslationEntity>> BatchTranslate(IEnumerable<Segment> batch)
+        async Task<IEnumerable<TranslationEntity>> BatchTranslate(IEnumerable<(Unit Unit, Segment Segment)> batch)
         {
-            var idSegments = batch.Select((x, i) => new { Id = i + 1, Value = x }).ToDictionary(x => x.Id.ToString(), x => x.Value);
+            var idSegments = batch.Select((x, i) => new { Id = i + 1, Value = x }).ToDictionary(x => x.Id.ToString(), x => x.Value.Segment);
             var allResults = new List<TranslationEntity>();
             batchCounter++;
             try
@@ -110,30 +111,37 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
             return allResults;
         }
 
-        var segments = ErrorHandler.ExecuteWithErrorHandling(() => content.GetSegments());
-        result.TotalSegmentsCount = segments.Count();
-        segments = segments.Where(x => !x.IsIgnorbale && x.IsInitial);
+        var units = content.GetUnits();        
+        result.TotalSegmentsCount = units.SelectMany(x => x.Segments).Count();
+        units = units.Where(x => x.IsInitial);
+        var segments = units.Where(x => x.IsInitial).SelectMany(x => x.Segments);
         result.TotalTranslatable = segments.Count();
 
-        var processedBatches = await segments.Batch(batchSize).Process(BatchTranslate);
+        var processedBatches = await units.Batch(batchSize).Process(BatchTranslate);
         result.ProcessedBatchesCount = batchCounter;
         result.Usage = UsageDto.Sum(usages);
 
         var updatedCount = 0;
-        foreach (var (segment, translation) in processedBatches)
+        foreach (var (unit, results) in processedBatches)
         {
-            var shouldTranslateFromState = segment.State == null || segment.State == SegmentState.Initial;
-            if ( !shouldTranslateFromState || string.IsNullOrEmpty(translation.TranslatedText))
+            foreach(var (segment, translation) in results) 
             {
-                continue;
+                var shouldTranslateFromState = segment.State == null || segment.State == SegmentState.Initial;
+                if (!shouldTranslateFromState || string.IsNullOrEmpty(translation.TranslatedText))
+                {
+                    continue;
+                }
+
+                if (segment.GetTarget() != translation.TranslatedText)
+                {
+                    updatedCount++;
+                    segment.SetTarget(translation.TranslatedText);
+                    segment.State = SegmentState.Translated;
+                }
             }
 
-            if (segment.GetTarget() != translation.TranslatedText)
-            {
-                updatedCount++;
-                segment.SetTarget(translation.TranslatedText);
-                segment.State = SegmentState.Translated;
-            }
+            unit.Provenance.Translation.Tool = modelIdentifier.GetModel();
+            unit.Provenance.Translation.ToolReference = $"https://openai.com/{modelIdentifier.GetModel()}";
         }
 
         result.TargetsUpdatedCount = updatedCount;
@@ -160,7 +168,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
     public async Task<BackgroundProcessingResponse> TranslateInBackground([ActionParameter] StartBackgroundProcessRequest startBackgroundProcessRequest)
     {
         var stream = await fileManagementClient.DownloadAsync(startBackgroundProcessRequest.File);
-        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => Transformation.Parse(stream, startBackgroundProcessRequest.File.Name));
+        var content = await Transformation.Parse(stream, startBackgroundProcessRequest.File.Name);
         
         content.SourceLanguage ??= startBackgroundProcessRequest.SourceLanguage;
         content.TargetLanguage ??= startBackgroundProcessRequest.TargetLanguage;
@@ -173,7 +181,8 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
             content.SourceLanguage = await IdentifySourceLanguage(startBackgroundProcessRequest, content.Source().GetPlaintext());
         }
 
-        var segments = ErrorHandler.ExecuteWithErrorHandling(() => content.GetSegments());
+        var units = content.GetUnits();
+        var segments = units.SelectMany(x => x.Segments);
         segments = segments.GetSegmentsForTranslation().ToList();
 
         var batchRequests = new List<object>();

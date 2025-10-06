@@ -40,8 +40,9 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
         
         var originalFileStream = await fileManagementClient.DownloadAsync(request.TransformationFile);
         var content = await Transformation.Parse(originalFileStream, request.TransformationFile.Name);
-        
-        var totalSegments = content.GetSegments().Count();
+
+        var units = content.GetUnits();
+        var totalSegments = units.SelectMany(x => x.Segments).Count();
         var updatedCount = 0;
         var processedCount = 0;
         var usageList = new List<UsageDto>();
@@ -52,9 +53,9 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
 
         var segments = backgroundType switch
         {
-            "translate" => content.GetSegments().GetSegmentsForTranslation().ToList(),
-            "edit" => content.GetSegments().GetSegmentsForEditing().ToList(),
-            _ => content.GetSegments().Where(x => !x.IsIgnorbale).ToList()
+            "translate" => units.SelectMany(x => x.Segments).GetSegmentsForTranslation().ToList(),
+            "edit" => units.SelectMany(x => x.Segments).GetSegmentsForEditing().ToList(),
+            _ => units.SelectMany(x => x.Segments).Where(x => !x.IsIgnorbale).ToList()
         };
 
         foreach (var batchRequest in batchRequests)
@@ -157,7 +158,8 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
         
         var stream = await fileManagementClient.DownloadAsync(request.TransformationFile);
         var content = await Transformation.Parse(stream, request.TransformationFile.Name);
-        var segments = content.GetSegments().Where(x => !x.IsIgnorbale && x.State == SegmentState.Translated).ToList();
+        var units = content.GetUnits();
+        var segments = units.SelectMany(x => x.Segments).Where(x => !x.IsIgnorbale && x.State == SegmentState.Translated).ToList();
         
         var usage = new UsageDto();
         var combinedReport = new StringBuilder();

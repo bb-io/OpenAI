@@ -1,9 +1,9 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Apps.OpenAI.Utils;
 using Blackbird.Filters.Transformations;
 using Newtonsoft.Json;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 
 namespace Apps.OpenAI.Services;
 
@@ -12,40 +12,40 @@ public class ContentPromptBuilderService
     public string GetPostEditSystemPrompt()
     {
         return "## Localization Specialist\n" +
-                "You are a professional translator specializing in post-editing XLIFF translations. " +
-                "Maintain a formal tone appropriate to content type. " +
+                "You are a professional translator/" +
                 "Focus solely on improving translations: correct errors, enhance fluency, ensure terminology consistency. " +
-                "Preserve all formatting and XML tags exactly. " +
+                "Preserve all formatting and XML or HTML tags exactly. " +
                 "For ambiguous text, select the most natural translation in context. " +
+                "If there are any additional instructions then it's very important to apply them." +
                 "Process each segment independently even when similar.";
     }
 
     public string GetProcessSystemPrompt()
     {
         return "## Localization Specialist\n" +
-                "You are a professional translator specializing in XLIFF translations. " +
-                "Maintain a formal tone appropriate to content type. " +
+                "You are a professional translator/" +
                 "Focus solely on translating the text: ensure accuracy, fluency, and consistency. " +
-                "Preserve all formatting and XML tags exactly. " +
+                "Preserve all formatting and XML or HTML tags exactly. " +
                 "For ambiguous text, select the most natural translation in context. " +
+                "If there are any additional instructions then it's very important to apply them." +
                 "Process each segment independently even when similar.";
     }
 
     public string BuildPostEditUserPrompt(string sourceLanguage, string targetLanguage,
-        Dictionary<string, Segment> batch, string? additionalPrompt, string? glossaryPrompt)
+        Dictionary<string, Segment> batch, string? additionalPrompt, string? glossaryPrompt, List<Note>? notes)
     {
-        return BuildUserPrompt(sourceLanguage, targetLanguage, batch, additionalPrompt, glossaryPrompt, true);
+        return BuildUserPrompt(sourceLanguage, targetLanguage, batch, additionalPrompt, glossaryPrompt, true, notes);
     }
 
     public string BuildProcessUserPrompt(string sourceLanguage, string targetLanguage,
-        Dictionary<string, Segment> batch, string? additionalPrompt, string? glossaryPrompt)
+        Dictionary<string, Segment> batch, string? additionalPrompt, string? glossaryPrompt, List<Note>? notes)
     {
-        return BuildUserPrompt(sourceLanguage, targetLanguage, batch, additionalPrompt, glossaryPrompt, false);
+        return BuildUserPrompt(sourceLanguage, targetLanguage, batch, additionalPrompt, glossaryPrompt, false, notes);
     }
 
     private string BuildUserPrompt(string sourceLanguage, string targetLanguage,
         Dictionary<string, Segment> batch, string? additionalPrompt, string? glossaryPrompt, 
-        bool isPostEdit)
+        bool isPostEdit, List<Note>? notes)
     {
         var jsonData = isPostEdit 
             ? JsonConvert.SerializeObject(batch.Select(x => new { Id = x.Key, Source = x.Value.GetSource(), Target = x.Value.GetTarget() }))
@@ -83,11 +83,15 @@ public class ContentPromptBuilderService
             prompt.AppendLine(glossaryPrompt);
         }
 
-        if (!string.IsNullOrEmpty(additionalPrompt))
+         if (!string.IsNullOrEmpty(additionalPrompt) || (notes != null && notes.Count > 0))
         {
             prompt.AppendLine();
             prompt.AppendLine("### ADDITIONAL REQUIREMENTS");
             prompt.AppendLine(additionalPrompt);
+            foreach (var note in notes)
+            {
+                prompt.AppendLine($"{note.Category}: {note.Text}");
+            }
         }
 
         prompt.AppendLine();

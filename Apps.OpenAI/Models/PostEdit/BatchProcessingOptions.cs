@@ -1,4 +1,6 @@
 using Blackbird.Applications.Sdk.Common.Files;
+using Blackbird.Filters.Transformations;
+using System.Collections.Generic;
 
 namespace Apps.OpenAI.Models.PostEdit;
 
@@ -11,4 +13,5 @@ public record BatchProcessingOptions(
     bool FilterGlossary,
     int MaxRetryAttempts,
     int? MaxTokens,
-    string? ReasoningEffort);
+    string? ReasoningEffort,
+    List<Note>? Notes);

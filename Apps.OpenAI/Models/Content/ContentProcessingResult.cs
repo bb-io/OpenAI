@@ -2,11 +2,6 @@
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.SDK.Blueprints.Interfaces.Translate;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Apps.OpenAI.Models.Content;
 public class ContentProcessingResult : ITranslateFileOutput

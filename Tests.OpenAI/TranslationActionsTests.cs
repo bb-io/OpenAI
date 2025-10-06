@@ -37,7 +37,31 @@ public class TranslationActionsTests : TestBase
     }
 
     [TestMethod]
-    public async Task Translate_xliff()
+    public async Task Translate_xlf()
+    {
+        var actions = new TranslationActions(InvocationContext, FileManagementClient);
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5" };
+        var translateRequest = new TranslateContentRequest
+        {
+            File = new FileReference { Name = "contentful.untranslated.xlf" },
+            TargetLanguage = "nl"
+        };
+        var reasoningEffortRequest = new ReasoningEffortRequest
+        {
+            ReasoningEffort = "low"
+        };
+        string? systemMessage = null;
+        var glossaryRequest = new GlossaryRequest();
+
+        var result = await actions.TranslateContent(modelIdentifier, translateRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
+        Assert.IsNotNull(result);
+        Assert.IsTrue(result.File.Name.Contains("contentful"));
+
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+    }
+
+    [TestMethod]
+    public async Task Translate_xlf12()
     {
         var actions = new TranslationActions(InvocationContext, FileManagementClient);
         var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5" };
