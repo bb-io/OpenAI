@@ -106,6 +106,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
         var units = content.GetUnits();
         var segments = units.SelectMany(x => x.Segments);
+        result.TotalSegmentsCount = segments.Count();
         units = units.Where(x => x.State == SegmentState.Translated);
         segments = units.SelectMany(x => x.Segments);
         result.TotalSegmentsReviewed = segments.Count();
