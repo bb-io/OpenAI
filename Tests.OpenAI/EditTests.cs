@@ -2,16 +2,9 @@
 using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Models.Requests.Content;
-using Apps.OpenAI.Models.Requests.Xliff;
-using Apps.OpenAI.Services;
 using Blackbird.Applications.Sdk.Common.Files;
-using Blackbird.Xliff.Utils.Models;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Apps.OpenAI.Models.Requests.Background;
 using Tests.OpenAI.Base;
 
 namespace Tests.OpenAI;
@@ -62,5 +55,24 @@ public class EditTests : TestBase
         Assert.IsNotNull(result);
 
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+    }
+
+    [TestMethod]
+    public async Task EditInBackground_WithXliffFile_Success()
+    {
+        var actions = new EditActions(InvocationContext, FileManagementClient);
+        
+        var editRequest = new StartBackgroundProcessRequest
+        {
+            ModelId = "gpt-4.1",
+            File = new FileReference { Name = "The Hobbit, or There and Back Again_en-US.html.xlf" },
+            TargetLanguage = "fr"
+        };
+        
+        var response = await actions.EditInBackground(editRequest);
+        
+        Assert.IsNotNull(response);
+        Assert.IsNotNull(response.BatchId);
+        Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
     }
 }

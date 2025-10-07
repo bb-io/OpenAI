@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
 using Apps.OpenAI.Api;
 using Apps.OpenAI.Dtos;
+using Apps.OpenAI.Models.Entities;
 using Apps.OpenAI.Models.Requests.Background;
 using Apps.OpenAI.Models.Responses.Background;
 using Apps.OpenAI.Models.Responses.Batch;
@@ -60,39 +61,60 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
 
         foreach (var batchRequest in batchRequests)
         {
-            processedCount++;
-            var index = int.TryParse(batchRequest.CustomId, out var idx) ? idx : throw new PluginApplicationException($"Invalid CustomId '{batchRequest.CustomId}' in batch request. Expected an integer value. You probably provided the batch that was not created by Blackbird.");
-            var segment = segments.Count > index ? segments[index] : null;
-            if (segment == null)
-            {
-                throw new PluginApplicationException(
-                    $"Segment with id {batchRequest.CustomId} not found in the content file.");
-            }
+            var bucketIndex = int.TryParse(batchRequest.CustomId, out var idx) ? idx : 
+                throw new PluginApplicationException($"Invalid CustomId '{batchRequest.CustomId}' in batch request. Expected an integer value. You probably provided the batch that was not created by Blackbird.");
 
-            var newContent = batchRequest.Response.Body.Choices[0].Message.Content;
-            if (segment.GetTarget() != newContent)
+            var responseContent = batchRequest.Response.Body.Choices[0].Message.Content;
+            
+            try
             {
-                if (backgroundType == "translate")
+                var translationResponse = JsonConvert.DeserializeObject<TranslationResponse>(responseContent);
+                if (translationResponse?.Translations == null)
                 {
-                    segment.State = SegmentState.Translated;
-                    segment.SetTarget(newContent);
-                    updatedCount++;
-                } 
-                else if (backgroundType == "edit")
+                    throw new PluginApplicationException($"Invalid response format in batch {bucketIndex}. Expected JSON with translations array.");
+                }
+
+                foreach (var translation in translationResponse.Translations)
                 {
+                    processedCount++;
+                    var segmentIndex = int.TryParse(translation.TranslationId, out var segIdx) ? segIdx : 
+                        throw new PluginApplicationException($"Invalid translation_id '{translation.TranslationId}' in batch response. Expected an integer value.");
+                    
+                    var segment = segments.Count > segmentIndex ? segments[segmentIndex] : null;
+                    if (segment == null)
+                    {
+                        throw new PluginApplicationException($"Segment with index {segmentIndex} not found in the content file.");
+                    }
+
+                    var newContent = translation.TranslatedText;
                     if (segment.GetTarget() != newContent)
                     {
-                        segment.SetTarget(newContent);
-                        updatedCount++;
+                        if (backgroundType == "translate")
+                        {
+                            segment.State = SegmentState.Translated;
+                            segment.SetTarget(newContent);
+                            updatedCount++;
+                        } 
+                        else if (backgroundType == "edit")
+                        {
+                            if (segment.GetTarget() != newContent)
+                            {
+                                segment.SetTarget(newContent);
+                                updatedCount++;
+                            }
+                            segment.State = SegmentState.Reviewed;
+                        } 
+                        else
+                        {
+                            segment.SetTarget(newContent);
+                            updatedCount++;
+                        }
                     }
-                    
-                    segment.State = SegmentState.Reviewed;
-                } 
-                else
-                {
-                    segment.SetTarget(newContent);
-                    updatedCount++;
                 }
+            }
+            catch (JsonException ex)
+            {
+                throw new PluginApplicationException($"Failed to parse JSON response from batch {bucketIndex}: {ex.Message}. Response content: {responseContent}");
             }
             
             if (batchRequest.Response.Body.Usage != null)
@@ -167,32 +189,53 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
         
         foreach (var batchRequest in batchRequests)
         {
-            var index = int.TryParse(batchRequest.CustomId, out var idx) ? idx : 
+            var bucketIndex = int.TryParse(batchRequest.CustomId, out var idx) ? idx : 
                 throw new PluginApplicationException($"Invalid CustomId '{batchRequest.CustomId}' in batch request. Expected an integer value.");
             
-            var segment = segments.Count > index ? segments[index] : null;
-            if (segment == null)
+            var responseContent = batchRequest.Response.Body.Choices[0].Message.Content;
+            
+            try
             {
-                throw new PluginApplicationException($"Segment with index {index} not found in the content file.");
+                var mqmResponse = JsonConvert.DeserializeObject<MqmReportResponse>(responseContent);
+                if (mqmResponse?.Reports == null)
+                {
+                    throw new PluginApplicationException($"Invalid response format in batch {bucketIndex}. Expected JSON with reports array.");
+                }
+
+                foreach (var report in mqmResponse.Reports)
+                {
+                    var segmentIndex = int.TryParse(report.SegmentId, out var segIdx) ? segIdx : 
+                        throw new PluginApplicationException($"Invalid segment_id '{report.SegmentId}' in batch response. Expected an integer value.");
+                    
+                    var segment = segments.Count > segmentIndex ? segments[segmentIndex] : null;
+                    if (segment == null)
+                    {
+                        throw new PluginApplicationException($"Segment with index {segmentIndex} not found in the content file.");
+                    }
+                    
+                    var sourceText = segment.GetSource();
+                    var targetText = segment.GetTarget();
+                    var mqmReport = report.MqmReport;
+                    
+                    combinedReport.AppendLine($"Source: {sourceText}");
+                    combinedReport.AppendLine($"Translation: {targetText}");
+                    combinedReport.AppendLine("MQM Report:");
+                    combinedReport.AppendLine(mqmReport);
+                    combinedReport.AppendLine(new string('-', 50));
+                    combinedReport.AppendLine();
+                    
+                    segmentReports.Add(new SegmentMqmReport 
+                    {
+                        SourceText = sourceText,
+                        TargetText = targetText, 
+                        MqmReport = mqmReport
+                    });
+                }
             }
-            
-            var sourceText = segment.GetSource();
-            var targetText = segment.GetTarget();
-            var mqmReport = batchRequest.Response.Body.Choices[0].Message.Content;
-            
-            combinedReport.AppendLine($"Source: {sourceText}");
-            combinedReport.AppendLine($"Translation: {targetText}");
-            combinedReport.AppendLine("MQM Report:");
-            combinedReport.AppendLine(mqmReport);
-            combinedReport.AppendLine(new string('-', 50));
-            combinedReport.AppendLine();
-            
-            segmentReports.Add(new SegmentMqmReport 
+            catch (JsonException ex)
             {
-                SourceText = sourceText,
-                TargetText = targetText, 
-                MqmReport = mqmReport
-            });
+                throw new PluginApplicationException($"Failed to parse JSON response from batch {bucketIndex}: {ex.Message}. Response content: {responseContent}");
+            }
             
             if (batchRequest.Response.Body.Usage != null)
             {
@@ -255,4 +298,19 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
     }
     
     #endregion
+    
+    private class MqmReportResponse
+    {
+        [JsonProperty("reports")]
+        public List<MqmReportEntity> Reports { get; set; } = new();
+    }
+
+    private class MqmReportEntity
+    {
+        [JsonProperty("segment_id")]
+        public string SegmentId { get; set; } = string.Empty;
+
+        [JsonProperty("mqm_report")]
+        public string MqmReport { get; set; } = string.Empty;
+    }
 }

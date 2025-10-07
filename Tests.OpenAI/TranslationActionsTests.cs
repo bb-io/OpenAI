@@ -92,7 +92,7 @@ public class TranslationActionsTests : TestBase
         var translateRequest = new StartBackgroundProcessRequest
         {
             ModelId = "gpt-4.1",
-            File = new FileReference { Name = "test.xlf" },
+            File = new FileReference { Name = "The Hobbit, or There and Back Again_en-US.html.xlf" },
             TargetLanguage = "fr"
         };
         

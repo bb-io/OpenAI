@@ -49,7 +49,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         var result = new ContentProcessingEditResult();
         var stream = await fileManagementClient.DownloadAsync(input.File);
 
-        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(()=>Transformation.Parse(stream, input.File.Name));
+        var content = await Transformation.Parse(stream, input.File.Name);
 
         var batchProcessingService = new BatchProcessingService(Client, FileManagementClient);
         var batchOptions = new BatchProcessingOptions(
@@ -106,6 +106,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
         var units = content.GetUnits();
         var segments = units.SelectMany(x => x.Segments);
+        result.TotalSegmentsCount = segments.Count();
         units = units.Where(x => x.State == SegmentState.Translated);
         segments = units.SelectMany(x => x.Segments);
         result.TotalSegmentsReviewed = segments.Count();
@@ -170,40 +171,58 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             glossaryLookup = CreateGlossaryLookup(blackbirdGlossary);
         }
 
-        var systemPrompt = "You are receiving a source text that was translated into target text. " +
-                          "Review the target text and respond with edits of the target text as necessary. " +
-                          "If no edits required, respond with the original target text. ";
+        var systemPromptBase = "You are receiving source texts that were translated into target texts. " +
+                          "Review the target texts and respond with edits of the target texts as necessary. " +
+                          "If no edits required, respond with the original target texts. Return the edits in the specified JSON format.";
                           
         if (processRequest.AdditionalInstructions != null)
         {
-            systemPrompt += $"Additional instructions: {processRequest.AdditionalInstructions}. ";
+            systemPromptBase += $" Additional instructions: {processRequest.AdditionalInstructions}.";
         }
         
         if(glossaryLookup != null)
         {
-            systemPrompt += "Use the provided glossary to ensure accurate translations of specific terms.";
+            systemPromptBase += " Use the provided glossary to ensure accurate translations of specific terms.";
         }
 
         var batchRequests = new List<object>();
-        foreach (var pair in segments.Select((segment, index) => new { Segment = segment, Index = index }))
+        var bucketSize = processRequest.GetBucketingSize();
+        var segmentList = segments.ToList();
+        
+        // Create buckets by splitting segments into chunks
+        var segmentBuckets = new List<List<Segment>>();
+        for (int i = 0; i < segmentList.Count; i += bucketSize)
         {
-            var sourceText = pair.Segment.GetSource();
-            var targetText = pair.Segment.GetTarget();
+            var bucket = segmentList.Skip(i).Take(bucketSize).ToList();
+            segmentBuckets.Add(bucket);
+        }
+        
+        foreach (var (bucket, bucketIndex) in segmentBuckets.Select((bucket, index) => (bucket, index)))
+        {
+            var userPrompt = "Review and edit the following texts:\n\n";
             
-            var userPrompt = $"Source text: {sourceText};\nTarget text: {targetText};";
+            foreach (var (segment, segmentIndex) in bucket.Select((seg, idx) => (seg, idx)))
+            {
+                var globalIndex = bucketIndex * bucketSize + segmentIndex;
+                var sourceText = segment.GetSource();
+                var targetText = segment.GetTarget();
+                
+                userPrompt += $"ID: {globalIndex}\nSource text: {sourceText}\nTarget text: {targetText}\n\n";
+            }
             
             if (glossaryLookup != null)
             {
-                var glossaryPromptPart = GetOptimizedGlossaryPromptPart(glossaryLookup, sourceText);
+                var combinedText = string.Join(" ", bucket.Select(s => s.GetSource()));
+                var glossaryPromptPart = GetOptimizedGlossaryPromptPart(glossaryLookup, combinedText);
                 if (!string.IsNullOrEmpty(glossaryPromptPart))
                 {
-                    userPrompt += glossaryPromptPart;
+                    userPrompt += $"\nGlossary terms:\n{glossaryPromptPart}";
                 }
             }
 
             var batchRequest = new
             {
-                custom_id = pair.Index.ToString(),
+                custom_id = bucketIndex.ToString(),
                 method = "POST",
                 url = "/v1/chat/completions",
                 body = new
@@ -214,7 +233,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                         new
                         {
                             role = "system",
-                            content = systemPrompt
+                            content = systemPromptBase
                         },
                         new
                         {
@@ -222,6 +241,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                             content = userPrompt
                         }
                     },
+                    response_format = ResponseFormats.GetXliffResponseFormat(),
                     temperature = 0.3,
                     max_tokens = 4000,
                     top_p = 1.0,

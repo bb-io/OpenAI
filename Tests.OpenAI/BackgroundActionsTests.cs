@@ -16,7 +16,7 @@ public class BackgroundActionsTests : TestBase
         var actions = new BackgroundActions(InvocationContext, FileManagementClient);
         var downloadRequest = new BackgroundDownloadRequest
         {
-            BatchId = "batch_68d52abe5dc481908c1c78739908e7ba",
+            BatchId = "batch_68e4a64badd8819082197f5fef3306b5",
             TransformationFile = new FileReference { Name = "The Hobbit, or There and Back Again_en-US.html.xlf" }
         };
         
@@ -52,7 +52,7 @@ public class BackgroundActionsTests : TestBase
         var actions = new BackgroundActions(InvocationContext, FileManagementClient);
         var downloadRequest = new BackgroundDownloadRequest
         {
-            BatchId = "batch_68d524a2d59c8190a89421d2c37f195a",
+            BatchId = "batch_68e4168ac48c81909609edd7ea536873",
             TransformationFile = new FileReference { Name = "mqm.xlf" }
         };
         

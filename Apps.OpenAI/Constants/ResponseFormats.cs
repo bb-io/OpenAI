@@ -101,4 +101,54 @@ public static class ResponseFormats
             }
         };
     }
+    
+    public static object GetMqmReportResponseFormat()
+    {
+        return new
+        {
+            type = "json_schema",
+            json_schema = new
+            {
+                name = "MqmReports",
+                strict = true,
+                schema = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        reports = new
+                        {
+                            type = "array",
+                            items = new
+                            {
+                                type = "object",
+                                properties = new
+                                {
+                                    segment_id = new
+                                    {
+                                        type = "string"
+                                    },
+                                    mqm_report = new
+                                    {
+                                        type = "string"
+                                    }
+                                },
+                                required = new[]
+                                {
+                                    "segment_id",
+                                    "mqm_report"
+                                },
+                                additionalProperties = false
+                            }
+                        }
+                    },
+                    required = new[]
+                    {
+                        "reports"
+                    },
+                    additionalProperties = false
+                }
+            }
+        };
+    }
 }
