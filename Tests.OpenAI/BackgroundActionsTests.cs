@@ -16,8 +16,8 @@ public class BackgroundActionsTests : TestBase
         var actions = new BackgroundActions(InvocationContext, FileManagementClient);
         var downloadRequest = new BackgroundDownloadRequest
         {
-            BatchId = "batch_68e4138f9e848190a06d371b38afa6fa",
-            TransformationFile = new FileReference { Name = "test.xlf" }
+            BatchId = "batch_68e4a64badd8819082197f5fef3306b5",
+            TransformationFile = new FileReference { Name = "The Hobbit, or There and Back Again_en-US.html.xlf" }
         };
         
         var result = await actions.DownloadContentFromBackground(downloadRequest);
