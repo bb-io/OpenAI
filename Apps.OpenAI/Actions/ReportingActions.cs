@@ -22,7 +22,7 @@ using Blackbird.Filters.Transformations;
 
 namespace Apps.OpenAI.Actions;
 
-[ActionList("Review")]
+[ActionList("Reporting")]
 public class ReportingActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : BaseActions(invocationContext, fileManagementClient)
 {
