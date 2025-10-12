@@ -20,8 +20,7 @@ namespace Apps.OpenAI.Actions;
 public class ReviewActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : BaseActions(invocationContext, fileManagementClient)
 {
-    [Action("Get translation issues",
-        Description = "Review text translation and generate a comment with the issue description")]
+    [Action("Get translation issues", Description = "Review text translation and generate a comment with the issue description")]
     public async Task<ChatResponse> GetTranslationIssues([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] GetTranslationIssuesRequest input, [ActionParameter] GlossaryRequest glossary)
     {

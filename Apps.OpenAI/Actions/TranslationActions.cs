@@ -74,6 +74,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         var errors = new List<string>();
         var usages = new List<UsageDto>();
         int batchCounter = 0;
+        var systemprompt = string.Empty;
 
         async Task<IEnumerable<TranslationEntity>> BatchTranslate(IEnumerable<(Unit Unit, Segment Segment)> batch)
         {
@@ -87,6 +88,8 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
                 {
                     allResults.AddRange(batchResult.UpdatedTranslations);
                 }
+
+                systemprompt = batchResult.SystemPrompt;
 
                 var duplicates = batchResult.UpdatedTranslations.GroupBy(x => x.TranslationId)
                     .Where(g => g.Count() > 1)
@@ -117,9 +120,10 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         var segments = units.Where(x => x.IsInitial).SelectMany(x => x.Segments);
         result.TotalTranslatable = segments.Count();
 
-        var processedBatches = await units.Batch(batchSize).Process(BatchTranslate);
+        var processedBatches = await units.Where(x => x.IsInitial).Batch(batchSize).Process(BatchTranslate);
         result.ProcessedBatchesCount = batchCounter;
         result.Usage = UsageDto.Sum(usages);
+        result.SystemPrompt = systemprompt;
 
         var updatedCount = 0;
         foreach (var (unit, results) in processedBatches)
@@ -162,8 +166,8 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         }       
 
         return result;
-    }
-    
+    }    
+
     [Action("Translate in background", Description = "Start background translation process for a file. This action will return a batch ID that can be used to download the results later.")]
     public async Task<BackgroundProcessingResponse> TranslateInBackground([ActionParameter] StartBackgroundProcessRequest startBackgroundProcessRequest)
     {
