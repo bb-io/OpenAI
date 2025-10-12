@@ -33,24 +33,20 @@ public class BatchProcessingService(OpenAIClient openAIClient, IFileManagementCl
                     options.Glossary, batch.Select(x => x.Value), options.FilterGlossary);
             }
 
-            var userPrompt = postEdit ? promptBuilderService.BuildPostEditUserPrompt(
+            var userPrompt = promptBuilderService.BuildUserPrompt(batch, postEdit);
+            var systemPrompt = promptBuilderService.BuildSystemPrompt(
                 options.SourceLanguage,
                 options.TargetLanguage,
-                batch,
                 options.Prompt,
                 glossaryPrompt,
-                options.Notes
-                ) : promptBuilderService.BuildProcessUserPrompt(
-                options.SourceLanguage,
-                options.TargetLanguage,
-                batch,
-                options.Prompt,
-                glossaryPrompt,
+                postEdit,
                 options.Notes);
+
+            result.SystemPrompt = systemPrompt;
 
             var messages = new List<ChatMessageDto>
             {
-                new(MessageRoles.System, postEdit ? promptBuilderService.GetPostEditSystemPrompt() : promptBuilderService.GetProcessSystemPrompt()),
+                new(MessageRoles.System, systemPrompt),
                 new(MessageRoles.User, userPrompt)
             };
 

@@ -20,4 +20,7 @@ public class ContentProcessingResult : ITranslateFileOutput
 
     [Display("Processed batches")]
     public int ProcessedBatchesCount { get; set; }
+
+    [Display("System prompt")]
+    public string SystemPrompt { get; set; }
 }

@@ -10,4 +10,5 @@ public class BatchResult
     public UsageDto Usage { get; set; } = new();
     public List<string> ErrorMessages { get; set; } = new();
     public bool IsSuccess { get; set; } = true;
+    public string SystemPrompt { get; set; }
 }

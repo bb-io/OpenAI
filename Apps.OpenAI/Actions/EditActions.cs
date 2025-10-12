@@ -68,6 +68,8 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         var usages = new List<UsageDto>();
         int batchCounter = 0;
 
+        var systemprompt = string.Empty;
+
         async Task<IEnumerable<TranslationEntity>> BatchTranslate(IEnumerable<(Unit Unit, Segment Segment)> batch)
         {
             var idSegments = batch.Select((x, i) => new { Id = i + 1, Value = x }).ToDictionary(x => x.Id.ToString(), x => x.Value.Segment);
@@ -80,6 +82,8 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                 {
                     allResults.AddRange(batchResult.UpdatedTranslations);
                 }
+
+                systemprompt = batchResult.SystemPrompt;
 
                 var duplicates = batchResult.UpdatedTranslations.GroupBy(x => x.TranslationId)
                     .Where(g => g.Count() > 1)
@@ -114,6 +118,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         var processedBatches = await units.Batch(batchSize).Process(BatchTranslate);
         result.ProcessedBatchesCount = batchCounter;
         result.Usage = UsageDto.Sum(usages);
+        result.SystemPrompt = systemprompt;
 
         var updatedCount = 0;
 
