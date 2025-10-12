@@ -20,4 +20,9 @@ public class StartBackgroundProcessRequest : TextChatModelIdentifier
     public string? AdditionalInstructions { get; set; }
     
     public FileReference? Glossary { get; set; }
+    
+    [Display("Bucket size", Description = "Specify the number of source texts to be translated at once. Default value: 25.")]
+    public int? BucketSize { get; set; }
+    
+    public int GetBucketingSize() => BucketSize ?? 25;
 }

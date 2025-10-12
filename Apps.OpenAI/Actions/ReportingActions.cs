@@ -22,7 +22,7 @@ using Blackbird.Filters.Transformations;
 
 namespace Apps.OpenAI.Actions;
 
-[ActionList("Review")]
+[ActionList("Reporting")]
 public class ReportingActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : BaseActions(invocationContext, fileManagementClient)
 {
@@ -97,12 +97,19 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
         segments = segments.Where(x => !x.IsIgnorbale && x.State == SegmentState.Translated).ToList();
 
         var batchRequests = new List<object>();
-        foreach (var pair in segments.Select((segment, index) => new { Segment = segment, Index = index }))
+        var bucketSize = request.GetBucketingSize();
+        var segmentList = segments.ToList();
+        
+        var segmentBuckets = new List<List<Segment>>();
+        for (int i = 0; i < segmentList.Count; i += bucketSize)
         {
-            var sourceText = pair.Segment.GetSource();
-            var targetText = pair.Segment.GetTarget();
-            
-            var systemPrompt = "Perform an LQA analysis and use the MQM error typology format using all 7 dimensions: " +
+            var bucket = segmentList.Skip(i).Take(bucketSize).ToList();
+            segmentBuckets.Add(bucket);
+        }
+        
+        foreach (var (bucket, bucketIndex) in segmentBuckets.Select((bucket, index) => (bucket, index)))
+        {
+            var systemPrompt = "Perform an LQA analysis and use the MQM error typology format using all 7 dimensions for each provided segment: " +
                            "1. Terminology – errors arising when a term does not conform to normative domain or organizational terminology standards or when a term in the target text is not the correct, normative equivalent of the corresponding term in the source text. " +
                            "2. Accuracy – errors occurring when the target text does not accurately correspond to the propositional content of the source text, introduced by distorting, omitting, or adding to the message. " +
                            "3. Linguistic conventions  – errors related to the linguistic well-formedness of the text, including problems with grammaticality, spelling, punctuation, and mechanical correctness. " +
@@ -110,28 +117,40 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
                            "5. Locale conventions – errors occurring when the translation product violates locale-specific content or formatting requirements for data elements. " +
                            "6. Audience appropriateness – errors arising from the use of content in the translation product that is invalid or inappropriate for the target locale or target audience. " +
                            "7. Design and markup – errors related to the physical design or presentation of a translation product, including character, paragraph, and UI element formatting and markup, integration of text with graphical elements, and overall page or window layout. " +
-                           "Provide a quality rating for each dimension from 0 (completely bad) to 10 (perfect). You are an expert linguist and your task is to perform a Language Quality Assessment on input sentences. " +
+                           "Provide a quality rating for each dimension from 0 (completely bad) to 10 (perfect). You are an expert linguist and your task is to perform a Language Quality Assessment on input segments. " +
                            "Try to propose a fixed translation that would have no LQA errors. " +
-                           "Formatting: use line spacing between each category. The category name should be bold.";
+                           "Formatting: use line spacing between each category. The category name should be bold. Return the MQM reports in the specified JSON format.";
 
             if (request.AdditionalInstructions != null)
                 systemPrompt = $"{systemPrompt} {request.AdditionalInstructions}";
 
-            var userPrompt =
-                $"{(content.SourceLanguage != null ? $"The {content.SourceLanguage} " : "")}\"{sourceText}\" was translated as \"{targetText}\"{(content.TargetLanguage != null ? $" into {request.TargetLanguage}" : "")}.{(request.TargetAudience != null ? $" The target audience is {request.TargetAudience}" : "")}";
+            var userPrompt = "Analyze the following segments:\n\n";
+            
+            foreach (var (segment, segmentIndex) in bucket.Select((seg, idx) => (seg, idx)))
+            {
+                var globalIndex = bucketIndex * bucketSize + segmentIndex;
+                var sourceText = segment.GetSource();
+                var targetText = segment.GetTarget();
+                
+                userPrompt += $"ID: {globalIndex}\n" +
+                             $"Source ({content.SourceLanguage}): {sourceText}\n" +
+                             $"Translation ({content.TargetLanguage}): {targetText}\n" +
+                             $"{(request.TargetAudience != null ? $"Target audience: {request.TargetAudience}\n" : "")}\n";
+            }
 
             if (request.Glossary != null)
             {
-                var glossaryPromptPart = await GetGlossaryPromptPart(request.Glossary, sourceText, true);
+                var combinedText = string.Join(" ", bucket.Select(s => s.GetSource()));
+                var glossaryPromptPart = await GetGlossaryPromptPart(request.Glossary, combinedText, true);
                 if (!string.IsNullOrEmpty(glossaryPromptPart))
                 {
-                    userPrompt += glossaryPromptPart;
+                    userPrompt += $"\nGlossary terms:\n{glossaryPromptPart}";
                 }
             }
             
             var batchRequest = new
             {
-                custom_id = pair.Index.ToString(),
+                custom_id = bucketIndex.ToString(),
                 method = "POST",
                 url = "/v1/chat/completions",
                 body = new
@@ -149,7 +168,8 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
                             role = "user",
                             content = userPrompt
                         }
-                    }
+                    },
+                    response_format = ResponseFormats.GetMqmReportResponseFormat()
                 }
             };
 

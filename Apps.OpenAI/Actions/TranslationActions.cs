@@ -198,37 +198,62 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
             glossaryLookup = CreateGlossaryLookup(blackbirdGlossary);
         }
         
-        var systemPromptBase = $"Translate the following text from {content.SourceLanguage} to {content.TargetLanguage}. " +
-                            "Preserve the original format, tags, and structure. ";
+        var systemPromptBase = $"Translate the following texts from {content.SourceLanguage} to {content.TargetLanguage}. " +
+                            "Preserve the original format, tags, and structure. Return the translations in the specified JSON format.";
                             
         if (startBackgroundProcessRequest.AdditionalInstructions != null)
         {
-            systemPromptBase += $"Additional instructions: {startBackgroundProcessRequest.AdditionalInstructions}. ";
+            systemPromptBase += $" Additional instructions: {startBackgroundProcessRequest.AdditionalInstructions}.";
         }
         
         if(glossaryLookup != null)
         {
-            systemPromptBase += "Use the provided glossary to ensure accurate translations of specific terms.";
+            systemPromptBase += " Use the provided glossary to ensure accurate translations of specific terms.";
         }
         
-        foreach (var pair in segments.Select((segment, index) => new { Segment = segment, Index = index }))
+        var bucketSize = startBackgroundProcessRequest.GetBucketingSize();
+        var segmentList = segments.ToList();
+        
+        // Create buckets by splitting segments into chunks
+        var segmentBuckets = new List<List<Segment>>();
+        for (int i = 0; i < segmentList.Count; i += bucketSize)
         {
-            var sourceText = pair.Segment.GetSource();
-            var userPrompt = sourceText;
+            var bucket = segmentList.Skip(i).Take(bucketSize).ToList();
+            segmentBuckets.Add(bucket);
+        }
+        
+        foreach (var (bucket, bucketIndex) in segmentBuckets.Select((bucket, index) => (bucket, index)))
+        {
+            var segmentTexts = new List<string>();
+            var segmentIds = new List<string>();
             
-            var systemPrompt = systemPromptBase;
+            foreach (var (segment, segmentIndex) in bucket.Select((seg, idx) => (seg, idx)))
+            {
+                var globalIndex = bucketIndex * bucketSize + segmentIndex;
+                var sourceText = segment.GetSource();
+                segmentTexts.Add(sourceText);
+                segmentIds.Add(globalIndex.ToString());
+            }
+            
+            var userPrompt = "Translate the following texts:\n\n";
+            for (int i = 0; i < segmentTexts.Count; i++)
+            {
+                userPrompt += $"ID: {segmentIds[i]}\nText: {segmentTexts[i]}\n\n";
+            }
+            
             if (glossaryLookup != null)
             {
-                var glossaryPromptPart = GetOptimizedGlossaryPromptPart(glossaryLookup, sourceText);
+                var combinedText = string.Join(" ", segmentTexts);
+                var glossaryPromptPart = GetOptimizedGlossaryPromptPart(glossaryLookup, combinedText);
                 if (!string.IsNullOrEmpty(glossaryPromptPart))
                 {
-                    userPrompt += "\n" + glossaryPromptPart;
+                    userPrompt += $"\nGlossary terms:\n{glossaryPromptPart}";
                 }
             }
             
             var batchRequest = new
             {
-                custom_id = pair.Index.ToString(),
+                custom_id = bucketIndex.ToString(),
                 method = "POST",
                 url = "/v1/chat/completions",
                 body = new
@@ -239,14 +264,15 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
                         new
                         {
                             role = "system",
-                            content = systemPrompt
+                            content = systemPromptBase
                         },
                         new
                         {
                             role = "user",
                             content = userPrompt
                         }
-                    }
+                    },
+                    response_format = ResponseFormats.GetXliffResponseFormat()
                 }
             };
 
