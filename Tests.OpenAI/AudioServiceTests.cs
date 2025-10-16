@@ -13,27 +13,33 @@ namespace Tests.OpenAI
         [TestMethod]
         public async Task CreateTranscriptionAsync()
         {
-            var handler = new AudioActions(InvocationContext, FileManagementClient);
-            var data = await handler.CreateTranscription(
-                new TranscriptionRequest
-                {
-                    File = new FileReference { Name = "tts delorean.mp3" },
+            foreach (var context in InvocationContext)
+            {
+                var handler = new AudioActions(context, FileManagementClient);
+                var data = await handler.CreateTranscription(
+                    new TranscriptionRequest
+                    {
+                        File = new FileReference { Name = "tts delorean.mp3" },
 
-                    Language = "en",
-                });
+                        Language = "en",
+                    });
 
-            Console.WriteLine(data.Transcription);
-            Assert.IsNotNull(data);
+                Console.WriteLine(data.Transcription);
+                Assert.IsNotNull(data);
+            }
         }
 
         [TestMethod]
         public async Task CreateSpeechAsync()
         {
-            var handler = new AudioActions(InvocationContext, FileManagementClient);
-            var data = await handler.CreateSpeech(new SpeechCreationModelIdentifier { ModelId = "tts-1" },
-                new CreateSpeechRequest { InputText = "Hello dear friend! How are you? It`s been a while" });
+            foreach (var context in InvocationContext)
+            {
+                var handler = new AudioActions(context, FileManagementClient);
+                var data = await handler.CreateSpeech(new SpeechCreationModelIdentifier { ModelId = "tts-1" },
+                    new CreateSpeechRequest { InputText = "Hello dear friend! How are you? It`s been a while" });
 
-            Assert.IsNotNull(data);
+                Assert.IsNotNull(data);
+            }
         }
     }
 }

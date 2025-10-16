@@ -14,63 +14,72 @@ public class ChatActionsTests : TestBase
     [TestMethod]
     public async Task ChatMessageRequest_WithSimpleTextMessage_ReturnsValidResponse()
     {
-        var actions = new ChatActions(InvocationContext, FileManagementClient);
-        var result = await actions.ChatMessageRequest(
-            new TextChatModelIdentifier 
-            { 
-                ModelId = "gpt-5"
-            },
-            new ChatRequest
-            {
-                Message = "Who are you? State your model (are you GPT5?), creator, and your main responsibilities."
-            },
-            new GlossaryRequest());
+        foreach (var context in InvocationContext)
+        {
+            var actions = new ChatActions(context, FileManagementClient);
+            var result = await actions.ChatMessageRequest(
+                new TextChatModelIdentifier 
+                { 
+                    ModelId = "gpt-5"
+                },
+                new ChatRequest
+                {
+                    Message = "Who are you? State your model (are you GPT5?), creator, and your main responsibilities."
+                },
+                new GlossaryRequest());
 
-        Console.WriteLine(result.Message);
-        Assert.IsNotNull(result.Message);
+            Console.WriteLine(result.Message);
+            Assert.IsNotNull(result.Message);
+        }
     }
 
     [TestMethod]
     public async Task ChatMessageRequest_WithHtmlFile_ReturnsValidResponse()
     {
-        var actions = new ChatActions(InvocationContext, FileManagementClient);
-        var result = await actions.ChatMessageRequest(
-            new TextChatModelIdentifier
-            {
-                ModelId = "gpt-5"
-            },
-            new ChatRequest
-            {
-                Message = "Give a couple of SEO keywords",
-                File = new Blackbird.Applications.Sdk.Common.Files.FileReference { 
-                    Name = "contentful.html",
-                    ContentType = "text/html"
-                }
-            },
-            new GlossaryRequest());
+        foreach (var context in InvocationContext)
+        {
+            var actions = new ChatActions(context, FileManagementClient);
+            var result = await actions.ChatMessageRequest(
+                new TextChatModelIdentifier
+                {
+                    ModelId = "gpt-5"
+                },
+                new ChatRequest
+                {
+                    Message = "Give a couple of SEO keywords",
+                    File = new Blackbird.Applications.Sdk.Common.Files.FileReference { 
+                        Name = "contentful.html",
+                        ContentType = "text/html"
+                    }
+                },
+                new GlossaryRequest());
 
-        Console.WriteLine(result.Message);
-        Assert.IsNotNull(result.Message);
+            Console.WriteLine(result.Message);
+            Assert.IsNotNull(result.Message);
+        }
     }
 
     [TestMethod]
     public async Task ChatMessageRequest_WithAudioFile_ReturnsValidResponse()
     {
-        var actions = new ChatActions(InvocationContext, FileManagementClient);
-        var result = await actions.ChatMessageRequest(
-            new TextChatModelIdentifier { ModelId = "gpt-4o" },
-            new ChatRequest
-            {
-                Message = "Answer to the audio file!",
-                File = new Blackbird.Applications.Sdk.Common.Files.FileReference 
-                { 
-                    Name = "tts delorean.mp3", 
-                    ContentType = "audio/mp3" 
-                }
-            },
-            new GlossaryRequest());
+        foreach (var context in InvocationContext)
+        {
+            var actions = new ChatActions(context, FileManagementClient);
+            var result = await actions.ChatMessageRequest(
+                new TextChatModelIdentifier { ModelId = "gpt-4o" },
+                new ChatRequest
+                {
+                    Message = "Answer to the audio file!",
+                    File = new Blackbird.Applications.Sdk.Common.Files.FileReference 
+                    { 
+                        Name = "tts delorean.mp3", 
+                        ContentType = "audio/mp3" 
+                    }
+                },
+                new GlossaryRequest());
 
-        Console.WriteLine(result.Message);
-        Assert.IsNotNull(result.Message);
+            Console.WriteLine(result.Message);
+            Assert.IsNotNull(result.Message);
+        }
     }
 }
