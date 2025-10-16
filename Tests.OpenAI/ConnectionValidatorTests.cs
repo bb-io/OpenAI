@@ -12,8 +12,9 @@ public class ConnectionValidatorTests : TestBase
     {
         var validator = new ConnectionValidator();
 
-        var result = await validator.ValidateConnection(Creds, CancellationToken.None);
-        Assert.IsTrue(result.IsValid);
+        var tasks = CredentialGroups.Select(x => validator.ValidateConnection(x, CancellationToken.None).AsTask());
+        var results = await Task.WhenAll(tasks);
+        Assert.IsTrue(results.All(x => x.IsValid));
     }
 
     [TestMethod]
@@ -21,7 +22,7 @@ public class ConnectionValidatorTests : TestBase
     {
         var validator = new ConnectionValidator();
 
-        var newCreds = Creds.Select(x => new AuthenticationCredentialsProvider(x.KeyName, x.Value + "_incorrect"));
+        var newCreds = CredentialGroups.First().Select(x => new AuthenticationCredentialsProvider(x.KeyName, x.Value + "_incorrect"));
         var result = await validator.ValidateConnection(newCreds, CancellationToken.None);
         Assert.IsFalse(result.IsValid);
     }

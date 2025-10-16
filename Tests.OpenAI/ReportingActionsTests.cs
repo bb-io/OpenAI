@@ -12,20 +12,23 @@ public class ReportingActionsTests : TestBase
     [TestMethod]
     public async Task CreateMqmReportInBackground_XliffFile_Success()
     {
-        var actions = new ReportingActions(InvocationContext, FileManagementClient);
-        var request = new CreateMqmReportInBackgroundRequest()
+        foreach (var context in InvocationContext)
         {
-            ModelId = "gpt-4.1",
-            File = new FileReference
+            var actions = new ReportingActions(context, FileManagementClient);
+            var request = new CreateMqmReportInBackgroundRequest()
             {
-                Name = "mqm.xlf"
-            },
-            TargetLanguage = "fr"
-        };
-        
-        var result = await actions.CreateMqmReportInBackground(request);
-        
-        Assert.IsNotNull(result);
-        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+                ModelId = "gpt-4.1",
+                File = new FileReference
+                {
+                    Name = "mqm.xlf"
+                },
+                TargetLanguage = "fr"
+            };
+            
+            var result = await actions.CreateMqmReportInBackground(request);
+            
+            Assert.IsNotNull(result);
+            Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        }
     }
 }

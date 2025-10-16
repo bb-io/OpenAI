@@ -1,8 +1,15 @@
 {
-  "ConnectionDefinition": {
-    "API key": "",
-    "Deployment": "",
-    "URL": ""
-  },
+  "ConnectionDefinition": [
+    {
+      "Connection type": "Azure OpenAI",
+      "API key": "",
+      "Deployment": "",
+      "URL": ""
+    },
+    {
+      "Connection type": "OpenAI",
+      "API key": ""
+    }
+  ],
   "TestFolder": "C:\\Users\\..."
 }
