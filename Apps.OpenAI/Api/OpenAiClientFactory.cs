@@ -8,7 +8,7 @@ using Blackbird.Applications.Sdk.Common.Authentication;
 
 namespace Apps.OpenAI.Api;
 
-public class OpenAiClientFactory : IOpenAiClientFactory
+public class OpenAiClientFactory
 {
     public IOpenAiClient Create(IEnumerable<AuthenticationCredentialsProvider> credentials)
     {

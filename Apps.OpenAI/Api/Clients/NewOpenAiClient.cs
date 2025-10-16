@@ -1,6 +1,7 @@
 ﻿using Apps.OpenAI.Api.Interfaces;
 using Apps.OpenAI.Api.Requests;
 using Apps.OpenAI.Constants;
+using Apps.OpenAI.Utils;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Connections;
 using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
@@ -48,6 +49,6 @@ public class NewOpenAiClient : BlackBirdRestClient, IOpenAiClient
 
     protected override Exception ConfigureErrorException(RestResponse response)
     {
-        throw new NotImplementedException();
+        return ErrorHelper.ConfigureErrorException(response, JsonSettings);
     }
 }
