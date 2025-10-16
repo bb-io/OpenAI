@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Apps.OpenAI.Api;
-using Apps.OpenAI.Constants;
+using Apps.OpenAI.Api.Requests;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.PostEdit;
 using Apps.OpenAI.Models.Requests.Chat;

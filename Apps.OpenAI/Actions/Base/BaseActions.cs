@@ -23,10 +23,9 @@ using System.Collections.Generic;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Responses.Batch;
-using Apps.OpenAI.Models.Responses.Chat;
-using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
 using Blackbird.Applications.Sdk.Utils.Extensions.Http;
+using Apps.OpenAI.Api.Requests;
 
 namespace Apps.OpenAI.Actions.Base;
 

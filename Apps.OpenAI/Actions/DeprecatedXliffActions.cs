@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
-using Apps.OpenAI.Api;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Identifiers;
@@ -14,15 +12,9 @@ using Apps.OpenAI.Models.Responses.Chat;
 using Apps.OpenAI.Utils;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
-using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using Blackbird.Applications.Sdk.Glossaries.Utils.Converters;
-using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
-using RestSharp;
-using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
 using System.Net.Mime;
 using Apps.OpenAI.Models.Entities;
 using MoreLinq;
@@ -30,6 +22,7 @@ using Apps.OpenAI.Models.Requests.Xliff;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Apps.OpenAI.Services;
 using Apps.OpenAI.Models.PostEdit;
+using Apps.OpenAI.Api;
 
 namespace Apps.OpenAI.Actions;
 

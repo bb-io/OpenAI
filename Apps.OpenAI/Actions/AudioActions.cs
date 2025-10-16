@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
-using Apps.OpenAI.Api;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests;
@@ -16,6 +15,7 @@ using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Newtonsoft.Json;
 using RestSharp;
+using Apps.OpenAI.Api.Requests;
 
 namespace Apps.OpenAI.Actions;
 

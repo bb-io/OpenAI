@@ -1,6 +1,8 @@
 {
   "ConnectionDefinition": {
-    "API key": ""
+    "API key": "",
+    "Deployment": "",
+    "URL": ""
   },
   "TestFolder": "C:\\Users\\..."
 }

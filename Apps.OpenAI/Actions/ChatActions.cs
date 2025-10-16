@@ -17,7 +17,6 @@ using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Filters.Content;
 using Blackbird.Filters.Transformations;
 using Blackbird.Filters.Xliff.Xliff2;
-using Blackbird.Filters.Coders;
 
 namespace Apps.OpenAI.Actions;
 
@@ -179,5 +178,4 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         return messages;
     }
-
 }

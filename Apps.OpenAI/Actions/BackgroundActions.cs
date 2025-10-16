@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
-using Apps.OpenAI.Api;
+using Apps.OpenAI.Api.Requests;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Entities;
 using Apps.OpenAI.Models.Requests.Background;
