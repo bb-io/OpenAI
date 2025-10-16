@@ -8,15 +8,13 @@ using Blackbird.Applications.Sdk.Utils.RestSharp;
 using RestSharp;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Apps.OpenAI.Api.Clients;
 
 public class AzureOpenAiClient : BlackBirdRestClient, IOpenAiClient
 {
-    private readonly string _apiKey;
-    private readonly string _deployment;
+    private readonly IEnumerable<AuthenticationCredentialsProvider> _credentials;
 
     public AzureOpenAiClient(IEnumerable<AuthenticationCredentialsProvider> credentials) : base(
         new()
@@ -27,27 +25,23 @@ public class AzureOpenAiClient : BlackBirdRestClient, IOpenAiClient
         }
     )
     {
-        _apiKey = credentials.First(x => x.KeyName == CredNames.ApiKey).Value;
-        _deployment = credentials.First(x => x.KeyName == CredNames.Deployment).Value;
+        _credentials = credentials;
     }
 
     public async ValueTask<ConnectionValidationResponse> ValidateConnection()
     {
-        var request = new AzureOpenAiRequest("/chat/completions", Method.Post, _apiKey);
-        request.AddBody(
-            new
+        var body = new Dictionary<string, object>
+        {
+            ["messages"] = new[]
             {
-                model = _deployment,
-                messages = new []
+                new
                 {
-                    new
-                    {
-                        role = "user",
-                        content = "hello world!"
-                    }
+                    role = "user",
+                    content = "hello world!"
                 }
-            }
-        );
+            },
+        };
+        var request = new AzureOpenAiRequest("/chat/completions", Method.Post, body, _credentials);
 
         try
         {
