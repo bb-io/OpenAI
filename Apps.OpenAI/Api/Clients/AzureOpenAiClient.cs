@@ -16,22 +16,38 @@ namespace Apps.OpenAI.Api.Clients;
 public class AzureOpenAiClient : BlackBirdRestClient, IOpenAiClient
 {
     private readonly string _apiKey;
+    private readonly string _deployment;
 
     public AzureOpenAiClient(IEnumerable<AuthenticationCredentialsProvider> credentials) : base(
         new()
         {
             ThrowOnAnyError = false,
-            BaseUrl = new Uri(credentials.Get(CredNames.Url).Value),
+            BaseUrl = new Uri($"{credentials.Get(CredNames.Url).Value}/openai/v1"),
             MaxTimeout = (int)TimeSpan.FromMinutes(15).TotalMilliseconds
         }
     )
     {
         _apiKey = credentials.First(x => x.KeyName == CredNames.ApiKey).Value;
+        _deployment = credentials.First(x => x.KeyName == CredNames.Deployment).Value;
     }
 
     public async ValueTask<ConnectionValidationResponse> ValidateConnection()
     {
-        var request = new AzureOpenAiRequest("/chat/completions?api-version=2024-06-01", Method.Get, _apiKey);
+        var request = new AzureOpenAiRequest("/chat/completions", Method.Post, _apiKey);
+        request.AddBody(
+            new
+            {
+                model = _deployment,
+                messages = new []
+                {
+                    new
+                    {
+                        role = "user",
+                        content = "hello world!"
+                    }
+                }
+            }
+        );
 
         try
         {
