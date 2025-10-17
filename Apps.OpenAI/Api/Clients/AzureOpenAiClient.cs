@@ -38,18 +38,7 @@ public class AzureOpenAiClient : BlackBirdRestClient, IOpenAiClient
 
     public async ValueTask<ConnectionValidationResponse> ValidateConnection()
     {
-        var body = new Dictionary<string, object>
-        {
-            ["messages"] = new[]
-            {
-                new
-                {
-                    role = "user",
-                    content = "hello world!"
-                }
-            },
-        };
-        var request = new AzureOpenAiRequest("/chat/completions", Method.Post, body, _credentials);
+        var request = new AzureOpenAiRequest("/models", Method.Get, _credentials);
 
         try
         {
