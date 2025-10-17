@@ -19,7 +19,7 @@ public class TestBase
 
     private void InitializeCredentials()
     {
-        var config = new ConfigurationBuilder().AddJsonFile("appsettings.json.example").Build();
+        var config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
         CredentialGroups = config.GetSection("ConnectionDefinition")
             .GetChildren()
             .Select(section =>
@@ -43,7 +43,7 @@ public class TestBase
 
     private void InitializeFileManager()
     {
-        var config = new ConfigurationBuilder().AddJsonFile("appsettings.json.example").Build();
+        var config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
         var folderLocation = config.GetSection("TestFolder").Value;
         FileManagementClient = new FileManagementClient(folderLocation!);
     }
