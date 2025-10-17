@@ -6,27 +6,52 @@ Blackbird is the new automation backbone for the language technology industry. B
 
 <!-- begin docs -->
 
-This OpenAI app in Blackbird grants you access to all API endpoints and models that OpenAI has to offer from completion, chat, edit to DALL-E image generation and Whisper. The app supports all models available in the OpenAI API, including the latest models like gpt-5, gpt-5-nano, gpt-4.1, o3
+This OpenAI app in Blackbird gives you access to all OpenAI API endpoints and models, including completions, chat, edits, DALL-E image generation, and Whisper. You can use it with both OpenAI's official API and Azure OpenAI endpoints, supporting all available models, including the latest such as gpt-5, gpt-5-nano, gpt-4.1, and o3.
 
 ## Before setting up
 
 Before you can connect you need to make sure that:
 
+### For OpenAI actions
+
 - You have an [OpenAI account](https://platform.openai.com/signup).
-- You have generated a new API key in the [API keys](https://platform.openai.com/account/api-keys) section, granting programmatic access to OpenAI models on a 'pay-as-you-go' basis. With this, you only pay for your actual usage, which [starts at $0,002 per 1,000 tokens](https://openai.com/pricing) for the fastest chat model. Note that the ChatGPT Plus subscription plan is not applicable for this; it only provides access to the limited web interface at chat.openai.com and doesn't include OpenAI API access. Ensure you copy the entire API key, displayed once upon creation, rather than an abbreviated version. The API key has the shape `sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`.
+- You have generated a new `API key` in the [API keys](https://platform.openai.com/account/api-keys) section, granting programmatic access to OpenAI models on a 'pay-as-you-go' basis. With this, you only pay for your actual usage, which [starts at $0,002 per 1,000 tokens](https://openai.com/pricing) for the fastest chat model. Note that the ChatGPT Plus subscription plan is not applicable for this; it only provides access to the limited web interface at chat.openai.com and doesn't include OpenAI API access. Ensure you copy the entire API key, displayed once upon creation, rather than an abbreviated version. The API key has the shape `sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`.
 - Your API account has a payment method and a positive balance, with a minimum of $5. You can set this up in the [Billing settings](https://platform.openai.com/account/billing/overview) section.
 
 **Note**: Blackbird by default uses the latest models in its actions. If your subscription does not support these models then you have to add the models you can use in every Blackbird action.
 
+### For Azure OpenAI actions
+
+- You have the `Resource URL` for your Azure OpenAI account.
+- You know `Deployment name` and `API key` for your Azure OpenAI account.
+
+You can find how to create and deploy an Azure OpenAI Service resource [here](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/create-resource?pivots=web-portal).
+
 ## Connecting
 
-1. Navigate to apps and search for OpenAI.
-2. Click _Add Connection_.
-3. Name your connection for future reference e.g. 'My OpenAI connection'.
-4. Fill in your API key obtained earlier.
-5. Click _Connect_.
+Navigate to apps and search for OpenAI and click _Add Connection_. This application has two connection types: OpenAI and Azure OpenAI. You can select the connection you need from the dropdown menu. Please give your connection a name for future reference, e.g. 'My OpenAI Connection'.
 
-![1694611695232](image/README/1694611695232.png)
+![connection](image/README/common.png)
+
+### OpenAI
+
+1. Select `OpenAI` connection type.
+2. Fill in your `API key` obtained earlier.
+3. Click _Connect_.
+4. Verify that connection was added successfully.
+
+![connection](image/README/openai.png)
+
+### Azure OpenAI
+
+1. Select `Azure OpenAI` connection type.
+2. Enter the `Resource URL`, `Deployment name`, and `API key` for your Azure OpenAI account.
+3. Click _Connect_.
+4. Verify that connection was added successfully.
+
+**Note**: Pay attention to your `Resource URL` connection parameter. Sometimes the correct URL could have some path after a domain name. For example: https://example.openai.azure.com/**openai**
+
+![connection](image/README/azure.png)
 
 ## Actions
 
@@ -40,7 +65,7 @@ All textual actions have the following optional input values in order to modify 
 - Frequency penalty
 - Reasoning effort
 
-For more in-depth information about most actions consult the [OpenAI API reference](https://platform.openai.com/docs/api-reference).
+For more in-depth information about most actions consult the [OpenAI API reference](https://platform.openai.com/docs/api-reference) or [Azure OpenAI API reference](https://learn.microsoft.com/en-us/azure/ai-foundry/openai/latest).
 
 Different actions support various models that are appropriate for the given task (e.g. gpt-4 model for **Chat** action). Action groups and the corresponding models recommended for them are shown in the table below.
 
@@ -59,8 +84,10 @@ Do you have a cool use case that we can turn into an action? Let us know!
 
 ### Chat
 
-- **Chat** given a chat message, returns a response. You can optionally add a system prompt and/or an image. Also you can add collection of texts and it will be added to the prompt along with the message. Also you can optionally add Glossary as well. Useful if you want to add collection of messages to the prompt.
+- **Chat** given a chat message, returns a response. You can optionally add a system prompt and/or an image. Also you can add collection of texts and it will be added to the prompt along with the message. Also you can optionally add Glossary as well. Useful if you want to add collection of messages to the prompt. 
 - **Chat with system prompt** the same as above except that the system prompt is mandatory.
+
+**Note**: Azure OpenAI does not support audio files for chat actions.
 
 ### Translation
 
