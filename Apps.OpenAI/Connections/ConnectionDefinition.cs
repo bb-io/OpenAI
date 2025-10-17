@@ -9,15 +9,12 @@ namespace Apps.OpenAI.Connections;
 
 public class ConnectionDefinition : IConnectionDefinition
 {
-    private const string OpenAiConnectionName = "Developer API token";
-    private const string AzureOpenAiConnectionName = "AzureConnection";
-
     public IEnumerable<ConnectionPropertyGroup> ConnectionPropertyGroups => new List<ConnectionPropertyGroup>
     {
         new()
         {
             DisplayName = "OpenAI",
-            Name = OpenAiConnectionName,
+            Name = ConnectionTypes.OpenAi,
             AuthenticationType = ConnectionAuthenticationType.Undefined,
             ConnectionProperties = new List<ConnectionProperty>
             {
@@ -27,7 +24,7 @@ public class ConnectionDefinition : IConnectionDefinition
         new()
         {
             DisplayName = "Azure OpenAI",
-            Name = AzureOpenAiConnectionName,
+            Name = ConnectionTypes.AzureOpenAi,
             AuthenticationType = ConnectionAuthenticationType.Undefined,
             ConnectionProperties = new List<ConnectionProperty>
             {
@@ -44,8 +41,7 @@ public class ConnectionDefinition : IConnectionDefinition
 
         var connectionType = values[nameof(ConnectionPropertyGroup)] switch
         {
-            AzureOpenAiConnectionName => ConnectionTypes.AzureOpenAi,
-            OpenAiConnectionName => ConnectionTypes.OpenAi,
+            var ct when ConnectionTypes.SupportedConnectionTypes.Contains(ct) => ct,
             _ => throw new Exception($"Unknown connection type: {values[nameof(ConnectionPropertyGroup)]}")
         };
 

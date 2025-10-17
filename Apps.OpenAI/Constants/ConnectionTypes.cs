@@ -1,7 +1,11 @@
-﻿namespace Apps.OpenAI.Constants;
+﻿using System.Collections.Generic;
+
+namespace Apps.OpenAI.Constants;
 
 public static class ConnectionTypes
 {
-    public const string OpenAi = "OpenAI";
-    public const string AzureOpenAi = "Azure OpenAI";
+    public const string OpenAi = "Developer API token";
+    public const string AzureOpenAi = "AzureConnection";
+
+    public static readonly IEnumerable<string> SupportedConnectionTypes = [OpenAi, AzureOpenAi];
 }

@@ -1,13 +1,13 @@
 {
   "ConnectionDefinition": [
     {
-      "Connection type": "Azure OpenAI",
+      "Connection type": "AzureConnection",
       "API key": "",
       "Deployment": "",
       "URL": ""
     },
     {
-      "Connection type": "OpenAI",
+      "Connection type": "Developer API token", // OpenAI
       "API key": ""
     }
   ],
