@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
 	  <Product>Open AI (Merged)</Product>
 	  <Description>Creating safe artificial general intelligence that benefits all of humanity</Description>
-	  <Version>2.7.21</Version>
+	  <Version>2.7.23</Version>
 	  <AssemblyName>OpenAiMerged</AssemblyName>
   </PropertyGroup>
 

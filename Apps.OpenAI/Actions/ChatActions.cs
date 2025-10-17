@@ -48,7 +48,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         
         while (counter < MaxCompletionRetries)
         {
-            var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel(), input);
+            var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input);
             completeMessage += response.Choices.First().Message.Content;
 
             usage += response.Usage;

@@ -232,7 +232,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
             { "frequency_penalty", input?.FrequencyPenalty ?? 0 }
         };
 
-        if (!model.Contains("gpt-5"))
+        if (!string.IsNullOrEmpty(model) && !model.Contains("gpt-5"))
         {
             body.AppendIfNotNull("temperature", input.Temperature);
         }
