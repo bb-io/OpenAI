@@ -8,7 +8,7 @@ namespace Apps.OpenAI.Models.Identifiers;
 public class TextChatModelIdentifier
 {
     [Display("Model"), DataSource(typeof(TextChatModelDataSourceHandler))]
-    public string ModelId { get; set; } = string.Empty;
+    public string? ModelId { get; set; }
 
     public string GetModel()
     {

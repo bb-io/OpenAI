@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Apps.OpenAI.Actions.Base;
+﻿using Apps.OpenAI.Actions.Base;
+using Apps.OpenAI.Api.Clients;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Identifiers;
@@ -11,12 +7,19 @@ using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Models.Responses.Chat;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
+using Blackbird.Applications.Sdk.Common.Exceptions;
+using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
-using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
+using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Filters.Content;
 using Blackbird.Filters.Transformations;
 using Blackbird.Filters.Xliff.Xliff2;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Apps.OpenAI.Actions;
 
@@ -25,24 +28,19 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     : BaseActions(invocationContext, fileManagementClient)
 {
     private const int MaxCompletionRetries = 3;
-    
+
     [Action("Chat", Description = "Gives a response given a chat message")]
-    public async Task<ChatResponse> ChatMessageRequest([ActionParameter] TextChatModelIdentifier modelIdentifier,
+    public async Task<ChatResponse> ChatMessageRequest(
+        [ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] ChatRequest input,
         [ActionParameter] GlossaryRequest glossary)
     {
-        if (input.File != null)
-        {
-            if (input.File.ContentType.StartsWith("audio") || input.File.Name.EndsWith("wav") || input.File.Name.EndsWith("mp3"))
-            {
-                modelIdentifier.ModelId = "gpt-4o-audio-preview";
-            }
-            if (input.File.ContentType.StartsWith("image") || input.File.Name.EndsWith("png") || input.File.Name.EndsWith("jpg") || input.File.Name.EndsWith("jpeg")|| input.File.Name.EndsWith("webp") || input.File.Name.EndsWith("gif"))
-            {
-                modelIdentifier.ModelId = "gpt-4-vision-preview";
-            }
-        }
-        
+        if (NewClient is NewOpenAiClient)
+            HandleOpenAiFileInput(modelIdentifier, input.File);
+
+        if (NewClient is AzureOpenAiClient)
+            HandleAzureFileInput(input.File);
+
         var messages = await GenerateChatMessages(input, glossary);
         var completeMessage = string.Empty;
         var usage = new UsageDto();
@@ -178,4 +176,47 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
         return messages;
     }
+
+    private static void HandleOpenAiFileInput(TextChatModelIdentifier modelIdentifier, FileReference? file)
+    {
+        if (string.IsNullOrEmpty(modelIdentifier.ModelId))
+        {
+            throw new PluginMisconfigurationException("Please select a model to execute this action using the OpenAI connection");
+        }
+
+        if (file == null) return;
+
+        var name = file.Name.ToLowerInvariant();
+        var type = file.ContentType.ToLowerInvariant();
+
+        if (IsAudioFile(name, type))
+        {
+            modelIdentifier.ModelId = "gpt-4o-audio-preview";
+        }
+        else if (IsImageFile(name, type))
+        {
+            modelIdentifier.ModelId = "gpt-4-vision-preview";
+        }
+    }
+
+    private static void HandleAzureFileInput(FileReference? file)
+    {
+        if (file == null) return;
+
+        var name = file.Name.ToLowerInvariant();
+        var type = file.ContentType.ToLowerInvariant();
+
+        if (IsAudioFile(name, type))
+        {
+            throw new PluginMisconfigurationException(
+                "Azure OpenAI does not support chat actions with audio files. Please use OpenAI for such tasks"
+            );
+        }
+    }
+
+    private static bool IsAudioFile(string name, string contentType) =>
+        contentType.StartsWith("audio") || name.EndsWith(".wav") || name.EndsWith(".mp3");
+
+    private static bool IsImageFile(string name, string contentType) =>
+        contentType.StartsWith("image") || new[] { ".png", ".jpg", ".jpeg", ".webp", ".gif" }.Any(name.EndsWith);
 }

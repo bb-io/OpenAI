@@ -1,8 +1,10 @@
-﻿using RestSharp;
-using System.Linq;
-using Apps.OpenAI.Constants;
-using System.Collections.Generic;
+﻿using Apps.OpenAI.Constants;
 using Blackbird.Applications.Sdk.Common.Authentication;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
+using RestSharp;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Apps.OpenAI.Api.Requests;
 
@@ -20,6 +22,12 @@ public class AzureOpenAiRequest : RestRequest
 
         string deployment = credentials.First(x => x.KeyName == CredNames.Deployment).Value;
         body["model"] = deployment;
-        this.AddJsonBody(body);
+
+        var json = JsonConvert.SerializeObject(body, new JsonSerializerSettings
+        {
+            ContractResolver = new CamelCasePropertyNamesContractResolver(),
+            NullValueHandling = NullValueHandling.Ignore,
+        });
+        this.AddStringBody(json, DataFormat.Json);
     }
 }

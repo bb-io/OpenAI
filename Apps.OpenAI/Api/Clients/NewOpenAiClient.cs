@@ -1,6 +1,7 @@
 ﻿using Apps.OpenAI.Api.Interfaces;
 using Apps.OpenAI.Api.Requests;
 using Apps.OpenAI.Constants;
+using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Utils;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Connections;
@@ -26,6 +27,12 @@ public class NewOpenAiClient : BlackBirdRestClient, IOpenAiClient
     {
         var key = credentials.Get(CredNames.ApiKey).Value;
         this.AddDefaultHeader("Authorization", $"Bearer {key}");
+    }
+
+    public async Task<ChatCompletionDto> ExecuteChatCompletion(Dictionary<string, object> input, string model)
+    {
+        var request = new OpenAIRequest("/chat/completions", Method.Post, input);
+        return await base.ExecuteWithErrorHandling<ChatCompletionDto>(request);
     }
 
     public async ValueTask<ConnectionValidationResponse> ValidateConnection()
