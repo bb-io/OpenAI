@@ -17,6 +17,14 @@ public class TestBase
         InitializeFileManager();
     }
 
+    public InvocationContext GetInvocationContext(string connectionType)
+    {
+        var context = InvocationContext.FirstOrDefault(x => x.AuthenticationCredentialsProviders.Any(y => y.Value == connectionType));
+        if (context == null)
+            throw new Exception($"Invocation context was not found for this connection type: {connectionType}");
+        else return context;
+    }
+
     private void InitializeCredentials()
     {
         var config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();

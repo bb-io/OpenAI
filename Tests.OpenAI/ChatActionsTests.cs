@@ -37,6 +37,27 @@ public class ChatActionsTests : TestBase
     }
 
     [TestMethod]
+    public async Task ChatMessageRequest_AzureOpenAiWithSimpleTextMessage_ReturnsValidResponse()
+    {
+        // Arrange
+        var context = GetInvocationContext(ConnectionTypes.AzureOpenAi);
+        var actions = new ChatActions(context, FileManagementClient);
+        var model = new TextChatModelIdentifier { ModelId = null };
+        var chatRequest = new ChatRequest
+        {
+            Message = "Who are you? State your model, creator, and your main responsibilities."
+        };
+        var glossary = new GlossaryRequest();
+
+        // Act
+        var result = await actions.ChatMessageRequest(model, chatRequest, glossary);
+
+        // Assert
+        PrintResult(context, result);
+        Assert.IsNotNull(result.Message);
+    }
+
+    [TestMethod]
     public async Task ChatMessageRequest_WithHtmlFile_ReturnsValidResponse()
     {
         foreach (var context in InvocationContext)
@@ -68,7 +89,7 @@ public class ChatActionsTests : TestBase
     public async Task ChatMessageRequest_OpenAIWithAudioFile_ReturnsValidResponse()
     {
         // Arrange
-        var context = InvocationContext.ElementAt(1);
+        var context = GetInvocationContext(ConnectionTypes.OpenAi);
         var actions = new ChatActions(context, FileManagementClient);
         var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o" };
         var chatRequest = new ChatRequest
@@ -116,7 +137,7 @@ public class ChatActionsTests : TestBase
     public async Task ChatMessageRequest_AzureOpenAIWithAudioFile_ThrowsMisconfigException()
     {
         // Arrange
-        var context = InvocationContext.ElementAt(0);
+        var context = GetInvocationContext(ConnectionTypes.AzureOpenAi);
         var actions = new ChatActions(context, FileManagementClient);
         var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o" };
         var chatRequest = new ChatRequest
