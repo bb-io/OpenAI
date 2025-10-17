@@ -11,12 +11,15 @@ namespace Tests.OpenAI
         [TestMethod]
         public async Task GenerateImageAsync()
         {
-            var handler = new ImageActions(InvocationContext, FileManagementClient);
-            var data = await handler.GenerateImage(
-                new ImageGenerationModelIdentifier { ModelId = "gpt-image-1" },
-                new ImageRequest { Prompt = "Generate photo of cat with donuts" });
+            foreach (var context in InvocationContext)
+            {
+                var handler = new ImageActions(context, FileManagementClient);
+                var data = await handler.GenerateImage(
+                    new ImageGenerationModelIdentifier { ModelId = "gpt-image-1" },
+                    new ImageRequest { Prompt = "Generate photo of cat with donuts" });
 
-            Assert.IsNotNull(data);
+                Assert.IsNotNull(data);
+            }
         }
     }
 }

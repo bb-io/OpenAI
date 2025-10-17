@@ -11,65 +11,83 @@ public class DataSourceHandlerTests : TestBase
     [TestMethod]
     public async Task GetDataAsync_ForTextChatModels_ReturnsNonEmptyCollection()
     {
-        var handler = new TextChatModelDataSourceHandler(InvocationContext);
-        var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
+        foreach (var context in InvocationContext)
+        {
+            var handler = new TextChatModelDataSourceHandler(context);
+            var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
 
-        PrintResult(data);
-        Assert.AreNotEqual(data.Count(), 0);
+            PrintResult(data);
+            Assert.AreNotEqual(data.Count(), 0);
+        }
     }
 
     [TestMethod]
     public async Task GetDataAsync_ForGenerateImagesModels_ReturnsNonEmptyCollection()
     {
-        var handler = new ImageGenerationModelDataSourceHandler(InvocationContext);
-        var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
+        foreach (var context in InvocationContext)
+        {
+            var handler = new ImageGenerationModelDataSourceHandler(context);
+            var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
 
-        PrintResult(data);
-        Assert.AreNotEqual(data.Count(), 0);
+            PrintResult(data);
+            Assert.AreNotEqual(data.Count(), 0);
+        }
     }
 
     [TestMethod]
     public async Task GetDataAsync_ForAudioModels_ReturnsNonEmptyCollection()
     {
-        var handler = new SpeechCreationModelDataSourceHandler(InvocationContext);
-        var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
+        foreach (var context in InvocationContext)
+        {
+            var handler = new SpeechCreationModelDataSourceHandler(context);
+            var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
 
-        PrintResult(data);
-        Assert.AreNotEqual(data.Count(), 0);
+            PrintResult(data);
+            Assert.AreNotEqual(data.Count(), 0);
+        }
     }
 
     [TestMethod]
     public async Task GetDataAsync_ForAssistantModels_ReturnsNonEmptyCollection()
     {
-        var handler = new AssistantsDataSourceHandler(InvocationContext);
-        var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
+        foreach (var context in InvocationContext)
+        {
+            var handler = new AssistantsDataSourceHandler(context);
+            var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
 
-        PrintResult(data);
-        Assert.AreNotEqual(data.Count(), 0);
+            PrintResult(data);
+            Assert.AreNotEqual(data.Count(), 0);
+        }
     }
 
     [TestMethod]
     public async Task GetDataAsync_ForBatches_ReturnsNonEmptyCollection()
     {
-        // Arrange
-        var handler = new BatchDataSourceHandler(InvocationContext);
+        foreach (var context in InvocationContext)
+        {
+            // Arrange
+            var handler = new BatchDataSourceHandler(context);
 
-        // Act
-        var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
+            // Act
+            var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
 
-        // Assert
-        PrintResult(data);
-        Assert.AreNotEqual(data.Count(), 0);
+            // Assert
+            PrintResult(data);
+            Assert.AreNotEqual(data.Count(), 0);
+        }
     }
 
     [TestMethod]
     public async Task Locales()
     {
-        var handler = new LocaleDataSourceHandler();
-        var data = handler.GetData();
+        foreach (var context in InvocationContext)
+        {
+            var handler = new LocaleDataSourceHandler();
+            var data = handler.GetData();
 
-        PrintResult(data);
-        Assert.AreNotEqual(data.Count(), 0);
+            PrintResult(data);
+            Assert.AreNotEqual(data.Count(), 0);
+        }
     }
 
     private static void PrintResult(IEnumerable<DataSourceItem> data)

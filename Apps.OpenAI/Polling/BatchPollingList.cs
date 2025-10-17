@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
-using Apps.OpenAI.Api;
+using Apps.OpenAI.Api.Requests;
 using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Responses.Batch;
 using Apps.OpenAI.Polling.Models;

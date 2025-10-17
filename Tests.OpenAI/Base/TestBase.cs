@@ -6,8 +6,8 @@ namespace Tests.OpenAI.Base;
 
 public class TestBase
 {
-    public IEnumerable<AuthenticationCredentialsProvider> Creds { get; private set; }
-    public InvocationContext InvocationContext { get; private set; }
+    public List<IEnumerable<AuthenticationCredentialsProvider>> CredentialGroups { get; private set; }
+    public List<InvocationContext> InvocationContext { get; private set; }
     public FileManagementClient FileManagementClient { get; private set; }
 
     public TestBase()
@@ -17,21 +17,36 @@ public class TestBase
         InitializeFileManager();
     }
 
+    public InvocationContext GetInvocationContext(string connectionType)
+    {
+        var context = InvocationContext.FirstOrDefault(x => x.AuthenticationCredentialsProviders.Any(y => y.Value == connectionType));
+        if (context == null)
+            throw new Exception($"Invocation context was not found for this connection type: {connectionType}");
+        else return context;
+    }
+
     private void InitializeCredentials()
     {
         var config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
-        Creds = config.GetSection("ConnectionDefinition")
-                     .GetChildren()
-                     .Select(x => new AuthenticationCredentialsProvider(x.Key, x.Value))
-                     .ToList();
+        CredentialGroups = config.GetSection("ConnectionDefinition")
+            .GetChildren()
+            .Select(section =>
+                section.GetChildren()
+               .Select(child => new AuthenticationCredentialsProvider(child.Key, child.Value))
+            )
+            .ToList();
     }
 
     private void InitializeInvocationContext()
     {
-        InvocationContext = new InvocationContext
+        InvocationContext = new List<InvocationContext>();
+        foreach (var credentialGroup in CredentialGroups)
         {
-            AuthenticationCredentialsProviders = Creds
-        };
+            InvocationContext.Add(new InvocationContext
+            {
+                AuthenticationCredentialsProviders = credentialGroup
+            });
+        }
     }
 
     private void InitializeFileManager()

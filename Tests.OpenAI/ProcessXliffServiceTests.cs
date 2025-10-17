@@ -20,7 +20,7 @@ public class ProcessXliffServiceTests : TestBase
         _processXliffService = new ProcessXliffService(
             new XliffService(FileManagementClient),
             new JsonGlossaryService(FileManagementClient),
-            new OpenAICompletionService(new Apps.OpenAI.Api.OpenAIClient(Creds)),
+            new OpenAICompletionService(new Apps.OpenAI.Api.OpenAIClient(CredentialGroups.First())),
             new ResponseDeserializationService(),
             new PromptBuilderService(),
             FileManagementClient
