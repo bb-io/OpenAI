@@ -112,10 +112,10 @@ public class ChatActionsTests : TestBase
     }
 
     [TestMethod]
-    public async Task ChatMessageRequest_WithSimpleTextMessageWithoutModelIdentifier_ThrowsMisconfigException()
+    public async Task ChatMessageRequest_OpenAiWithSimpleTextMessageWithoutModelIdentifier_ThrowsMisconfigException()
     {
         // Arrange
-        var context = InvocationContext.ElementAt(1);
+        var context = GetInvocationContext(ConnectionTypes.OpenAi);
         var actions = new ChatActions(context, FileManagementClient);
         var model = new TextChatModelIdentifier { ModelId = null };
         var chatRequest = new ChatRequest
