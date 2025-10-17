@@ -3,12 +3,17 @@
     {
       "Connection type": "AzureConnection",
       "API key": "",
-      "Deployment": "",
+      "Model": "",
       "URL": ""
     },
     {
       "Connection type": "Developer API token", // OpenAI
       "API key": ""
+    },
+    {
+      "Connection type": "OpenAiConnectionEmbedded",
+      "API key": "",
+      "Model": "gpt-4"
     }
   ],
   "TestFolder": "C:\\Users\\..."

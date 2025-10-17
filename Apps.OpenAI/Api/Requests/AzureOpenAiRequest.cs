@@ -24,7 +24,7 @@ public class AzureOpenAiRequest : RestRequest
         IEnumerable<AuthenticationCredentialsProvider> credentials
     ) : this(endpoint, method, credentials)
     {
-        string deployment = credentials.First(x => x.KeyName == CredNames.Deployment).Value;
+        string deployment = credentials.First(x => x.KeyName == CredNames.Model).Value;
         body["model"] = deployment;
 
         var json = JsonConvert.SerializeObject(body, new JsonSerializerSettings

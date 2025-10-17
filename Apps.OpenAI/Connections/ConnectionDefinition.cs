@@ -29,10 +29,21 @@ public class ConnectionDefinition : IConnectionDefinition
             ConnectionProperties = new List<ConnectionProperty>
             {
                 new(CredNames.Url) { DisplayName = "Resource URL" },
-                new(CredNames.Deployment) { DisplayName = "Deployment name" },
+                new(CredNames.Model) { DisplayName = "Deployment name" },
                 new(CredNames.ApiKey) { Sensitive = true }
             }
         },
+        new()
+        {
+            DisplayName = "OpenAI (embedded model)",
+            Name = ConnectionTypes.OpenAiEmbedded,
+            AuthenticationType = ConnectionAuthenticationType.Undefined,
+            ConnectionProperties = new List<ConnectionProperty>
+            {
+                new(CredNames.Model),
+                new(CredNames.ApiKey) { Sensitive = true }
+            }
+        }
     };
 
     public IEnumerable<AuthenticationCredentialsProvider> CreateAuthorizationCredentialsProviders(Dictionary<string, string> values)
