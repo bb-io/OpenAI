@@ -16,8 +16,21 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
 {
     public async ValueTask<ConnectionValidationResponse> ValidateConnection()
     {
+        string model = credentials.FirstOrDefault(x => x.KeyName == CredNames.Model)?.Value ?? "gpt-3.5-turbo";
+        var body = new Dictionary<string, object>
+        {
+            ["model"] = model,
+            ["messages"] = new[]
+            {
+                new
+                {
+                    role = "user",
+                    content = "hello world!"
+                }
+            },
+        };
+        var request = new OpenAIRequest("/chat/completions", Method.Post, body);
         var (headerKey, headerValue) = GetAuthHeader(credentials);
-        var request = new OpenAIRequest("/models", Method.Get);
         request.AddHeader(headerKey, headerValue);
 
         try
