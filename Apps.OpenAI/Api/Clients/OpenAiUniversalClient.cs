@@ -1,5 +1,6 @@
 ﻿using Apps.OpenAI.Api.Requests;
 using Apps.OpenAI.Constants;
+using Apps.OpenAI.Dtos;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Connections;
 using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
@@ -16,10 +17,9 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
 {
     public async ValueTask<ConnectionValidationResponse> ValidateConnection()
     {
-        string model = credentials.FirstOrDefault(x => x.KeyName == CredNames.Model)?.Value ?? "gpt-3.5-turbo";
+        string model = GetModel("gpt-3.5-turbo");
         var body = new Dictionary<string, object>
         {
-            ["model"] = model,
             ["messages"] = new[]
             {
                 new
@@ -29,13 +29,10 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
                 }
             },
         };
-        var request = new OpenAIRequest("/chat/completions", Method.Post, body);
-        var (headerKey, headerValue) = GetAuthHeader(credentials);
-        request.AddHeader(headerKey, headerValue);
 
         try
         {
-            await base.ExecuteWithErrorHandling(request);
+            await ExecuteChatCompletion(body, model);
             return new() { IsValid = true };
         }
         catch (Exception ex)
@@ -46,6 +43,25 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
                 Message = ex.Message
             };
         }
+    }
+
+    public async Task<ChatCompletionDto> ExecuteChatCompletion(Dictionary<string, object> input, string model)
+    {
+        input["model"] = GetModel(model);
+        var request = new OpenAIRequest("/chat/completions", Method.Post, input);
+
+        var (headerKey, headerValue) = GetAuthHeader(credentials);
+        request.AddHeader(headerKey, headerValue);
+
+        return await base.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+    }
+
+    private string GetModel(string defaultValue = null)
+    {
+        string model = credentials.FirstOrDefault(x => x.KeyName == CredNames.Model)?.Value ?? defaultValue;
+        if (model == null)
+            throw new Exception("Model is not specified in the connection or input");
+        else return model;
     }
 
     private (string headerKey, string headerValue) GetAuthHeader(IEnumerable<AuthenticationCredentialsProvider> credentials)
