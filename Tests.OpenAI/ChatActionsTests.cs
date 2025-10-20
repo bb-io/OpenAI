@@ -86,10 +86,10 @@ public class ChatActionsTests : TestBase
     }
 
     [TestMethod]
-    public async Task ChatMessageRequest_OpenAiWithAudioFile_ReturnsValidResponse()
+    public async Task ChatMessageRequest_OpenAiEmbeddedWithAudioFile_ReturnsValidResponse()
     {
         // Arrange
-        var context = GetInvocationContext(ConnectionTypes.OpenAi);
+        var context = GetInvocationContext(ConnectionTypes.OpenAiEmbedded);
         var actions = new ChatActions(context, FileManagementClient);
         var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o" };
         var chatRequest = new ChatRequest
@@ -148,6 +148,27 @@ public class ChatActionsTests : TestBase
 
         // Act
         var result = await actions.ChatMessageRequest(model, chatRequest, glossary);
+
+        // Assert
+        PrintResult(context, result);
+        Assert.IsNotNull(result.Message);
+    }
+
+    [TestMethod]
+    public async Task ChatMessageRequest_OpenAiEmbeddedWithSimpleTextMessageWithModelIdentifier_ReturnsValidResponse()
+    {
+        // Arrange
+        var context = GetInvocationContext(ConnectionTypes.OpenAiEmbedded);
+        var actions = new ChatActions(context, FileManagementClient);
+        var modelId = new TextChatModelIdentifier { ModelId = "gpt-5" };
+        var chatRequest = new ChatRequest
+        {
+            Message = "Who are you? State your model, creator, and your main responsibilities."
+        };
+        var glossary = new GlossaryRequest();
+
+        // Act
+        var result = await actions.ChatMessageRequest(modelId, chatRequest, glossary);
 
         // Assert
         PrintResult(context, result);

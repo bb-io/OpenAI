@@ -13,7 +13,7 @@
     {
       "Connection type": "OpenAiConnectionEmbedded",
       "API key": "",
-      "Model": "gpt-4"
+      "Model": "gpt-4.1-nano-2025-04-14"
     }
   ],
   "TestFolder": "C:\\Users\\..."

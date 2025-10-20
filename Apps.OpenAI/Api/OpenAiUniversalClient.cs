@@ -4,6 +4,7 @@ using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Utils;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Connections;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
 using Blackbird.Applications.Sdk.Utils.RestSharp;
 using RestSharp;
@@ -50,7 +51,7 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
 
     public async Task<ChatCompletionDto> ExecuteChatCompletion(Dictionary<string, object> input, string model)
     {
-        input["model"] = GetModel(model);
+        input["model"] = model ?? GetModel();
         var request = new OpenAIRequest("/chat/completions", Method.Post, input);
 
         var (headerKey, headerValue) = GetAuthHeader(credentials);
@@ -63,7 +64,7 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
     {
         string model = credentials.FirstOrDefault(x => x.KeyName == CredNames.Model)?.Value ?? defaultValue;
         if (model == null)
-            throw new Exception("Model is not specified in the connection or input");
+            throw new PluginApplicationException("Model is not specified in the connection or input");
         else return model;
     }
 
