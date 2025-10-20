@@ -15,6 +15,8 @@ namespace Apps.OpenAI.Api.Clients;
 
 public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider> credentials) : BlackBirdRestClient(CreateOptions(credentials))
 {
+    public string ConnectionType => credentials.First(x => x.KeyName == CredNames.ConnectionType).Value;
+
     public async ValueTask<ConnectionValidationResponse> ValidateConnection()
     {
         string model = GetModel("gpt-3.5-turbo");

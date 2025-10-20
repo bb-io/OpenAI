@@ -1,5 +1,5 @@
 ﻿using Apps.OpenAI.Api;
-using Apps.OpenAI.Api.Interfaces;
+using Apps.OpenAI.Api.Clients;
 using Apps.OpenAI.Api.Requests;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;
@@ -18,7 +18,6 @@ using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Xliff.Utils;
 using Blackbird.Xliff.Utils.Extensions;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using RestSharp;
 using System;
 using System.Collections.Generic;
@@ -35,7 +34,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
     : OpenAIInvocable(invocationContext)
 {
     protected readonly OpenAIClient Client = new OpenAIClient(invocationContext.AuthenticationCredentialsProviders);
-    protected readonly IOpenAiClient NewClient = new OpenAiClientFactory().Create(invocationContext.AuthenticationCredentialsProviders);
+    protected readonly OpenAiUniversalClient UniversalClient = new OpenAiUniversalClient(invocationContext.AuthenticationCredentialsProviders);
     protected readonly IFileManagementClient FileManagementClient = fileManagementClient;
 
     protected string? GetGlossaryPromptPart(Glossary blackbirdGlossary, string sourceContent, bool filter)
@@ -225,7 +224,6 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
     {
         var body = new Dictionary<string, object>
         {
-            { "model", model },
             { "messages", messages },
             { "top_p", input?.TopP ?? 1 },
             { "presence_penalty", input?.PresencePenalty ?? 0 },
@@ -240,7 +238,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         body.AppendIfNotNull("max_completion_tokens", input.MaximumTokens);
         body.AppendIfNotNull("reasoning_effort", input.ReasoningEffort);
 
-        return await NewClient.ExecuteChatCompletion(body, model);
+        return await UniversalClient.ExecuteChatCompletion(body, model);
     }
 
     protected async Task<string> IdentifySourceLanguage(TextChatModelIdentifier modelIdentifier, string content)

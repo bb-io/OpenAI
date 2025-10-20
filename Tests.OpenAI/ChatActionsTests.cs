@@ -1,12 +1,12 @@
-﻿using Newtonsoft.Json;
-using Tests.OpenAI.Base;
-using Apps.OpenAI.Actions;
+﻿using Apps.OpenAI.Actions;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Models.Responses.Chat;
-using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Exceptions;
+using Blackbird.Applications.Sdk.Common.Invocation;
+using Newtonsoft.Json;
+using Tests.OpenAI.Base;
 
 namespace Tests.OpenAI;
 
@@ -86,7 +86,7 @@ public class ChatActionsTests : TestBase
     }
 
     [TestMethod]
-    public async Task ChatMessageRequest_OpenAIWithAudioFile_ReturnsValidResponse()
+    public async Task ChatMessageRequest_OpenAiWithAudioFile_ReturnsValidResponse()
     {
         // Arrange
         var context = GetInvocationContext(ConnectionTypes.OpenAi);
@@ -132,9 +132,30 @@ public class ChatActionsTests : TestBase
         // Assert
         StringAssert.Contains(ex.Message, "Please select a model to execute this action using the OpenAI connection");
     }
+    
+    [TestMethod]
+    public async Task ChatMessageRequest_OpenAiEmbeddedWithSimpleTextMessageWithoutModelIdentifier_ReturnsValidResponse()
+    {
+        // Arrange
+        var context = GetInvocationContext(ConnectionTypes.OpenAiEmbedded);
+        var actions = new ChatActions(context, FileManagementClient);
+        var model = new TextChatModelIdentifier { ModelId = null };
+        var chatRequest = new ChatRequest
+        {
+            Message = "Who are you? State your model, creator, and your main responsibilities."
+        };
+        var glossary = new GlossaryRequest();
+
+        // Act
+        var result = await actions.ChatMessageRequest(model, chatRequest, glossary);
+
+        // Assert
+        PrintResult(context, result);
+        Assert.IsNotNull(result.Message);
+    }
 
     [TestMethod]
-    public async Task ChatMessageRequest_AzureOpenAIWithAudioFile_ThrowsMisconfigException()
+    public async Task ChatMessageRequest_AzureOpenAiWithAudioFile_ThrowsMisconfigException()
     {
         // Arrange
         var context = GetInvocationContext(ConnectionTypes.AzureOpenAi);

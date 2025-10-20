@@ -1,5 +1,4 @@
 ﻿using Apps.OpenAI.Actions.Base;
-using Apps.OpenAI.Api.Clients;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Identifiers;
@@ -35,11 +34,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         [ActionParameter] ChatRequest input,
         [ActionParameter] GlossaryRequest glossary)
     {
-        if (NewClient is NewOpenAiClient)
-            HandleOpenAiFileInput(modelIdentifier, input.File);
-
-        if (NewClient is AzureOpenAiClient)
-            HandleAzureFileInput(input.File);
+        HandleInput(modelIdentifier, input);
 
         var messages = await GenerateChatMessages(input, glossary);
         var completeMessage = string.Empty;
@@ -177,13 +172,21 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         return messages;
     }
 
+    private void HandleInput(TextChatModelIdentifier modelIdentifier, ChatRequest input)
+    {
+        if (UniversalClient.ConnectionType == ConnectionTypes.OpenAi)
+        {
+            if (string.IsNullOrEmpty(modelIdentifier.ModelId))
+                throw new PluginMisconfigurationException("Please select a model to execute this action using the OpenAI connection");
+            HandleOpenAiFileInput(modelIdentifier, input.File);
+        }
+        else if (UniversalClient.ConnectionType == ConnectionTypes.AzureOpenAi)
+            HandleAzureFileInput(input.File);
+        else HandleOpenAiFileInput(modelIdentifier, input.File);
+    }
+
     private static void HandleOpenAiFileInput(TextChatModelIdentifier modelIdentifier, FileReference? file)
     {
-        if (string.IsNullOrEmpty(modelIdentifier.ModelId))
-        {
-            throw new PluginMisconfigurationException("Please select a model to execute this action using the OpenAI connection");
-        }
-
         if (file == null) return;
 
         var name = file.Name.ToLowerInvariant();
