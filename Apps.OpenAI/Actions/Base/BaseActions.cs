@@ -1,5 +1,4 @@
 ﻿using Apps.OpenAI.Api;
-using Apps.OpenAI.Api.Clients;
 using Apps.OpenAI.Api.Requests;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;

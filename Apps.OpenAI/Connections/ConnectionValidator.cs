@@ -1,9 +1,9 @@
-﻿using Blackbird.Applications.Sdk.Common.Authentication;
+﻿using Apps.OpenAI.Api;
+using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Connections;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Apps.OpenAI.Api.Clients;
 
 namespace Apps.OpenAI.Connections;
 

@@ -1,6 +1,7 @@
 ﻿using Apps.OpenAI.Api.Requests;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;
+using Apps.OpenAI.Utils;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Connections;
 using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
@@ -11,7 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Apps.OpenAI.Api.Clients;
+namespace Apps.OpenAI.Api;
 
 public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider> credentials) : BlackBirdRestClient(CreateOptions(credentials))
 {
@@ -101,6 +102,6 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
 
     protected override Exception ConfigureErrorException(RestResponse response)
     {
-        throw new NotImplementedException();
+        return ErrorHelper.ConfigureErrorException(response, JsonSettings);
     }
 }
