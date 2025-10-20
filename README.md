@@ -29,7 +29,7 @@ You can find how to create and deploy an Azure OpenAI Service resource [here](ht
 
 ## Connecting
 
-Navigate to apps and search for OpenAI and click _Add Connection_. This application has two connection types: OpenAI and Azure OpenAI. You can select the connection you need from the dropdown menu. Please give your connection a name for future reference, e.g. 'My OpenAI Connection'.
+Navigate to apps and search for OpenAI and click _Add Connection_. This application has three connection types: OpenAI, Azure OpenAI, and OpenAI with an embedded model in the connection. You can select the connection you need from the dropdown menu. Please give your connection a name for future reference, e.g. 'My OpenAI Connection'.
 
 ![connection](image/README/common.png)
 
@@ -41,6 +41,12 @@ Navigate to apps and search for OpenAI and click _Add Connection_. This applicat
 4. Verify that connection was added successfully.
 
 ![connection](image/README/openai.png)
+
+If you choose `OpenAI (embedded model)` connection type, please specify the model you want to use.
+
+![connection](image/README/openai-embed.png)
+
+**Note**: The selected model can be overridden in the action using the `Model` input.
 
 ### Azure OpenAI
 
