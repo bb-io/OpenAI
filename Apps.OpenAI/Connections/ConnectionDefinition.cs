@@ -18,7 +18,7 @@ public class ConnectionDefinition : IConnectionDefinition
             AuthenticationType = ConnectionAuthenticationType.Undefined,
             ConnectionProperties = new List<ConnectionProperty>
             {
-                new(CredNames.ApiKey) { Sensitive = true }
+                new(CredNames.ApiKey) { Sensitive = true, DisplayName = "API key" }
             }
         },
         new()
@@ -30,7 +30,7 @@ public class ConnectionDefinition : IConnectionDefinition
             {
                 new(CredNames.Url) { DisplayName = "Resource URL" },
                 new(CredNames.Model) { DisplayName = "Deployment name" },
-                new(CredNames.ApiKey) { Sensitive = true }
+                new(CredNames.ApiKey) { Sensitive = true, DisplayName = "API key" }
             }
         },
         new()
@@ -40,8 +40,8 @@ public class ConnectionDefinition : IConnectionDefinition
             AuthenticationType = ConnectionAuthenticationType.Undefined,
             ConnectionProperties = new List<ConnectionProperty>
             {
-                new(CredNames.Model),
-                new(CredNames.ApiKey) { Sensitive = true }
+                new(CredNames.Model) { DisplayName = "Model" },
+                new(CredNames.ApiKey) { Sensitive = true, DisplayName = "API key" }
             }
         }
     };
