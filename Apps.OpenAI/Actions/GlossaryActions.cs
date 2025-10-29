@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
-using Apps.OpenAI.Api;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Identifiers;
@@ -37,7 +34,12 @@ public class GlossaryActions(InvocationContext invocationContext, IFileManagemen
                            $"Return a JSON of the following structure: {{\"result\": [{{{string.Join(", ", input.Languages.Select(x => $"\"{x}\": \"\""))}}}].";
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, input.Content) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel(), input, new { type = "json_object" });
+        var response = await ExecuteChatCompletion(
+            messages, 
+            UniversalClient.GetModel(modelIdentifier.ModelId), 
+            input, 
+            new { type = "json_object" }
+        );
 
         List<Dictionary<string, string>> items = null;
         try
