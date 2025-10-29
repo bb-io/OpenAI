@@ -283,4 +283,10 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         
         return await UniversalClient.ExecuteWithErrorHandling<BatchResponse>(createBatchRequest);
     }
+
+    protected void ThrowForAzure(string actionType)
+    {
+        if (UniversalClient.ConnectionType == ConnectionTypes.AzureOpenAi)
+            throw new PluginMisconfigurationException($"Azure OpenAI does not support {actionType} actions. Please use OpenAI for such tasks");
+    }
 }

@@ -22,7 +22,7 @@ public abstract class BaseModelDataSourceHandler(InvocationContext invocationCon
 
     public async Task<IEnumerable<DataSourceItem>> GetDataAsync(DataSourceContext context, CancellationToken cancellationToken)
     {
-        var client = new OpenAIClient(InvocationContext.AuthenticationCredentialsProviders);
+        var client = new OpenAiUniversalClient(InvocationContext.AuthenticationCredentialsProviders);
         var request = new OpenAIRequest("/models", Method.Get);
         var models = await client.ExecuteWithErrorHandling<ModelsList>(request);
         
