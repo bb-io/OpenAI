@@ -16,13 +16,9 @@ using TiktokenSharp;
 namespace Apps.OpenAI.Actions;
 
 [ActionList("Text analysis")]
-public class TextAnalysisActions : BaseActions
+public class TextAnalysisActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
+    : BaseActions(invocationContext, fileManagementClient)
 {
-    public TextAnalysisActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
-        : base(invocationContext, fileManagementClient)
-    {
-    }
-
     [Action("Create embedding", Description = "Generate an embedding for a text provided. An embedding is a list of " +
                                               "floating point numbers that captures semantic information about the " +
                                               "text that it represents.")]
@@ -30,7 +26,7 @@ public class TextAnalysisActions : BaseActions
         [ActionParameter] EmbeddingModelIdentifier modelIdentifier,
         [ActionParameter] EmbeddingRequest input)
     {
-        var model = modelIdentifier.ModelId ?? "text-embedding-ada-002";
+        var model = UniversalClient.GetModel(modelIdentifier.ModelId ?? "text-embedding-ada-002");
 
         var request = new OpenAIRequest("/embeddings", Method.Post);
         request.AddJsonBody(new
@@ -39,11 +35,8 @@ public class TextAnalysisActions : BaseActions
             input = input.Text
         });
 
-        var response = await Client.ExecuteWithErrorHandling<DataDto<EmbeddingDto>>(request);
-        return new()
-        {
-            Embedding = response.Data.First().Embedding
-        };
+        var response = await UniversalClient.ExecuteWithErrorHandling<DataDto<EmbeddingDto>>(request);
+        return new() { Embedding = response.Data.First().Embedding };
     }
 
     [Action("Tokenize text", Description = "Tokenize the text provided. Optionally specify encoding: cl100k_base " +
@@ -56,9 +49,6 @@ public class TextAnalysisActions : BaseActions
 
         var tokens = tikToken.Encode(input.Text);
 
-        return new()
-        {
-            Tokens = tokens
-        };
+        return new() { Tokens = tokens };
     }
 }
