@@ -64,7 +64,7 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
         }
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, UniversalClient.GetModel(modelIdentifier.GetModel()));
+        var response = await ExecuteChatCompletion(messages, UniversalClient.GetModel(modelIdentifier.ModelId));
 
         return new()
         {
@@ -156,7 +156,7 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
                 url = "/v1/chat/completions",
                 body = new
                 {
-                    model = UniversalClient.GetModel(request.GetModel()),
+                    model = UniversalClient.GetModel(request.ModelId),
                     messages = new object[]
                     {
                         new

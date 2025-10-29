@@ -248,7 +248,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         var userPrompt = snippet + ". The BCP 47 language code: ";
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel());
+        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId);
 
         return response.Choices.First().Message.Content;
     }
