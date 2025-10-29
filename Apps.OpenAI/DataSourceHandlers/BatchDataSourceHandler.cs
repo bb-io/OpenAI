@@ -17,7 +17,7 @@ public class BatchDataSourceHandler(InvocationContext invocationContext)
 {
     public async Task<IEnumerable<DataSourceItem>> GetDataAsync(DataSourceContext context, CancellationToken cancellationToken)
     {
-        var client = new OpenAIClient(InvocationContext.AuthenticationCredentialsProviders);
+        var client = new OpenAiUniversalClient(InvocationContext.AuthenticationCredentialsProviders);
         var request = new OpenAIRequest("/batches?limit=100", Method.Get);
         var batches = await client.ExecuteWithErrorHandling<BatchPaginationResponse>(request);
         return batches.Data

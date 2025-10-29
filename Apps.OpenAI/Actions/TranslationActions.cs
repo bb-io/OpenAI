@@ -58,7 +58,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
             content.SourceLanguage = await IdentifySourceLanguage(modelIdentifier, content.Source().GetPlaintext());
         }
 
-        var batchProcessingService = new BatchProcessingService(Client, FileManagementClient);
+        var batchProcessingService = new BatchProcessingService(UniversalClient, FileManagementClient);
         var batchOptions = new BatchProcessingOptions(
             modelIdentifier.GetModel(),
             content.SourceLanguage,

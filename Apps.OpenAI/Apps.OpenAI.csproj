@@ -2,10 +2,10 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-	  <Product>OpenAI</Product>
+	  <Product>Open AI (Merged)</Product>
 	  <Description>Creating safe artificial general intelligence that benefits all of humanity</Description>
-	  <Version>2.8.0</Version>
-	  <AssemblyName>Apps.OpenAI</AssemblyName>
+	  <Version>2.8.2</Version>
+	  <AssemblyName>OpenAiMerged</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>

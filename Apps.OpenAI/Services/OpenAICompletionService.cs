@@ -14,7 +14,7 @@ using TiktokenSharp;
 
 namespace Apps.OpenAI.Services;
 
-public class OpenAICompletionService(OpenAIClient openAIClient) : IOpenAICompletionService
+public class OpenAICompletionService(OpenAiUniversalClient openAIClient) : IOpenAICompletionService
 {
     private const string DefaultEncoding = "cl100k_base";
 

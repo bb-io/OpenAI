@@ -66,7 +66,6 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
 
     public override async Task<T> ExecuteWithErrorHandling<T>(RestRequest request)
     {
-        SetAuthHeader(request);
         string content = (await ExecuteWithErrorHandling(request)).Content;
         T val = JsonConvert.DeserializeObject<T>(content, JsonSettings);
         return val == null ? throw new Exception($"Could not parse {content} to {typeof(T)}") : val;
@@ -83,9 +82,9 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
         return restResponse;
     }
 
-    private string GetModel(string defaultValue = null)
+    public string GetModel(string defaultValue = null)
     {
-        string model = credentials.FirstOrDefault(x => x.KeyName == CredNames.Model)?.Value ?? defaultValue;
+        string? model = credentials.FirstOrDefault(x => x.KeyName == CredNames.Model)?.Value ?? defaultValue;
         if (model == null)
             throw new PluginApplicationException("Model is not specified in the connection or input");
         else return model;

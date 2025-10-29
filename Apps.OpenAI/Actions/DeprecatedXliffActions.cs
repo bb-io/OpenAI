@@ -39,14 +39,14 @@ public class DeprecatedXliffActions(InvocationContext invocationContext, IFileMa
     {
         var xliffProcessingService = new ProcessXliffService(new XliffService(FileManagementClient), 
             new JsonGlossaryService(FileManagementClient),
-            new OpenAICompletionService(Client), 
+            new OpenAICompletionService(UniversalClient), 
             new ResponseDeserializationService(),
             new PromptBuilderService(), 
             FileManagementClient);
 
         var result = await xliffProcessingService.ProcessXliffAsync(new OpenAiXliffInnerRequest
         {
-            ModelId = modelIdentifier.GetModel(),
+            ModelId = UniversalClient.GetModel(modelIdentifier.ModelId),
             Prompt = prompt,
             XliffFile = input.File,
             Glossary = glossary.Glossary,
@@ -90,7 +90,7 @@ public class DeprecatedXliffActions(InvocationContext invocationContext, IFileMa
                 JsonConvert.SerializeObject(batch.Select(x => new { x.Id, x.Source, x.Target }).ToList()));
 
             var messages = new List<ChatMessageDto> { new(MessageRoles.System, PromptBuilder.DefaultSystemPrompt), new(MessageRoles.User, userPrompt) };
-            var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel(), new BaseChatRequest { Temperature = 0.1f }, ResponseFormats.GetQualityScoreXliffResponseFormat());
+            var response = await ExecuteChatCompletion(messages, UniversalClient.GetModel(modelIdentifier.ModelId), new BaseChatRequest { Temperature = 0.1f }, ResponseFormats.GetQualityScoreXliffResponseFormat());
             usage += response.Usage;
             
             var choice = response.Choices.First();
@@ -203,14 +203,14 @@ public class DeprecatedXliffActions(InvocationContext invocationContext, IFileMa
     {
         var postEditService = new PostEditService(new XliffService(FileManagementClient), 
             new JsonGlossaryService(FileManagementClient),
-            new OpenAICompletionService(new OpenAIClient(Creds)), 
+            new OpenAICompletionService(new OpenAiUniversalClient(Creds)), 
             new ResponseDeserializationService(),
             new PromptBuilderService(), 
             FileManagementClient);
 
         var result = await postEditService.PostEditXliffAsync(new OpenAiXliffInnerRequest
         {
-            ModelId = modelIdentifier.GetModel(),
+            ModelId = UniversalClient.GetModel(modelIdentifier.ModelId),
             Prompt = prompt,
             XliffFile = input.File,
             Glossary = glossary.Glossary,
@@ -272,7 +272,7 @@ public class DeprecatedXliffActions(InvocationContext invocationContext, IFileMa
         }
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel());
+        var response = await ExecuteChatCompletion(messages, UniversalClient.GetModel(modelIdentifier.ModelId));
 
         return new()
         {
@@ -327,7 +327,7 @@ public class DeprecatedXliffActions(InvocationContext invocationContext, IFileMa
         }
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel(), input, new { type = "json_object" });
+        var response = await ExecuteChatCompletion(messages, UniversalClient.GetModel(modelIdentifier.ModelId), input, new { type = "json_object" });
 
         try
         {
@@ -382,7 +382,7 @@ public class DeprecatedXliffActions(InvocationContext invocationContext, IFileMa
         }
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel());
+        var response = await ExecuteChatCompletion(messages, UniversalClient.GetModel(modelIdentifier.ModelId));
 
         return new()
         {
