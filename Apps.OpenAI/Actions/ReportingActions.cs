@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Apps.OpenAI.Actions.Base;
+﻿using Apps.OpenAI.Actions.Base;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Identifiers;
@@ -19,6 +16,10 @@ using Blackbird.Filters.Constants;
 using Blackbird.Filters.Enums;
 using Blackbird.Filters.Extensions;
 using Blackbird.Filters.Transformations;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Xml.Serialization;
 
 namespace Apps.OpenAI.Actions;
 
@@ -63,7 +64,7 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
         }
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel());
+        var response = await ExecuteChatCompletion(messages, UniversalClient.GetModel(modelIdentifier.GetModel()));
 
         return new()
         {
@@ -155,7 +156,7 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
                 url = "/v1/chat/completions",
                 body = new
                 {
-                    model = request.GetModel(),
+                    model = UniversalClient.GetModel(request.GetModel()),
                     messages = new object[]
                     {
                         new
