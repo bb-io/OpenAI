@@ -3,9 +3,10 @@ using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Models.Requests.Content;
 using Blackbird.Applications.Sdk.Common.Files;
-using Newtonsoft.Json;
 using Apps.OpenAI.Models.Requests.Background;
 using Tests.OpenAI.Base;
+using Apps.OpenAI.Constants;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 
 namespace Tests.OpenAI;
 
@@ -31,10 +32,10 @@ public class EditTests : TestBase
             var glossaryRequest = new GlossaryRequest();
 
             var result = await actions.EditContent(modelIdentifier, editRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
+            
             Assert.IsNotNull(result);
             Assert.IsTrue(result.File.Name.Contains("contentful"));
-
-            Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+            PrintResult(context, result);
         }
     }
 
@@ -57,31 +58,54 @@ public class EditTests : TestBase
             var glossaryRequest = new GlossaryRequest();
 
             var result = await actions.EditContent(modelIdentifier, editRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
+            
             Assert.IsNotNull(result);
-
-            Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+            PrintResult(context, result);
         }
     }
 
     [TestMethod]
-    public async Task EditInBackground_WithXliffFile_Success()
+    public async Task EditInBackground_OpenAiEmbeddedWithXliffFile_Success()
     {
-        foreach (var context in InvocationContext)
+        // Arrange
+        var context = GetInvocationContext(ConnectionTypes.OpenAi);
+        var actions = new EditActions(context, FileManagementClient);
+
+        var editRequest = new StartBackgroundProcessRequest
         {
-            var actions = new EditActions(context, FileManagementClient);
-            
-            var editRequest = new StartBackgroundProcessRequest
-            {
-                ModelId = "gpt-4.1",
-                File = new FileReference { Name = "The Hobbit, or There and Back Again_en-US.html.xlf" },
-                TargetLanguage = "fr"
-            };
-            
-            var response = await actions.EditInBackground(editRequest);
-            
-            Assert.IsNotNull(response);
-            Assert.IsNotNull(response.BatchId);
-            Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
-        }
+            ModelId = "gpt-4.1",
+            File = new FileReference { Name = "The Hobbit, or There and Back Again_en-US.html.xlf" },
+            TargetLanguage = "fr"
+        };
+
+        // Act
+        var response = await actions.EditInBackground(editRequest);
+
+        // Assert          
+        Assert.IsNotNull(response);
+        Assert.IsNotNull(response.BatchId);
+        PrintResult(context, response);
+    }
+
+    [TestMethod]
+    public async Task EditInBackground_AzureOpenAiWithXliffFile_ThrowsExceptionWithCorrectMessage()
+    {
+        // Arrange
+        var context = GetInvocationContext(ConnectionTypes.AzureOpenAi);
+        var actions = new EditActions(context, FileManagementClient);
+
+        var editRequest = new StartBackgroundProcessRequest
+        {
+            File = new FileReference { Name = "The Hobbit, or There and Back Again_en-US.html.xlf" },
+            TargetLanguage = "fr"
+        };
+
+        // Act
+        var ex = await Assert.ThrowsExceptionAsync<PluginMisconfigurationException>(async () =>
+            await actions.EditInBackground(editRequest)
+        );
+
+        // Assert          
+        StringAssert.Contains(ex.Message, "which is not supported for batch jobs");
     }
 }

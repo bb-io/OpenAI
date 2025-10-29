@@ -271,7 +271,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         var uploadFileRequest = new OpenAIRequest("/files", Method.Post)
             .AddFile("file", bytes, $"{Guid.NewGuid()}.jsonl", "application/jsonl")
             .AddParameter("purpose", "batch");
-        var file = await Client.ExecuteWithErrorHandling<FileDto>(uploadFileRequest);
+        var file = await UniversalClient.ExecuteWithErrorHandling<FileDto>(uploadFileRequest);
 
         var createBatchRequest = new OpenAIRequest("/batches", Method.Post)
             .WithJsonBody(new
@@ -281,6 +281,6 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
                 completion_window = "24h",
             });
         
-        return await Client.ExecuteWithErrorHandling<BatchResponse>(createBatchRequest);
+        return await UniversalClient.ExecuteWithErrorHandling<BatchResponse>(createBatchRequest);
     }
 }
