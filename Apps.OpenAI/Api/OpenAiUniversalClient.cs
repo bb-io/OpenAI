@@ -7,6 +7,7 @@ using Blackbird.Applications.Sdk.Common.Connections;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
 using Blackbird.Applications.Sdk.Utils.RestSharp;
+using Newtonsoft.Json;
 using RestSharp;
 using System;
 using System.Collections.Generic;
@@ -17,6 +18,8 @@ namespace Apps.OpenAI.Api;
 
 public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider> credentials) : BlackBirdRestClient(CreateOptions(credentials))
 {
+    private readonly AuthHeaderDto _authHeader = new(credentials);
+
     public string ConnectionType => credentials.First(x => x.KeyName == CredNames.ConnectionType).Value;
 
     public async ValueTask<ConnectionValidationResponse> ValidateConnection()
@@ -51,13 +54,33 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
 
     public async Task<ChatCompletionDto> ExecuteChatCompletion(Dictionary<string, object> input, string model)
     {
-        input["model"] = model ?? GetModel();
-        var request = new OpenAIRequest("/chat/completions", Method.Post, input);
+        bool isEmbeddedModel = ConnectionType == ConnectionTypes.AzureOpenAi || ConnectionType == ConnectionTypes.OpenAiEmbedded;
+        var extractedModel = isEmbeddedModel ? GetModel() : model;
+        input["model"] = extractedModel;
 
-        var (headerKey, headerValue) = GetAuthHeader(credentials);
-        request.AddHeader(headerKey, headerValue);
+        var request = new OpenAIRequest("/chat/completions", Method.Post, input);
+        SetAuthHeader(request);
 
         return await base.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+    }
+
+    public override async Task<T> ExecuteWithErrorHandling<T>(RestRequest request)
+    {
+        SetAuthHeader(request);
+        string content = (await ExecuteWithErrorHandling(request)).Content;
+        T val = JsonConvert.DeserializeObject<T>(content, JsonSettings);
+        return val == null ? throw new Exception($"Could not parse {content} to {typeof(T)}") : val;
+    }
+
+    public override async Task<RestResponse> ExecuteWithErrorHandling(RestRequest request)
+    {
+        SetAuthHeader(request);
+        RestResponse restResponse = await ExecuteAsync(request);
+        if (!restResponse.IsSuccessStatusCode)
+        {
+            throw ConfigureErrorException(restResponse);
+        }
+        return restResponse;
     }
 
     private string GetModel(string defaultValue = null)
@@ -68,18 +91,7 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
         else return model;
     }
 
-    private (string headerKey, string headerValue) GetAuthHeader(IEnumerable<AuthenticationCredentialsProvider> credentials)
-    {
-        var connectionType = credentials.First(x => x.KeyName == CredNames.ConnectionType).Value;
-
-        return connectionType switch
-        {
-            ConnectionTypes.AzureOpenAi => ("api-key", credentials.Get(CredNames.ApiKey).Value),
-            ConnectionTypes.OpenAi => ("Authorization", $"Bearer {credentials.Get(CredNames.ApiKey).Value}"),
-            ConnectionTypes.OpenAiEmbedded => ("Authorization", $"Bearer {credentials.Get(CredNames.ApiKey).Value}"),
-            _ => throw new Exception($"Unsupported connection type: {connectionType}")
-        };
-    }
+    private void SetAuthHeader(RestRequest request) => request.AddHeader(_authHeader.HeaderKey, _authHeader.HeaderValue);
 
     private static RestClientOptions CreateOptions(IEnumerable<AuthenticationCredentialsProvider> credentials)
     {
