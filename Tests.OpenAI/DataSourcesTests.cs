@@ -1,6 +1,8 @@
-﻿using Apps.OpenAI.DataSourceHandlers;
+﻿using Apps.OpenAI.Constants;
+using Apps.OpenAI.DataSourceHandlers;
 using Apps.OpenAI.DataSourceHandlers.ModelDataSourceHandlers;
 using Blackbird.Applications.Sdk.Common.Dynamic;
+using Blackbird.Applications.Sdk.Common.Invocation;
 using Tests.OpenAI.Base;
 
 namespace Tests.OpenAI;
@@ -16,7 +18,7 @@ public class DataSourceHandlerTests : TestBase
             var handler = new TextChatModelDataSourceHandler(context);
             var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
 
-            PrintResult(data);
+            PrintResult(data, context);
             Assert.AreNotEqual(data.Count(), 0);
         }
     }
@@ -29,7 +31,7 @@ public class DataSourceHandlerTests : TestBase
             var handler = new ImageGenerationModelDataSourceHandler(context);
             var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
 
-            PrintResult(data);
+            PrintResult(data, context);
             Assert.AreNotEqual(data.Count(), 0);
         }
     }
@@ -42,7 +44,7 @@ public class DataSourceHandlerTests : TestBase
             var handler = new SpeechCreationModelDataSourceHandler(context);
             var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
 
-            PrintResult(data);
+            PrintResult(data, context);
             Assert.AreNotEqual(data.Count(), 0);
         }
     }
@@ -55,7 +57,7 @@ public class DataSourceHandlerTests : TestBase
             var handler = new AssistantsDataSourceHandler(context);
             var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
 
-            PrintResult(data);
+            PrintResult(data, context);
             Assert.AreNotEqual(data.Count(), 0);
         }
     }
@@ -72,7 +74,7 @@ public class DataSourceHandlerTests : TestBase
             var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
 
             // Assert
-            PrintResult(data);
+            PrintResult(data, context);
             Assert.AreNotEqual(data.Count(), 0);
         }
     }
@@ -85,14 +87,16 @@ public class DataSourceHandlerTests : TestBase
             var handler = new LocaleDataSourceHandler();
             var data = handler.GetData();
 
-            PrintResult(data);
+            PrintResult(data, context);
             Assert.AreNotEqual(data.Count(), 0);
         }
     }
 
-    private static void PrintResult(IEnumerable<DataSourceItem> data)
+    private static void PrintResult(IEnumerable<DataSourceItem> data, InvocationContext context)
     {
+        Console.WriteLine(context.AuthenticationCredentialsProviders.First(x => x.KeyName == CredNames.ConnectionType).Value);
         foreach (var item in data)
             Console.WriteLine($"{item.Value}: {item.DisplayName}");
+        Console.WriteLine();
     }
 }
