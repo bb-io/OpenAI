@@ -1,3 +1,4 @@
+using Apps.OpenAI.Api;
 using Apps.OpenAI.Models.PostEdit;
 using Apps.OpenAI.Services;
 using Blackbird.Applications.Sdk.Common.Files;
@@ -20,7 +21,7 @@ public class ProcessXliffServiceTests : TestBase
         _processXliffService = new ProcessXliffService(
             new XliffService(FileManagementClient),
             new JsonGlossaryService(FileManagementClient),
-            new OpenAICompletionService(new Apps.OpenAI.Api.OpenAIClient(CredentialGroups.First())),
+            new OpenAICompletionService(new OpenAiUniversalClient(CredentialGroups.First())),
             new ResponseDeserializationService(),
             new PromptBuilderService(),
             FileManagementClient

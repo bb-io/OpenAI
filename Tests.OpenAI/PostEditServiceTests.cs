@@ -1,3 +1,4 @@
+using Apps.OpenAI.Api;
 using Apps.OpenAI.Models.PostEdit;
 using Apps.OpenAI.Services;
 using Apps.OpenAI.Services.Abstract;
@@ -21,7 +22,7 @@ public class PostEditServiceTests : TestBase
         _postEditService = new PostEditService(
             new XliffService(FileManagementClient),
             new JsonGlossaryService(FileManagementClient),
-            new OpenAICompletionService(new Apps.OpenAI.Api.OpenAIClient(CredentialGroups.First())),
+            new OpenAICompletionService(new OpenAiUniversalClient(CredentialGroups.First())),
             new ResponseDeserializationService(),
             new PromptBuilderService(),
             FileManagementClient

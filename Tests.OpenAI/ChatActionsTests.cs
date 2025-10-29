@@ -2,10 +2,7 @@
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Chat;
-using Apps.OpenAI.Models.Responses.Chat;
 using Blackbird.Applications.Sdk.Common.Exceptions;
-using Blackbird.Applications.Sdk.Common.Invocation;
-using Newtonsoft.Json;
 using Tests.OpenAI.Base;
 
 namespace Tests.OpenAI;
@@ -200,12 +197,5 @@ public class ChatActionsTests : TestBase
 
         // Assert
         StringAssert.Contains(ex.Message, "Azure OpenAI does not support chat actions with audio files");
-    }
-
-    private static void PrintResult(InvocationContext context, ChatResponse result)
-    {
-        Console.WriteLine(context.AuthenticationCredentialsProviders.First(x => x.KeyName == CredNames.ConnectionType).Value);
-        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
-        Console.WriteLine();
     }
 }

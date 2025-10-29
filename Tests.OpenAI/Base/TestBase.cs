@@ -1,6 +1,9 @@
-﻿using Blackbird.Applications.Sdk.Common.Authentication;
+﻿using Apps.OpenAI.Constants;
+using Apps.OpenAI.Models.Responses.Chat;
+using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 
 namespace Tests.OpenAI.Base;
 
@@ -23,6 +26,13 @@ public class TestBase
         if (context == null)
             throw new Exception($"Invocation context was not found for this connection type: {connectionType}");
         else return context;
+    }
+
+    protected static void PrintResult(InvocationContext context, object result)
+    {
+        Console.WriteLine(context.AuthenticationCredentialsProviders.First(x => x.KeyName == CredNames.ConnectionType).Value);
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        Console.WriteLine();
     }
 
     private void InitializeCredentials()
