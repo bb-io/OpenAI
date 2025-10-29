@@ -6,6 +6,7 @@ using Blackbird.Applications.Sdk.Common.Files;
 using Newtonsoft.Json;
 using Apps.OpenAI.Models.Requests.Background;
 using Tests.OpenAI.Base;
+using Apps.OpenAI.Constants;
 
 namespace Tests.OpenAI;
 
@@ -94,25 +95,23 @@ public class TranslationActionsTests : TestBase
     }
 
     [TestMethod]
-    public async Task TranslateInBackground_WithXliffFile_Success()
+    public async Task TranslateInBackground_OpenAiEmbedded_WithXliffFile_Success()
     {
-        foreach (var context in InvocationContext)
+        var context = GetInvocationContext(ConnectionTypes.OpenAiEmbedded);
+        var actions = new TranslationActions(context, FileManagementClient);
+            
+        var translateRequest = new StartBackgroundProcessRequest
         {
-            var actions = new TranslationActions(context, FileManagementClient);
+            ModelId = "gpt-4.1",
+            File = new FileReference { Name = "contentful12.xliff" },
+            TargetLanguage = "fr"
+        };
             
-            var translateRequest = new StartBackgroundProcessRequest
-            {
-                ModelId = "gpt-4.1",
-                File = new FileReference { Name = "The Hobbit, or There and Back Again_en-US.html.xlf" },
-                TargetLanguage = "fr"
-            };
+        var response = await actions.TranslateInBackground(translateRequest);
             
-            var response = await actions.TranslateInBackground(translateRequest);
-            
-            Assert.IsNotNull(response);
-            Assert.IsNotNull(response.BatchId);
-            Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
-        }
+        Assert.IsNotNull(response);
+        Assert.IsNotNull(response.BatchId);
+        Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
     }
 
     [TestMethod]

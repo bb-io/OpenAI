@@ -231,11 +231,11 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
 
         if (!string.IsNullOrEmpty(model) && !model.Contains("gpt-5"))
         {
-            body.AppendIfNotNull("temperature", input.Temperature);
+            body.AppendIfNotNull("temperature", input?.Temperature);
         }
 
-        body.AppendIfNotNull("max_completion_tokens", input.MaximumTokens);
-        body.AppendIfNotNull("reasoning_effort", input.ReasoningEffort);
+        body.AppendIfNotNull("max_completion_tokens", input?.MaximumTokens);
+        body.AppendIfNotNull("reasoning_effort", input?.ReasoningEffort);
 
         return await UniversalClient.ExecuteChatCompletion(body, model);
     }
@@ -248,7 +248,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         var userPrompt = snippet + ". The BCP 47 language code: ";
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId);
+        var response = await ExecuteChatCompletion(messages, UniversalClient.GetModel(modelIdentifier.ModelId));
 
         return response.Choices.First().Message.Content;
     }
