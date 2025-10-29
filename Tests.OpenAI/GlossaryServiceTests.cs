@@ -34,7 +34,7 @@ public class GlossaryServiceTests : TestBase
             
             // Assert
             Assert.IsNotNull(result);
-            Console.WriteLine(result);
+            PrintResult(context, result);
             
             Assert.IsTrue(result.Contains("Glossary entries"));
             Assert.IsTrue(result.Contains("Entry:"));
@@ -59,8 +59,8 @@ public class GlossaryServiceTests : TestBase
             
             // Assert
             Assert.IsNotNull(result);
-            Console.WriteLine(result);
-            
+            PrintResult(context, result);
+
             Assert.IsTrue(result.Contains("Glossary entries"));
             Assert.IsTrue(result.Contains("Entry:"));
             
@@ -91,7 +91,7 @@ public class GlossaryServiceTests : TestBase
             }
             else
             {
-                Console.WriteLine(result);
+                PrintResult(context, result);
                 Assert.IsTrue(result.Contains("Glossary entries"));
             }
         }
@@ -113,8 +113,8 @@ public class GlossaryServiceTests : TestBase
             
             // Assert
             Assert.IsNotNull(result);
-            Console.WriteLine(result);
-            
+            PrintResult(context, result);
+
             bool hasUsageExamples = result.Contains("Usage example:");
             Console.WriteLine($"Glossary contains usage examples: {hasUsageExamples}");
         }
