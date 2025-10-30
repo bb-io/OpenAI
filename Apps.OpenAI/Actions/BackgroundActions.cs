@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
 using Apps.OpenAI.Api.Requests;
+using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Entities;
 using Apps.OpenAI.Models.Requests.Background;
@@ -65,21 +66,41 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
                 throw new PluginApplicationException($"Invalid CustomId '{batchRequest.CustomId}' in batch request. Expected an integer value. You probably provided the batch that was not created by Blackbird.");
 
             var responseContent = batchRequest.Response.Body.Choices[0].Message.Content;
-            
+
             try
             {
-                var translationResponse = JsonConvert.DeserializeObject<TranslationResponse>(responseContent);
-                if (translationResponse?.Translations == null)
+                TranslationResponse translationResponse;
+                var cleanedContent = responseContent.Trim().Trim('`').Trim();
+
+                if (cleanedContent.StartsWith("{") || cleanedContent.StartsWith("["))
                 {
-                    throw new PluginApplicationException($"Invalid response format in batch {bucketIndex}. Expected JSON with translations array.");
+                    translationResponse = JsonConvert.DeserializeObject<TranslationResponse>(cleanedContent)
+                        ?? throw new PluginApplicationException($"Empty or invalid JSON in batch {bucketIndex}.");
                 }
+                else
+                {
+                    translationResponse = new TranslationResponse
+                    {
+                        Translations = new List<TranslationEntity>
+                        {
+                            new()
+                            {
+                                TranslationId = "0",
+                                TranslatedText = cleanedContent
+                            }
+                        }
+                    };
+                }
+
+                if (translationResponse.Translations == null || !translationResponse.Translations.Any())
+                    throw new PluginApplicationException($"Invalid response format in batch {bucketIndex}. Expected translations array or plain text.");
 
                 foreach (var translation in translationResponse.Translations)
                 {
                     processedCount++;
-                    var segmentIndex = int.TryParse(translation.TranslationId, out var segIdx) ? segIdx : 
+                    var segmentIndex = int.TryParse(translation.TranslationId, out var segIdx) ? segIdx :
                         throw new PluginApplicationException($"Invalid translation_id '{translation.TranslationId}' in batch response. Expected an integer value.");
-                    
+
                     var segment = segments.Count > segmentIndex ? segments[segmentIndex] : null;
                     if (segment == null)
                     {
@@ -94,7 +115,7 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
                             segment.State = SegmentState.Translated;
                             segment.SetTarget(newContent);
                             updatedCount++;
-                        } 
+                        }
                         else if (backgroundType == "edit")
                         {
                             if (segment.GetTarget() != newContent)
@@ -103,7 +124,7 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
                                 updatedCount++;
                             }
                             segment.State = SegmentState.Reviewed;
-                        } 
+                        }
                         else
                         {
                             segment.SetTarget(newContent);
@@ -116,7 +137,8 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
             {
                 throw new PluginApplicationException($"Failed to parse JSON response from batch {bucketIndex}: {ex.Message}. Response content: {responseContent}");
             }
-            
+
+
             if (batchRequest.Response.Body.Usage != null)
             {
                 usageList.Add(new UsageDto
@@ -186,57 +208,82 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
         var usage = new UsageDto();
         var combinedReport = new StringBuilder();
         var segmentReports = new List<SegmentMqmReport>();
-        
+
         foreach (var batchRequest in batchRequests)
         {
-            var bucketIndex = int.TryParse(batchRequest.CustomId, out var idx) ? idx : 
-                throw new PluginApplicationException($"Invalid CustomId '{batchRequest.CustomId}' in batch request. Expected an integer value.");
-            
+            var bucketIndex = int.TryParse(batchRequest.CustomId, out var idx)
+                ? idx
+                : throw new PluginApplicationException(
+                    $"Invalid CustomId '{batchRequest.CustomId}' in batch request. Expected an integer value.");
+
             var responseContent = batchRequest.Response.Body.Choices[0].Message.Content;
-            
+            if (string.IsNullOrWhiteSpace(responseContent))
+                throw new PluginApplicationException($"Empty response content in batch request {bucketIndex}.");
+
             try
             {
-                var mqmResponse = JsonConvert.DeserializeObject<MqmReportResponse>(responseContent);
-                if (mqmResponse?.Reports == null)
+                var cleaned = responseContent.Trim().Trim('`').Trim();
+
+                MqmReportResponse mqmResponse;
+
+                if (cleaned.StartsWith("{") || cleaned.StartsWith("["))
                 {
-                    throw new PluginApplicationException($"Invalid response format in batch {bucketIndex}. Expected JSON with reports array.");
+                    mqmResponse = JsonConvert.DeserializeObject<MqmReportResponse>(cleaned)
+                        ?? throw new PluginApplicationException($"Invalid JSON MQM report format in batch {bucketIndex}.");
+                }
+                else
+                {
+                    mqmResponse = new MqmReportResponse
+                    {
+                        Reports =
+                        {
+                            new MqmReportEntity
+                            {
+                                SegmentId = bucketIndex.ToString(),
+                                MqmReport = cleaned
+                            }
+                        }
+                    };
                 }
 
                 foreach (var report in mqmResponse.Reports)
                 {
-                    var segmentIndex = int.TryParse(report.SegmentId, out var segIdx) ? segIdx : 
-                        throw new PluginApplicationException($"Invalid segment_id '{report.SegmentId}' in batch response. Expected an integer value.");
-                    
+                    var segmentIndex = int.TryParse(report.SegmentId, out var segIdx)
+                        ? segIdx
+                        : throw new PluginApplicationException(
+                            $"Invalid segment_id '{report.SegmentId}' in batch response. Expected an integer value.");
+
                     var segment = segments.Count > segmentIndex ? segments[segmentIndex] : null;
                     if (segment == null)
                     {
                         throw new PluginApplicationException($"Segment with index {segmentIndex} not found in the content file.");
                     }
-                    
+
                     var sourceText = segment.GetSource();
                     var targetText = segment.GetTarget();
                     var mqmReport = report.MqmReport;
-                    
+
                     combinedReport.AppendLine($"Source: {sourceText}");
                     combinedReport.AppendLine($"Translation: {targetText}");
                     combinedReport.AppendLine("MQM Report:");
                     combinedReport.AppendLine(mqmReport);
                     combinedReport.AppendLine(new string('-', 50));
                     combinedReport.AppendLine();
-                    
-                    segmentReports.Add(new SegmentMqmReport 
+
+                    segmentReports.Add(new SegmentMqmReport
                     {
                         SourceText = sourceText,
-                        TargetText = targetText, 
+                        TargetText = targetText,
                         MqmReport = mqmReport
                     });
                 }
             }
             catch (JsonException ex)
             {
-                throw new PluginApplicationException($"Failed to parse JSON response from batch {bucketIndex}: {ex.Message}. Response content: {responseContent}");
+                throw new PluginApplicationException(
+                    $"Failed to parse MQM report in batch {bucketIndex}: {ex.Message}. Response content: {responseContent}");
             }
-            
+
             if (batchRequest.Response.Body.Usage != null)
             {
                 usage += new UsageDto
@@ -247,7 +294,7 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
                 };
             }
         }
-        
+
         return new MqmBackgroundResponse
         {
             CombinedReport = combinedReport.ToString(),
@@ -277,7 +324,7 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
                 $"The batch process failed. Errors: {batch.Errors}");
         }
 
-        var fileContentResponse = await Client.ExecuteWithErrorHandling(
+        var fileContentResponse = await UniversalClient.ExecuteWithErrorHandling(
             new OpenAIRequest($"/files/{batch.OutputFileId}/content", Method.Get));
 
         var batchRequests = new List<BatchRequestDto>();
@@ -294,11 +341,11 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
     private async Task<BatchResponse> GetBatchStatusAsync(string batchId)
     {
         var getBatchRequest = new OpenAIRequest($"/batches/{batchId}", Method.Get);
-        return await Client.ExecuteWithErrorHandling<BatchResponse>(getBatchRequest);
+        return await UniversalClient.ExecuteWithErrorHandling<BatchResponse>(getBatchRequest);
     }
-    
+
     #endregion
-    
+
     private class MqmReportResponse
     {
         [JsonProperty("reports")]
