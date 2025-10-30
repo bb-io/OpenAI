@@ -27,6 +27,7 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
         string model = GetModel("gpt-3.5-turbo");
         var body = new Dictionary<string, object>
         {
+            ["model"] = model,
             ["messages"] = new[]
             {
                 new
@@ -39,7 +40,7 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
 
         try
         {
-            await ExecuteChatCompletion(body, model);
+            await ExecuteChatCompletion(body);
             return new() { IsValid = true };
         }
         catch (Exception ex)
@@ -52,16 +53,10 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
         }
     }
 
-    public async Task<ChatCompletionDto> ExecuteChatCompletion(Dictionary<string, object> input, string model)
+    public async Task<ChatCompletionDto> ExecuteChatCompletion(Dictionary<string, object> input)
     {
-        bool isEmbeddedModel = ConnectionType == ConnectionTypes.AzureOpenAi || ConnectionType == ConnectionTypes.OpenAiEmbedded;
-        var extractedModel = isEmbeddedModel ? GetModel() : model;
-        input["model"] = extractedModel;
-
         var request = new OpenAIRequest("/chat/completions", Method.Post, input);
-        SetAuthHeader(request);
-
-        return await base.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+        return await ExecuteWithErrorHandling<ChatCompletionDto>(request);
     }
 
     public override async Task<T> ExecuteWithErrorHandling<T>(RestRequest request)
@@ -74,20 +69,33 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
     public override async Task<RestResponse> ExecuteWithErrorHandling(RestRequest request)
     {
         SetAuthHeader(request);
+
         RestResponse restResponse = await ExecuteAsync(request);
         if (!restResponse.IsSuccessStatusCode)
-        {
             throw ConfigureErrorException(restResponse);
-        }
+
         return restResponse;
     }
 
     public string GetModel(string defaultValue = null)
     {
-        string? model = credentials.FirstOrDefault(x => x.KeyName == CredNames.Model)?.Value ?? defaultValue;
-        if (model == null)
-            throw new PluginApplicationException("Model is not specified in the connection or input");
-        else return model;
+        return ConnectionType switch
+        {
+            ConnectionTypes.OpenAiEmbedded =>
+                defaultValue
+                ?? credentials.FirstOrDefault(x => x.KeyName == CredNames.Model)?.Value
+                ?? throw new PluginApplicationException("Model must be provided in the input or connection"),
+
+            ConnectionTypes.OpenAi =>
+                defaultValue
+                ?? throw new PluginApplicationException("Model must be provided in the input"),
+
+            ConnectionTypes.AzureOpenAi =>
+                credentials.FirstOrDefault(x => x.KeyName == CredNames.Model)?.Value
+                ?? throw new PluginApplicationException("Model must be provided in the connection"),
+
+            _ => throw new PluginApplicationException($"Unsupported connection type: {ConnectionType}")
+        };
     }
 
     private void SetAuthHeader(RestRequest request) => request.AddHeader(_authHeader.HeaderKey, _authHeader.HeaderValue);

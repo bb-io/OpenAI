@@ -222,6 +222,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
     {
         var body = new Dictionary<string, object>
         {
+            { "model", model },
             { "messages", messages },
             { "top_p", input?.TopP ?? 1 },
             { "presence_penalty", input?.PresencePenalty ?? 0 },
@@ -236,7 +237,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         body.AppendIfNotNull("max_completion_tokens", input?.MaximumTokens);
         body.AppendIfNotNull("reasoning_effort", input?.ReasoningEffort);
 
-        return await UniversalClient.ExecuteChatCompletion(body, model);
+        return await UniversalClient.ExecuteChatCompletion(body);
     }
 
     protected async Task<string> IdentifySourceLanguage(TextChatModelIdentifier modelIdentifier, string content)

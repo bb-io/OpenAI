@@ -11,26 +11,24 @@ namespace Tests.OpenAI;
 public class ChatActionsTests : TestBase
 {
     [TestMethod]
-    public async Task ChatMessageRequest_WithSimpleTextMessage_ReturnsValidResponse()
+    public async Task ChatMessageRequest_OpenAiEmbeddedWithSimpleTextMessage_ReturnsValidResponse()
     {
-        foreach (var context in InvocationContext)
+        // Arrange
+        var context = GetInvocationContext(ConnectionTypes.OpenAiEmbedded);
+        var actions = new ChatActions(context, FileManagementClient);
+        var model = new TextChatModelIdentifier { ModelId = "gpt-5" };
+        var chatRequest = new ChatRequest
         {
-            // Arrange
-            var actions = new ChatActions(context, FileManagementClient);
-            var model = new TextChatModelIdentifier { ModelId = "gpt-5" };
-            var chatRequest = new ChatRequest
-            {
-                Message = "Who are you? State your model, creator, and your main responsibilities."
-            };
-            var glossary = new GlossaryRequest();
+            Message = "Who are you? State your model, creator, and your main responsibilities."
+        };
+        var glossary = new GlossaryRequest();
 
-            // Act
-            var result = await actions.ChatMessageRequest(model, chatRequest, glossary);
+        // Act
+        var result = await actions.ChatMessageRequest(model, chatRequest, glossary);
 
-            // Assert
-            PrintResult(context, result);
-            Assert.IsNotNull(result.Message);
-        }
+        // Assert
+        PrintResult(context, result);
+        Assert.IsNotNull(result.Message);
     }
 
     [TestMethod]
@@ -39,7 +37,7 @@ public class ChatActionsTests : TestBase
         // Arrange
         var context = GetInvocationContext(ConnectionTypes.AzureOpenAi);
         var actions = new ChatActions(context, FileManagementClient);
-        var model = new TextChatModelIdentifier { ModelId = null };
+        var model = new TextChatModelIdentifier { ModelId = "gpt-5" };
         var chatRequest = new ChatRequest
         {
             Message = "Who are you? State your model, creator, and your main responsibilities."

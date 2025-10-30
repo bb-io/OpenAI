@@ -30,6 +30,6 @@ public class ConnectionValidatorTests : TestBase
         );
 
         // Assert
-        StringAssert.Contains(ex.Message, "Unknown connection type");
+        StringAssert.Contains(ex.Message, "Unsupported connection type");
     }
 }

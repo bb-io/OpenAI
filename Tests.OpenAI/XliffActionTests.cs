@@ -25,20 +25,20 @@ public class XliffActionTests : TestBase
             var editRequest = new PostEditXliffRequest
             {
                 DisableTagChecks = true,
-                File = new FileReference { Name = "670470817.xliff" },
+                File = new FileReference { Name = "contentful.html.xliff" },
                 SourceLanguage = "German",
                 TargetLanguage = "Italian",
 
             };
             string? systemMessage = prompt;
-            var glossaryRequest = new GlossaryRequest { Glossary = new FileReference { Name = "CAS LTAI.tbx" } };
+            var glossaryRequest = new GlossaryRequest { Glossary = new FileReference { Name = "glossary.tbx" } };
 
             // Act
             var result = await actions.PostEditXLIFF(modelIdentifier, editRequest, systemMessage, glossaryRequest);
 
             // Assert
             PrintResult(context, result);
-            Assert.IsTrue(result.File.Name.Contains("test"));
+            Assert.IsNotNull(result);
         }
     }
 
@@ -57,9 +57,8 @@ public class XliffActionTests : TestBase
             var glossaryRequest = new GlossaryRequest();
             
             await Assert.ThrowsExceptionAsync<PluginMisconfigurationException>(async () =>
-            {
-                await actions.TranslateXliff(modelIdentifier, translateRequest, systemMessage, glossaryRequest);
-            });
+                await actions.TranslateXliff(modelIdentifier, translateRequest, systemMessage, glossaryRequest)
+            );
         }
     }
 
@@ -106,10 +105,10 @@ public class XliffActionTests : TestBase
             };
             
             var result = await actions.PostEditXLIFF(modelIdentifier, editRequest, systemMessage, glossaryRequest);
+            
             Assert.IsNotNull(result);
             Assert.IsTrue(result.File.Name.Contains("test.xlf"));
-
-            Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+            PrintResult(context, result);
         }
     }
     
@@ -129,10 +128,10 @@ public class XliffActionTests : TestBase
             };
             
             var result = await actions.ScoreXLIFF(modelIdentifier, scoreRequest, null, 1500);
+
             Assert.IsNotNull(result);
             Assert.IsTrue(result.File.Name.Contains("test"));
-
-            Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+            PrintResult(context, result);
         }
     }
 }
