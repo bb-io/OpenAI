@@ -32,7 +32,6 @@ namespace Apps.OpenAI.Actions.Base;
 public abstract class BaseActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : OpenAIInvocable(invocationContext)
 {
-    protected readonly OpenAIClient Client = new OpenAIClient(invocationContext.AuthenticationCredentialsProviders);
     protected readonly OpenAiUniversalClient UniversalClient = new OpenAiUniversalClient(invocationContext.AuthenticationCredentialsProviders);
     protected readonly IFileManagementClient FileManagementClient = fileManagementClient;
 
