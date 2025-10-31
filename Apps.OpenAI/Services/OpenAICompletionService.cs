@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Apps.OpenAI.Api;
-using Apps.OpenAI.Constants;
+using Apps.OpenAI.Api.Requests;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.PostEdit;
 using Apps.OpenAI.Models.Requests.Chat;
@@ -14,7 +14,7 @@ using TiktokenSharp;
 
 namespace Apps.OpenAI.Services;
 
-public class OpenAICompletionService(OpenAIClient openAIClient) : IOpenAICompletionService
+public class OpenAICompletionService(OpenAiUniversalClient openAIClient) : IOpenAICompletionService
 {
     private const string DefaultEncoding = "cl100k_base";
 

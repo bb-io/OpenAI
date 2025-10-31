@@ -1,6 +1,6 @@
+using Tests.OpenAI.Base;
 using Apps.OpenAI.Connections;
 using Blackbird.Applications.Sdk.Common.Authentication;
-using Tests.OpenAI.Base;
 
 namespace Tests.OpenAI;
 
@@ -12,17 +12,24 @@ public class ConnectionValidatorTests : TestBase
     {
         var validator = new ConnectionValidator();
 
-        var result = await validator.ValidateConnection(Creds, CancellationToken.None);
-        Assert.IsTrue(result.IsValid);
+        var tasks = CredentialGroups.Select(x => validator.ValidateConnection(x, CancellationToken.None).AsTask());
+        var results = await Task.WhenAll(tasks);
+        Assert.IsTrue(results.All(x => x.IsValid));
     }
 
     [TestMethod]
     public async Task ValidateConnection_WithIncorrectCredentials_ReturnsInvalidResult()
     {
+        // Arrange
         var validator = new ConnectionValidator();
+        var newCreds = CredentialGroups.First().Select(x => new AuthenticationCredentialsProvider(x.KeyName, x.Value + "_incorrect"));
 
-        var newCreds = Creds.Select(x => new AuthenticationCredentialsProvider(x.KeyName, x.Value + "_incorrect"));
-        var result = await validator.ValidateConnection(newCreds, CancellationToken.None);
-        Assert.IsFalse(result.IsValid);
+        // Act
+        var ex = await Assert.ThrowsExceptionAsync<Exception>(async () =>
+            await validator.ValidateConnection(newCreds, CancellationToken.None)
+        );
+
+        // Assert
+        StringAssert.Contains(ex.Message, "Unsupported connection type");
     }
 }

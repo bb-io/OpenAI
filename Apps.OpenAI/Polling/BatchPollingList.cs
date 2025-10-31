@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
-using Apps.OpenAI.Api;
+using Apps.OpenAI.Api.Requests;
 using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Responses.Batch;
 using Apps.OpenAI.Polling.Models;
@@ -33,7 +33,7 @@ public class BatchPollingList(InvocationContext invocationContext) : BaseActions
         }
         
         var getBatchRequest = new OpenAIRequest($"/batches/{identifier.BatchId}", Method.Get);
-        var batch = await Client.ExecuteWithErrorHandling<BatchResponse>(getBatchRequest);
+        var batch = await UniversalClient.ExecuteWithErrorHandling<BatchResponse>(getBatchRequest);
         var triggered = (batch.Status == "completed" || batch.Status == "failed" || batch.Status == "cancelled") && !request.Memory.Triggered;
         return new()
         {

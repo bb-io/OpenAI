@@ -26,14 +26,14 @@ using Apps.OpenAI.Models.Requests.Background;
 using Apps.OpenAI.Models.Responses.Background;
 using Apps.OpenAI.Models.Responses.Chat;
 using Apps.OpenAI.Utils;
-using Blackbird.Applications.Sdk.Glossaries.Utils.Converters;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
 using Blackbird.Filters.Xliff.Xliff1;
 
 namespace Apps.OpenAI.Actions;
 
 [ActionList("Translation")]
-public class TranslationActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : BaseActions(invocationContext, fileManagementClient)
+public class TranslationActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
+    : BaseActions(invocationContext, fileManagementClient)
 {
     [BlueprintActionDefinition(BlueprintAction.TranslateFile)]
     [Action("Translate", Description = "Translate file content retrieved from a CMS or file storage. The output can be used in compatible actions.")]
@@ -58,9 +58,9 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
             content.SourceLanguage = await IdentifySourceLanguage(modelIdentifier, content.Source().GetPlaintext());
         }
 
-        var batchProcessingService = new BatchProcessingService(Client, FileManagementClient);
+        var batchProcessingService = new BatchProcessingService(UniversalClient, FileManagementClient);
         var batchOptions = new BatchProcessingOptions(
-            modelIdentifier.GetModel(),
+            UniversalClient.GetModel(modelIdentifier.ModelId),
             content.SourceLanguage,
             content.TargetLanguage,
             prompt,
@@ -144,8 +144,8 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
                 }
             }
 
-            unit.Provenance.Translation.Tool = modelIdentifier.GetModel();
-            unit.Provenance.Translation.ToolReference = $"https://openai.com/{modelIdentifier.GetModel()}";
+            unit.Provenance.Translation.Tool = UniversalClient.GetModel(modelIdentifier.ModelId);
+            unit.Provenance.Translation.ToolReference = $"https://openai.com/{UniversalClient.GetModel(modelIdentifier.ModelId)}";
         }
 
         result.TargetsUpdatedCount = updatedCount;
@@ -163,7 +163,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         else
         {
             result.File = await fileManagementClient.UploadAsync(content.Serialize().ToStream(), MediaTypes.Xliff, content.XliffFileName);
-        }       
+        }
 
         return result;
     }    
@@ -258,7 +258,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
                 url = "/v1/chat/completions",
                 body = new
                 {
-                    model = startBackgroundProcessRequest.GetModel(),
+                    model = UniversalClient.GetModel(startBackgroundProcessRequest.ModelId),
                     messages = new object[]
                     {
                         new
@@ -323,7 +323,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         userPrompt += "Localized text: ";
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel(), input);
+        var response = await ExecuteChatCompletion(messages, UniversalClient.GetModel(modelIdentifier.ModelId), input);
 
         return new()
         {
