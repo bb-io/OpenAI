@@ -84,15 +84,15 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
             ConnectionTypes.OpenAiEmbedded =>
                 defaultValue
                 ?? credentials.FirstOrDefault(x => x.KeyName == CredNames.Model)?.Value
-                ?? throw new PluginApplicationException("Model must be provided in the input or connection"),
+                ?? throw new PluginMisconfigurationException("Model must be provided in the input or connection"),
 
             ConnectionTypes.OpenAi =>
                 defaultValue
-                ?? throw new PluginApplicationException("Model must be provided in the input"),
+                ?? throw new PluginMisconfigurationException("Model must be provided in the input"),
 
             ConnectionTypes.AzureOpenAi =>
                 credentials.FirstOrDefault(x => x.KeyName == CredNames.Model)?.Value
-                ?? throw new PluginApplicationException("Model must be provided in the connection"),
+                ?? throw new PluginMisconfigurationException("Model must be provided in the connection"),
 
             _ => throw new PluginApplicationException($"Unsupported connection type: {ConnectionType}")
         };
