@@ -34,7 +34,6 @@ namespace Apps.OpenAI.Actions;
 [ActionList("Editing")]
 public class EditActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : BaseActions(invocationContext, fileManagementClient)
 {
-
     [BlueprintActionDefinition(BlueprintAction.EditFile)]
     [Action("Edit", Description = "Edit a translation. This action assumes you have previously translated content in Blackbird through any translation action.")]
     public async Task<ContentProcessingEditResult> EditContent([ActionParameter] TextChatModelIdentifier modelIdentifier,
@@ -51,9 +50,9 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
         var content = await Transformation.Parse(stream, input.File.Name);
 
-        var batchProcessingService = new BatchProcessingService(Client, FileManagementClient);
+        var batchProcessingService = new BatchProcessingService(UniversalClient, FileManagementClient);
         var batchOptions = new BatchProcessingOptions(
-            modelIdentifier.GetModel(),
+            UniversalClient.GetModel(modelIdentifier.ModelId),
             content.SourceLanguage,
             content.TargetLanguage,
             prompt,
@@ -134,8 +133,8 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                 segment.State = SegmentState.Reviewed;
             }
 
-            unit.Provenance.Review.Tool = modelIdentifier.GetModel();
-            unit.Provenance.Review.ToolReference = $"https://openai.com/{modelIdentifier.GetModel()}";
+            unit.Provenance.Review.Tool = UniversalClient.GetModel(modelIdentifier.ModelId);
+            unit.Provenance.Review.ToolReference = $"https://openai.com/{UniversalClient.GetModel(modelIdentifier.ModelId)}";
         }
 
         result.TotalSegmentsUpdated = updatedCount;
@@ -232,7 +231,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                 url = "/v1/chat/completions",
                 body = new
                 {
-                    model = processRequest.GetModel(),
+                    model = UniversalClient.GetModel(processRequest.ModelId),
                     messages = new object[]
                     {
                         new
@@ -309,7 +308,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         }
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel(), new() { ReasoningEffort = input.ReasoningEffort});
+        var response = await ExecuteChatCompletion(messages, UniversalClient.GetModel(modelIdentifier.ModelId), new() { ReasoningEffort = input.ReasoningEffort});
         return new EditResponse
         {
             UserPrompt = userPrompt,

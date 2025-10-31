@@ -1,3 +1,4 @@
+using Apps.OpenAI.Api;
 using Apps.OpenAI.Models.PostEdit;
 using Apps.OpenAI.Services;
 using Apps.OpenAI.Services.Abstract;
@@ -21,7 +22,7 @@ public class PostEditServiceTests : TestBase
         _postEditService = new PostEditService(
             new XliffService(FileManagementClient),
             new JsonGlossaryService(FileManagementClient),
-            new OpenAICompletionService(new Apps.OpenAI.Api.OpenAIClient(Creds)),
+            new OpenAICompletionService(new OpenAiUniversalClient(CredentialGroups.First())),
             new ResponseDeserializationService(),
             new PromptBuilderService(),
             FileManagementClient
@@ -35,148 +36,28 @@ public class PostEditServiceTests : TestBase
     [TestMethod]
     public async Task PostEditXliffAsync_WithValidRequest_ReturnsSuccessfulResult()
     {
-        // Arrange
-        var request = new OpenAiXliffInnerRequest
+        foreach (var context in InvocationContext)
         {
-            ModelId = ModelId,
-            XliffFile = _xliffFile,
-            NeverFail = true,
-            BucketSize = 50
-        };
+            // Arrange
+            var request = new OpenAiXliffInnerRequest
+            {
+                ModelId = ModelId,
+                XliffFile = _xliffFile,
+                NeverFail = true,
+                BucketSize = 50
+            };
 
-        // Act
-        var result = await _postEditService.PostEditXliffAsync(request);
-
-        // Assert
-        Assert.IsNotNull(result);
-        Assert.IsNotNull(result.File);
-        Assert.IsNotNull(result.Usage);
-        Assert.IsTrue(result.ProcessedBatchesCount > 0);
-        Assert.IsTrue(result.TotalSegmentsCount > 0);
-
-        // Output results for manual inspection
-        Console.WriteLine($"Processed batches: {result.ProcessedBatchesCount}");
-        Console.WriteLine($"Total segments: {result.TotalSegmentsCount}");
-        Console.WriteLine($"Updated segments: {result.TargetsUpdatedCount}");
-        Console.WriteLine($"Errors count: {result.ErrorMessages.Count}");
-        Console.WriteLine($"Locked segments excluded count: {result.LockedSegmentsExcludeCount}");
-
-        foreach (var error in result.ErrorMessages)
-        {
-            Console.WriteLine($"Error: {error}");
-        }
-    }
-
-    [TestMethod]
-    public async Task PostEditXliffAsync_WithGlossary_UsesGlossaryForTranslation()
-    {
-        // Arrange
-        var request = new OpenAiXliffInnerRequest
-        {
-            ModelId = ModelId,
-            XliffFile = _xliffFile,
-            Glossary = _glossaryFile,
-            FilterGlossary = true,
-            BucketSize = 1000,
-            NeverFail = true
-        };
-
-        // Act
-        var result = await _postEditService.PostEditXliffAsync(request);
-
-        // Assert
-        Assert.IsNotNull(result);
-        Assert.IsNotNull(result.File);
-        Assert.IsTrue(result.TargetsUpdatedCount > 0, "No segments were updated");
-
-        // Output results for manual inspection
-        Console.WriteLine($"Processed batches: {result.ProcessedBatchesCount}");
-        Console.WriteLine($"Total segments: {result.TotalSegmentsCount}");
-        Console.WriteLine($"Updated segments: {result.TargetsUpdatedCount}");
-        Console.WriteLine($"Usage - Prompt tokens: {result.Usage.PromptTokens}");
-        Console.WriteLine($"Usage - Completion tokens: {result.Usage.CompletionTokens}");
-        Console.WriteLine($"Usage - Total tokens: {result.Usage.TotalTokens}");
-        Console.WriteLine($"Locked segments excluded count: {result.LockedSegmentsExcludeCount}");
-    }
-
-    [TestMethod]
-    public async Task PostEditXliffAsync_WithCustomPrompt_AppliesPromptToTranslation()
-    {
-        // Arrange
-        var customPrompt = "Please ensure that all technical terms are translated accurately. " +
-                          "Keep the translations concise and clear.";
-
-        var request = new OpenAiXliffInnerRequest
-        {
-            ModelId = ModelId,
-            XliffFile = _xliffFile,
-            Prompt = customPrompt,
-            BucketSize = 1000,
-            NeverFail = true
-        };
-
-        // Act
-        var result = await _postEditService.PostEditXliffAsync(request);
-
-        // Assert
-        Assert.IsNotNull(result);
-        Assert.IsNotNull(result.File);
-        Assert.IsTrue(result.TargetsUpdatedCount > 0, "No segments were updated");
-
-        // Output results for manual inspection
-        Console.WriteLine($"Total segments: {result.TotalSegmentsCount}");
-        Console.WriteLine($"Updated segments: {result.TargetsUpdatedCount}");
-        Console.WriteLine($"Locked segments excluded count: {result.LockedSegmentsExcludeCount}");
-    }
-
-    [TestMethod]
-    public async Task PostEditXliffAsync_WithLowBatchSize_ProcessesAllSegments()
-    {
-        // Arrange
-        var request = new OpenAiXliffInnerRequest
-        {
-            ModelId = ModelId,
-            XliffFile = _xliffFile,
-            BucketSize = 2,
-            NeverFail = true
-        };
-
-        // Act
-        var result = await _postEditService.PostEditXliffAsync(request);
-
-        // Assert
-        Assert.IsNotNull(result);
-        Assert.IsTrue(result.ProcessedBatchesCount > 0);
-        Assert.IsTrue(result.TotalSegmentsCount > 0);
-
-        Console.WriteLine($"Bucket size: {request.BucketSize}");
-        Console.WriteLine($"Processed batches: {result.ProcessedBatchesCount}");
-        Console.WriteLine($"Total segments: {result.TotalSegmentsCount}");
-        Console.WriteLine($"Updated segments: {result.TargetsUpdatedCount}");
-        Console.WriteLine($"Locked segments excluded count: {result.LockedSegmentsExcludeCount}");
-    }
-
-    [TestMethod]
-    public async Task PostEditXliffAsync_WithNeverFailFalse_ThrowsExceptionOnError()
-    {
-        // Arrange
-        var request = new OpenAiXliffInnerRequest
-        {
-            ModelId = ModelId,
-            XliffFile = _xliffFile,
-            BucketSize = 1000,
-            NeverFail = false, // Will throw exception on error
-            // Using an invalid model ID would cause an error, but we can't risk actual API errors in tests
-            // so this test might not reliably demonstrate the exception behavior
-        };
-
-        try
-        {
             // Act
             var result = await _postEditService.PostEditXliffAsync(request);
 
-            // If no exception is thrown, report details for analysis
-            Console.WriteLine("No exception was thrown. This might mean the test conditions didn't trigger an error.");
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsNotNull(result.File);
+            Assert.IsNotNull(result.Usage);
+            Assert.IsTrue(result.ProcessedBatchesCount > 0);
+            Assert.IsTrue(result.TotalSegmentsCount > 0);
+
+            // Output results for manual inspection
             Console.WriteLine($"Processed batches: {result.ProcessedBatchesCount}");
             Console.WriteLine($"Total segments: {result.TotalSegmentsCount}");
             Console.WriteLine($"Updated segments: {result.TargetsUpdatedCount}");
@@ -188,14 +69,149 @@ public class PostEditServiceTests : TestBase
                 Console.WriteLine($"Error: {error}");
             }
         }
-        catch (Exception ex)
+    }
+
+    [TestMethod]
+    public async Task PostEditXliffAsync_WithGlossary_UsesGlossaryForTranslation()
+    {
+        foreach (var context in InvocationContext)
         {
-            // Assert - this is the expected path if an error occurs
-            Console.WriteLine($"Exception thrown as expected: {ex.Message}");
-            Assert.IsTrue(ex.Message.Contains("Failed to process batch") ||
-                         ex.Message.Contains("Error") ||
-                         ex.Message.Contains("OpenAI"),
-                         $"Unexpected exception message: {ex.Message}");
+            // Arrange
+            var request = new OpenAiXliffInnerRequest
+            {
+                ModelId = ModelId,
+                XliffFile = _xliffFile,
+                Glossary = _glossaryFile,
+                FilterGlossary = true,
+                BucketSize = 1000,
+                NeverFail = true
+            };
+
+            // Act
+            var result = await _postEditService.PostEditXliffAsync(request);
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsNotNull(result.File);
+            Assert.IsTrue(result.TargetsUpdatedCount > 0, "No segments were updated");
+
+            // Output results for manual inspection
+            Console.WriteLine($"Processed batches: {result.ProcessedBatchesCount}");
+            Console.WriteLine($"Total segments: {result.TotalSegmentsCount}");
+            Console.WriteLine($"Updated segments: {result.TargetsUpdatedCount}");
+            Console.WriteLine($"Usage - Prompt tokens: {result.Usage.PromptTokens}");
+            Console.WriteLine($"Usage - Completion tokens: {result.Usage.CompletionTokens}");
+            Console.WriteLine($"Usage - Total tokens: {result.Usage.TotalTokens}");
+            Console.WriteLine($"Locked segments excluded count: {result.LockedSegmentsExcludeCount}");
+        }
+    }
+
+    [TestMethod]
+    public async Task PostEditXliffAsync_WithCustomPrompt_AppliesPromptToTranslation()
+    {
+        foreach (var context in InvocationContext)
+        {
+            // Arrange
+            var customPrompt = "Please ensure that all technical terms are translated accurately. " +
+                              "Keep the translations concise and clear.";
+
+            var request = new OpenAiXliffInnerRequest
+            {
+                ModelId = ModelId,
+                XliffFile = _xliffFile,
+                Prompt = customPrompt,
+                BucketSize = 1000,
+                NeverFail = true
+            };
+
+            // Act
+            var result = await _postEditService.PostEditXliffAsync(request);
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsNotNull(result.File);
+            Assert.IsTrue(result.TargetsUpdatedCount > 0, "No segments were updated");
+
+            // Output results for manual inspection
+            Console.WriteLine($"Total segments: {result.TotalSegmentsCount}");
+            Console.WriteLine($"Updated segments: {result.TargetsUpdatedCount}");
+            Console.WriteLine($"Locked segments excluded count: {result.LockedSegmentsExcludeCount}");
+        }
+    }
+
+    [TestMethod]
+    public async Task PostEditXliffAsync_WithLowBatchSize_ProcessesAllSegments()
+    {
+        foreach (var context in InvocationContext)
+        {
+            // Arrange
+            var request = new OpenAiXliffInnerRequest
+            {
+                ModelId = ModelId,
+                XliffFile = _xliffFile,
+                BucketSize = 2,
+                NeverFail = true
+            };
+
+            // Act
+            var result = await _postEditService.PostEditXliffAsync(request);
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsTrue(result.ProcessedBatchesCount > 0);
+            Assert.IsTrue(result.TotalSegmentsCount > 0);
+
+            Console.WriteLine($"Bucket size: {request.BucketSize}");
+            Console.WriteLine($"Processed batches: {result.ProcessedBatchesCount}");
+            Console.WriteLine($"Total segments: {result.TotalSegmentsCount}");
+            Console.WriteLine($"Updated segments: {result.TargetsUpdatedCount}");
+            Console.WriteLine($"Locked segments excluded count: {result.LockedSegmentsExcludeCount}");
+        }
+    }
+
+    [TestMethod]
+    public async Task PostEditXliffAsync_WithNeverFailFalse_ThrowsExceptionOnError()
+    {
+        foreach (var context in InvocationContext)
+        {
+            // Arrange
+            var request = new OpenAiXliffInnerRequest
+            {
+                ModelId = ModelId,
+                XliffFile = _xliffFile,
+                BucketSize = 1000,
+                NeverFail = false, // Will throw exception on error
+                // Using an invalid model ID would cause an error, but we can't risk actual API errors in tests
+                // so this test might not reliably demonstrate the exception behavior
+            };
+
+            try
+            {
+                // Act
+                var result = await _postEditService.PostEditXliffAsync(request);
+
+                // If no exception is thrown, report details for analysis
+                Console.WriteLine("No exception was thrown. This might mean the test conditions didn't trigger an error.");
+                Console.WriteLine($"Processed batches: {result.ProcessedBatchesCount}");
+                Console.WriteLine($"Total segments: {result.TotalSegmentsCount}");
+                Console.WriteLine($"Updated segments: {result.TargetsUpdatedCount}");
+                Console.WriteLine($"Errors count: {result.ErrorMessages.Count}");
+                Console.WriteLine($"Locked segments excluded count: {result.LockedSegmentsExcludeCount}");
+
+                foreach (var error in result.ErrorMessages)
+                {
+                    Console.WriteLine($"Error: {error}");
+                }
+            }
+            catch (Exception ex)
+            {
+                // Assert - this is the expected path if an error occurs
+                Console.WriteLine($"Exception thrown as expected: {ex.Message}");
+                Assert.IsTrue(ex.Message.Contains("Failed to process batch") ||
+                             ex.Message.Contains("Error") ||
+                             ex.Message.Contains("OpenAI"),
+                             $"Unexpected exception message: {ex.Message}");
+            }
         }
     }
 }

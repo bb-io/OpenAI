@@ -9,11 +9,11 @@ using Blackbird.Filters.Transformations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Apps.OpenAI.Services;
-public class BatchProcessingService(OpenAIClient openAIClient, IFileManagementClient fileManagementClient)
+
+public class BatchProcessingService(OpenAiUniversalClient openAIClient, IFileManagementClient fileManagementClient)
 {
     public async Task<BatchResult> ProcessBatchAsync(
     Dictionary<string, Segment> batch,

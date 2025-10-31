@@ -2,7 +2,6 @@
 using Apps.OpenAI.Actions;
 using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Chat;
-using Blackbird.Applications.Sdk.Common.Exceptions;
 
 namespace Tests.OpenAI;
 
@@ -10,19 +9,22 @@ namespace Tests.OpenAI;
 public class RepurposeActionsTests : TestBase
 {
     [TestMethod]
-    public async Task CreateSummary_EmptyRequiredInputs_ThrowsException()
+    public async Task CreateSummary_ReturnsRepurposeResponse()
     {
-		// Arrange
-		var actions = new RepurposeActions(InvocationContext, FileManagementClient);
-		string emptyContent = "";
-        var emptyModelIdentifier = new TextChatModelIdentifier { ModelId = "" };
+        foreach (var context in InvocationContext)
+        {
+		    // Arrange
+		    var actions = new RepurposeActions(context, FileManagementClient);
+		    var content = "Hello world! This needs to be repurposed";
+            var model = new TextChatModelIdentifier { ModelId = "gpt-4.1" };
+            var request = new RepurposeRequest { ToneOfVOice = "very angry" };
 
-        // Act
-        var ex = await Assert.ThrowsExceptionAsync<PluginMisconfigurationException>(
-            async () => await actions.CreateSummary(emptyModelIdentifier, emptyContent, new RepurposeRequest { }, new GlossaryRequest { })
-        );
+            // Act
+            var result = await actions.CreateSummary(model, content, request, new GlossaryRequest { });
 
-        // Assert
-        Equals(ex.Message, "These parameters are required and can't be empty: Model; Text; ");
+            // Assert
+            PrintResult(context, result);
+            Assert.IsNotNull(result);
+        }
     }
 }

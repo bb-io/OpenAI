@@ -4,11 +4,7 @@ using Blackbird.Applications.Sdk.Common.Invocation;
 
 namespace Apps.OpenAI.DataSourceHandlers.ModelDataSourceHandlers;
 
-public class ImageGenerationModelDataSourceHandler : BaseModelDataSourceHandler
+public class ImageGenerationModelDataSourceHandler(InvocationContext invocationContext) : BaseModelDataSourceHandler(invocationContext)
 {
     protected override Func<string, bool> ModelIdFilter => id => id.Contains("dall") || id.Contains("gpt-image");
-
-    public ImageGenerationModelDataSourceHandler(InvocationContext invocationContext) : base(invocationContext)
-    {
-    }
 }

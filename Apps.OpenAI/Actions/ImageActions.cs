@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Apps.OpenAI.Actions.Base;
-using Apps.OpenAI.Api;
+using Apps.OpenAI.Api.Requests;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Identifiers;
@@ -22,17 +22,14 @@ using RestSharp;
 namespace Apps.OpenAI.Actions;
 
 [ActionList("Images")]
-public class ImageActions : BaseActions
+public class ImageActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : BaseActions(invocationContext, fileManagementClient)
 {
-    public ImageActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
-        : base(invocationContext, fileManagementClient)
-    {
-    }
-
     [Action("Generate image", Description = "Generates an image based on a prompt")]
     public async Task<ImageResponse> GenerateImage([ActionParameter] ImageGenerationModelIdentifier modelIdentifier,
         [ActionParameter] ImageRequest input)
     {
+        ThrowForAzure("image");
+
         var model = modelIdentifier.ModelId ?? "dall-e-3";
         var request = new OpenAIRequest("/images/generations", Method.Post);
 
@@ -68,7 +65,7 @@ public class ImageActions : BaseActions
             });
         }
 
-        var response = await Client.ExecuteWithErrorHandling<DataDto<ImageDataDto>>(request);
+        var response = await UniversalClient.ExecuteWithErrorHandling<DataDto<ImageDataDto>>(request);
         var bytes = Convert.FromBase64String(response.Data.First().Base64);
 
         using var stream = new MemoryStream(bytes);
@@ -82,6 +79,8 @@ public class ImageActions : BaseActions
         [ActionParameter] ImageChatModelIdentifier modelIdentifier,
         [ActionParameter] GetLocalizableContentFromImageRequest input)
     {
+        ThrowForAzure("image");
+
         var prompt = "Your objective is to conduct optical character recognition (OCR) to identify and extract any " +
                      "localizable content present in the image. Respond with the text found in the image, if any. " +
                      "If no localizable content is detected, provide an empty response.";

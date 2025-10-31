@@ -1,39 +1,38 @@
-﻿using System;
+﻿using Apps.OpenAI.Api;
+using Apps.OpenAI.Api.Requests;
+using Apps.OpenAI.Constants;
+using Apps.OpenAI.Dtos;
+using Apps.OpenAI.Invocables;
+using Apps.OpenAI.Models.Identifiers;
+using Apps.OpenAI.Models.Requests.Chat;
+using Apps.OpenAI.Models.Responses.Batch;
+using Apps.OpenAI.Utils;
+using Blackbird.Applications.Sdk.Common.Exceptions;
+using Blackbird.Applications.Sdk.Common.Files;
+using Blackbird.Applications.Sdk.Common.Invocation;
+using Blackbird.Applications.Sdk.Glossaries.Utils.Converters;
+using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
+using Blackbird.Applications.Sdk.Utils.Extensions.Http;
+using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
+using Blackbird.Xliff.Utils;
+using Blackbird.Xliff.Utils.Extensions;
+using Newtonsoft.Json;
+using RestSharp;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Apps.OpenAI.Api;
-using Apps.OpenAI.Invocables;
-using Blackbird.Applications.Sdk.Common.Files;
-using Blackbird.Applications.Sdk.Common.Invocation;
-using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using Blackbird.Applications.Sdk.Glossaries.Utils.Converters;
-using Blackbird.Xliff.Utils;
-using Blackbird.Xliff.Utils.Extensions;
 using System.Xml;
-using Blackbird.Applications.Sdk.Common.Exceptions;
-using Apps.OpenAI.Dtos;
-using Apps.OpenAI.Models.Requests.Chat;
-using Newtonsoft.Json.Serialization;
-using Newtonsoft.Json;
-using RestSharp;
-using System.Collections.Generic;
-using Apps.OpenAI.Constants;
-using Apps.OpenAI.Models.Identifiers;
-using Apps.OpenAI.Models.Responses.Batch;
-using Apps.OpenAI.Models.Responses.Chat;
-using Blackbird.Applications.Sdk.Common;
-using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
-using Blackbird.Applications.Sdk.Utils.Extensions.Http;
 
 namespace Apps.OpenAI.Actions.Base;
 
 public abstract class BaseActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : OpenAIInvocable(invocationContext)
 {
-    protected readonly OpenAIClient Client = new(invocationContext.AuthenticationCredentialsProviders);
+    protected readonly OpenAiUniversalClient UniversalClient = new OpenAiUniversalClient(invocationContext.AuthenticationCredentialsProviders);
     protected readonly IFileManagementClient FileManagementClient = fileManagementClient;
 
     protected string? GetGlossaryPromptPart(Glossary blackbirdGlossary, string sourceContent, bool filter)
@@ -219,9 +218,9 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         return xliffDocument;
     }
 
-    protected async Task<ChatCompletionDto> ExecuteChatCompletion(IEnumerable<object> messages, string model = "gpt-4-turbo-preview", BaseChatRequest input = null, object responseFormat = null)
+    protected async Task<ChatCompletionDto> ExecuteChatCompletion(IEnumerable<object> messages, string model, BaseChatRequest input = null, object responseFormat = null)
     {
-        var jsonDictionary = new Dictionary<string, object>
+        var body = new Dictionary<string, object>
         {
             { "model", model },
             { "messages", messages },
@@ -229,32 +228,16 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
             { "presence_penalty", input?.PresencePenalty ?? 0 },
             { "frequency_penalty", input?.FrequencyPenalty ?? 0 }
         };
-        
-        if(input?.Temperature != null && !model.Contains("gpt-5"))
+
+        if (!string.IsNullOrEmpty(model) && !model.Contains("gpt-5"))
         {
-            jsonDictionary.Add("temperature", input.Temperature);
-        }
-        
-        if (input?.MaximumTokens != null)
-        {
-            jsonDictionary.Add("max_completion_tokens", input.MaximumTokens);
-        }
-        
-        if (input?.ReasoningEffort != null)
-        {
-            jsonDictionary.Add("reasoning_effort", input.ReasoningEffort);
+            body.AppendIfNotNull("temperature", input?.Temperature);
         }
 
-        var jsonBodySerialized = JsonConvert.SerializeObject(jsonDictionary, new JsonSerializerSettings
-        {
-            ContractResolver = new CamelCasePropertyNamesContractResolver(),
-            NullValueHandling = NullValueHandling.Ignore,
-        });
+        body.AppendIfNotNull("max_completion_tokens", input?.MaximumTokens);
+        body.AppendIfNotNull("reasoning_effort", input?.ReasoningEffort);
 
-        var request = new OpenAIRequest("/chat/completions", Method.Post)
-            .AddJsonBody(jsonBodySerialized);
-
-        return await Client.ExecuteWithErrorHandling<ChatCompletionDto>(request);
+        return await UniversalClient.ExecuteChatCompletion(body);
     }
 
     protected async Task<string> IdentifySourceLanguage(TextChatModelIdentifier modelIdentifier, string content)
@@ -265,7 +248,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         var userPrompt = snippet + ". The BCP 47 language code: ";
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.GetModel());
+        var response = await ExecuteChatCompletion(messages, UniversalClient.GetModel(modelIdentifier.ModelId));
 
         return response.Choices.First().Message.Content;
     }
@@ -288,7 +271,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         var uploadFileRequest = new OpenAIRequest("/files", Method.Post)
             .AddFile("file", bytes, $"{Guid.NewGuid()}.jsonl", "application/jsonl")
             .AddParameter("purpose", "batch");
-        var file = await Client.ExecuteWithErrorHandling<FileDto>(uploadFileRequest);
+        var file = await UniversalClient.ExecuteWithErrorHandling<FileDto>(uploadFileRequest);
 
         var createBatchRequest = new OpenAIRequest("/batches", Method.Post)
             .WithJsonBody(new
@@ -298,6 +281,12 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
                 completion_window = "24h",
             });
         
-        return await Client.ExecuteWithErrorHandling<BatchResponse>(createBatchRequest);
+        return await UniversalClient.ExecuteWithErrorHandling<BatchResponse>(createBatchRequest);
+    }
+
+    protected void ThrowForAzure(string actionType)
+    {
+        if (UniversalClient.ConnectionType == ConnectionTypes.AzureOpenAi)
+            throw new PluginMisconfigurationException($"Azure OpenAI does not support {actionType} actions. Please use OpenAI for such tasks");
     }
 }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Apps.OpenAI.Api;
+using Apps.OpenAI.Api.Requests;
 using Apps.OpenAI.Dtos;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dynamic;
@@ -21,7 +22,7 @@ public abstract class BaseModelDataSourceHandler(InvocationContext invocationCon
 
     public async Task<IEnumerable<DataSourceItem>> GetDataAsync(DataSourceContext context, CancellationToken cancellationToken)
     {
-        var client = new OpenAIClient(InvocationContext.AuthenticationCredentialsProviders);
+        var client = new OpenAiUniversalClient(InvocationContext.AuthenticationCredentialsProviders);
         var request = new OpenAIRequest("/models", Method.Get);
         var models = await client.ExecuteWithErrorHandling<ModelsList>(request);
         
