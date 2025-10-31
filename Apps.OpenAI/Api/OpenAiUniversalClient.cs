@@ -24,7 +24,7 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
 
     public async ValueTask<ConnectionValidationResponse> ValidateConnection()
     {
-        string model = GetModel("gpt-3.5-turbo");
+        string model = credentials.FirstOrDefault(x => x.KeyName == CredNames.Model)?.Value ?? "gpt-3.5-turbo";
         var body = new Dictionary<string, object>
         {
             ["model"] = model,
