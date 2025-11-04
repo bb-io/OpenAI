@@ -6,6 +6,8 @@ public class OpenAiXliffInnerRequest
 {
     public string ModelId { get; set; } = string.Empty;
     public string? Prompt { get; set; }
+    public string? SystemPrompt { get; set; }
+    public bool OverwritePrompts { get; set; } = false;
     public FileReference XliffFile { get; set; } = new();
     public FileReference? Glossary { get; set; } 
     public int BucketSize { get; set; } = 1500;

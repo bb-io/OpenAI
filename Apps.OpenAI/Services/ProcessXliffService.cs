@@ -50,6 +50,8 @@ public class ProcessXliffService(
                 sourceLanguage,
                 targetLanguage,
                 request.Prompt,
+                request.SystemPrompt,
+                false,
                 request.Glossary,
                 request.FilterGlossary ?? true,
                 request.BatchRetryAttempts ?? 3,
