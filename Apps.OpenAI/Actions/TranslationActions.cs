@@ -59,22 +59,25 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         }
 
         var batchProcessingService = new BatchProcessingService(UniversalClient, FileManagementClient);
+
+        var systemprompt = string.Empty;
+        var errors = new List<string>();
+        var usages = new List<UsageDto>();
+        int batchCounter = 0;
+
         var batchOptions = new BatchProcessingOptions(
             UniversalClient.GetModel(modelIdentifier.ModelId),
             content.SourceLanguage,
             content.TargetLanguage,
             prompt,
+            systemprompt,
+            false,
             glossary.Glossary,
             true,
             3,
             null,
             reasoningEffortRequest.ReasoningEffort,
             content.Notes);
-
-        var errors = new List<string>();
-        var usages = new List<UsageDto>();
-        int batchCounter = 0;
-        var systemprompt = string.Empty;
 
         async Task<IEnumerable<TranslationEntity>> BatchTranslate(IEnumerable<(Unit Unit, Segment Segment)> batch)
         {

@@ -56,6 +56,8 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             content.SourceLanguage,
             content.TargetLanguage,
             prompt,
+            string.Empty,
+            false,
             glossary.Glossary,
             true,
             3,

@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Entities;
@@ -15,6 +10,12 @@ using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Xliff.Utils;
 using Blackbird.Xliff.Utils.Models;
 using DocumentFormat.OpenXml;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace Apps.OpenAI.Services;
 
@@ -50,6 +51,8 @@ public class PostEditService(
                 sourceLanguage,
                 targetLanguage,
                 request.Prompt,
+                request.SystemPrompt,
+                request.OverwritePrompts == true,
                 request.Glossary,
                 request.FilterGlossary ?? true,
                 request.BatchRetryAttempts ?? 3,
@@ -204,10 +207,21 @@ public class PostEditService(
                 options.Prompt,
                 glossaryPrompt);
 
-            var messages = new List<ChatMessageDto>
+            var messages = options.OverwritePrompts switch
             {
-                new(MessageRoles.System, promptBuilderService.GetPostEditSystemPrompt()),
-                new(MessageRoles.User, userPrompt)
+                true => new List<ChatMessageDto>
+                {
+                    new(MessageRoles.User, options.SystemPrompt ?? string.Empty),
+                    new(MessageRoles.User,
+                        options.Prompt + $" {Environment.NewLine}{Environment.NewLine}"
+                        + (JsonConvert.SerializeObject(batch.Select(x => new { x.Id, x.Source, x.Target })) ?? string.Empty) + $" {Environment.NewLine}{Environment.NewLine}"
+                        + (glossaryPrompt?.Substring(glossaryPrompt.IndexOf($"{Environment.NewLine}Glossary:{Environment.NewLine}")) ?? string.Empty))
+                },
+                false => new List<ChatMessageDto>
+                {
+                    new(MessageRoles.System, options.SystemPrompt ?? promptBuilderService.GetPostEditSystemPrompt()),
+                    new(MessageRoles.User, userPrompt)
+                },
             };
 
             var completionResult = await CallOpenAIAndProcessResponseAsync(

@@ -221,6 +221,7 @@ Here is an example bird for processing XLIFF files:
 - **Get MQM dimension values from XLIFF** Performs an LQA Analysis of a translated XLIFF file. The result will be in the MQM framework form. This action only returns the scores (between 1 and 10) of each dimension.
 - **Get MQM report from XLIFF** Performs an LQA Analysis of the translated XLIFF file. The result will be in the MQM framework form.
 - **Get translation issues from XLIFF** Reviews the translated XLIFF file and generate a comment with the issue description
+- **Apply prompt to XLIFF file** Runs prompt for each translation unit in the XLIFF file according to the provided instructions and updates the target text for each unit. For now it supports only 1.2 version and 2.1 of XLIFF. Supports batching where multiple units will be put into a single prompt.
 
 ### Bucket size, performance and cost
 

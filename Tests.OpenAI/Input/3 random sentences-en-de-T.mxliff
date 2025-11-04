@@ -1,0 +1,78 @@
+<?xml version='1.0' encoding='UTF-8'?><xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:m="http://www.memsource.com/mxlf/2.0" version="1.2" m:level="1" m:version="2.13">
+<file datatype="x-undefined" original="3 random sentences.txt" source-language="en" target-language="de" m:begin-group-id="0" m:end-group-id="2" m:file-format="PLAIN_TEXT" m:job-uid="1VxfCpfm1GEmJQdoDi0ff0" m:project-uid="quef01GlapFa19zzKWJJq8" m:task-id="tOvG0wyW9t1QEg2E1_dc2" m:transmem-ignore-tag-metadata="yes">
+<header>
+<m:in-ctx-preview-skel bilingual="false">
+<![CDATA[<html>
+<head>
+<style>
+body, span {white-space: pre;}
+</style>
+<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+<meta charset="UTF-8">
+</head>
+<body>
+<span><span id="m-tgroup_0" class="m-tgroup"></span></span>
+<span><span id="m-tgroup_1" class="m-tgroup"></span></span>
+<span><span id="m-tgroup_2" class="m-tgroup"></span></span>
+</body>
+</html>]]>
+</m:in-ctx-preview-skel>
+</header>
+<body>
+
+<group id="0" m:para-id="0">
+<context-group>
+</context-group>
+<trans-unit id="tOvG0wyW9t1QEg2E1_dc2:0" m:confirmed="0" m:created-at="1745423122266" m:created-by="189816" m:gross-score="0.96" m:level-edited="false" m:locked="false" m:modified-at="1745423122266" m:modified-by="189816" m:para-id="0" m:score="0.96" m:trans-origin="mt" m:trans-origin-detail="qe_v4_calibrated" xml:space="preserve">
+<source>Hang on, my kittens are scratching at the bathtub and they'll upset by the lack of biscuits.</source>
+<target>Moment mal, meine Kätzchen kratzen an der Badewanne und werden sich über den Mangel an Keksen aufregen.</target>
+<alt-trans match-quality="0.96" origin="machine-trans" m:mt-id="185645"><target>Moment mal, meine Kätzchen kratzen an der Badewanne und werden sich über den Mangel an Keksen aufregen.</target></alt-trans>
+<alt-trans origin="memsource-tm"><target/></alt-trans>
+<m:latest-trans-props>
+  <m:trans-prop name="score">0.96</m:trans-prop>
+  <m:trans-prop name="gross-score">0.96</m:trans-prop>
+  <m:trans-prop name="origin">mt</m:trans-prop>
+  <m:trans-prop name="origin-detail">qe_v4_calibrated</m:trans-prop>
+</m:latest-trans-props>
+</trans-unit>
+</group>
+<group id="1" m:para-id="1">
+<context-group>
+</context-group>
+<trans-unit id="tOvG0wyW9t1QEg2E1_dc2:1" m:confirmed="0" m:created-at="1745423122266" m:created-by="189816" m:gross-score="0.96" m:level-edited="false" m:locked="false" m:modified-at="1745423122266" m:modified-by="189816" m:para-id="1" m:score="0.96" m:trans-origin="mt" m:trans-origin-detail="qe_v4_calibrated" xml:space="preserve">
+<source>The glacier came alive as the climbers hiked closer.</source>
+<target>Der Gletscher erwachte zum Leben, als die Bergsteiger näher kamen.</target>
+<alt-trans match-quality="0.96" origin="machine-trans" m:mt-id="185645"><target>Der Gletscher erwachte zum Leben, als die Bergsteiger näher kamen.</target></alt-trans>
+<alt-trans origin="memsource-tm"><target/></alt-trans>
+<m:latest-trans-props>
+  <m:trans-prop name="score">0.96</m:trans-prop>
+  <m:trans-prop name="gross-score">0.96</m:trans-prop>
+  <m:trans-prop name="origin">mt</m:trans-prop>
+  <m:trans-prop name="origin-detail">qe_v4_calibrated</m:trans-prop>
+</m:latest-trans-props>
+</trans-unit>
+</group>
+<group id="2" m:para-id="2">
+<context-group>
+</context-group>
+<trans-unit id="tOvG0wyW9t1QEg2E1_dc2:2" m:confirmed="0" m:created-at="1745423122266" m:created-by="189816" m:gross-score="0.94" m:level-edited="false" m:locked="false" m:modified-at="1745423122266" m:modified-by="189816" m:para-id="2" m:score="0.94" m:trans-origin="mt" m:trans-origin-detail="qe_v4_calibrated" xml:space="preserve">
+<source>He watched the dancing piglets with panda bear tummies in the swimming pool.</source>
+<target>Er beobachtete die tanzenden Ferkel mit Pandabärbäuchen im Schwimmbecken.</target>
+<alt-trans match-quality="0.94" origin="machine-trans" m:mt-id="185645"><target>Er beobachtete die tanzenden Ferkel mit Pandabärbäuchen im Schwimmbecken.</target></alt-trans>
+<alt-trans origin="memsource-tm"><target/></alt-trans>
+<m:latest-trans-props>
+  <m:trans-prop name="score">0.94</m:trans-prop>
+  <m:trans-prop name="gross-score">0.94</m:trans-prop>
+  <m:trans-prop name="origin">mt</m:trans-prop>
+  <m:trans-prop name="origin-detail">qe_v4_calibrated</m:trans-prop>
+</m:latest-trans-props>
+</trans-unit>
+</group>
+</body>
+</file>
+<m:extra>
+<m:users>
+<m:user fullname="Vitalii Bezuhlyi" id="189816" uid="pMyxwAlflzGmehAs16nq72" username="vitalii.bezuhlyi"/>
+</m:users>
+</m:extra>
+</xliff>
