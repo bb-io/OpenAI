@@ -45,7 +45,7 @@ public class ReportingActionsTests : TestBase
         };
 
         // Act
-        var ex = await Assert.ThrowsExceptionAsync<PluginMisconfigurationException>(async () => 
+        var ex = await Assert.ThrowsExactlyAsync<PluginMisconfigurationException>(async () => 
             await actions.CreateMqmReportInBackground(request)
         );
 

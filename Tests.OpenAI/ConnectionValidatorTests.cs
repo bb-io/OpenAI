@@ -25,7 +25,7 @@ public class ConnectionValidatorTests : TestBase
         var newCreds = CredentialGroups.First().Select(x => new AuthenticationCredentialsProvider(x.KeyName, x.Value + "_incorrect"));
 
         // Act
-        var ex = await Assert.ThrowsExceptionAsync<Exception>(async () =>
+        var ex = await Assert.ThrowsExactlyAsync<Exception>(async () =>
             await validator.ValidateConnection(newCreds, CancellationToken.None)
         );
 

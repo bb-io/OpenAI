@@ -120,7 +120,7 @@ public class ChatActionsTests : TestBase
         var glossary = new GlossaryRequest();
 
         // Act
-        var ex = await Assert.ThrowsExceptionAsync<PluginMisconfigurationException>(async () =>
+        var ex = await Assert.ThrowsExactlyAsync<PluginMisconfigurationException>(async () =>
             await actions.ChatMessageRequest(model, chatRequest, glossary)
         );
 
@@ -189,7 +189,7 @@ public class ChatActionsTests : TestBase
         var glossary = new GlossaryRequest();
 
         // Act
-        var ex = await Assert.ThrowsExceptionAsync<PluginMisconfigurationException>(async () => 
+        var ex = await Assert.ThrowsExactlyAsync<PluginMisconfigurationException>(async () => 
             await actions.ChatMessageRequest(modelIdentifier, chatRequest, glossary)
         );
 

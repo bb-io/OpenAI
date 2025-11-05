@@ -36,7 +36,7 @@ public class ImageGenerateServiceTests : TestBase
         var prompt = new ImageRequest { Prompt = "Generate photo of cat with donuts" };
 
         // Act
-        var ex = await Assert.ThrowsExceptionAsync<PluginMisconfigurationException>(async () => 
+        var ex = await Assert.ThrowsExactlyAsync<PluginMisconfigurationException>(async () => 
             await handler.GenerateImage(modelId, prompt)
         );
 

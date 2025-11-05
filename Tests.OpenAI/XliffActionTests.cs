@@ -54,8 +54,8 @@ public class XliffActionTests : TestBase
             };
             string? systemMessage = null;
             var glossaryRequest = new GlossaryRequest();
-            
-            await Assert.ThrowsExceptionAsync<PluginMisconfigurationException>(async () =>
+
+            await Assert.ThrowsExactlyAsync<PluginMisconfigurationException>(async () =>
                 await actions.TranslateXliff(modelIdentifier, translateRequest, systemMessage, glossaryRequest)
             );
         }
