@@ -21,4 +21,6 @@ public class OpenAiXliffInnerRequest
     public int? BatchRetryAttempts { get; set; } = 3;
     public int? MaxTokens { get; set; }
     public bool DisableTagChecks { get; set; }
+    public string FileExtension { get; set; } = string.Empty;
+    public string ModifiedBy { get; set; } = "Blackbird";
 }
