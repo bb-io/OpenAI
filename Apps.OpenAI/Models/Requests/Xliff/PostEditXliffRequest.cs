@@ -18,6 +18,9 @@ public class PostEditXliffRequest
     [Display("Filter glossary terms")]
     public bool? FilterGlossary { get; set; }
 
+    [Display("Modified by")]
+    public string? ModifiedBy { get; set; }
+
     [Display("Update locked segments", Description = "By default it set to false. If false, OpenAI will not change the segments that are locked in the XLIFF file.")]
     public bool? PostEditLockedSegments { get; set; }
 

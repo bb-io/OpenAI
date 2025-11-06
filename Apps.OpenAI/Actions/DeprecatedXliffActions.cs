@@ -225,6 +225,7 @@ public class DeprecatedXliffActions(InvocationContext invocationContext, IFileMa
             NeverFail = input.NeverFail ?? true,
             BatchRetryAttempts = input.BatchRetryAttempts ?? 2,
             MaxTokens = input.MaxTokens,
+            ModifiedBy = input.ModifiedBy ?? "Blackbird",
             DisableTagChecks = input.DisableTagChecks ?? false,
         });
 
