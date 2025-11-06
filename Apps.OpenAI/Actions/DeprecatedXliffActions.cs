@@ -431,6 +431,9 @@ public class DeprecatedXliffActions(InvocationContext invocationContext, IFileMa
             BatchRetryAttempts = input.BatchRetryAttempts ?? 2,
             MaxTokens = promptRequest.MaximumTokens,
             DisableTagChecks = input.DisableTagChecks ?? false,
+            PostEditLockedSegments = input.UpdateLockedSegments ?? false,
+            ModifiedBy = input.ModifiedBy ?? "Blackbird",
+            FileExtension = fileExtension
         });
 
         return new PostEditXliffResponse(result);

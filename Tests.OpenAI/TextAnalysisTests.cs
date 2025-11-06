@@ -20,7 +20,7 @@ public class TextAnalysisTests : TestBase
         var identifier = new EmbeddingModelIdentifier { ModelId = "" };
 
         // Act
-        var ex = await Assert.ThrowsExceptionAsync<PluginApplicationException>(async () => 
+        var ex = await Assert.ThrowsExactlyAsync<PluginApplicationException>(async () => 
             await action.CreateEmbedding(identifier, request)
         );
 

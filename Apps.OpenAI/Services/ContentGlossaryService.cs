@@ -25,7 +25,7 @@ public class ContentGlossaryService(IFileManagementClient fileManagementClient)
         public List<GlossaryTermEntry> ConceptEntries { get; set; } = new();
     }
 
-    public async Task<string?> BuildGlossaryPromptAsync(FileReference? glossary, IEnumerable<Segment> segments, bool filter)
+    public async Task<string?> BuildGlossaryPromptAsync(FileReference? glossary, IEnumerable<Segment> segments, bool filter, bool? overwritePrompt = false)
     {
         if(glossary == null)
         {
@@ -83,7 +83,15 @@ public class ContentGlossaryService(IFileManagementClient fileManagementClient)
         };
         
         var jsonString = JsonConvert.SerializeObject(jsonGlossary, jsonSettings);
-        
+
+        if (overwritePrompt == true) {
+            var minimalPrompt = new StringBuilder();
+            minimalPrompt.AppendLine();
+            minimalPrompt.AppendLine("Glossary:");
+            minimalPrompt.AppendLine(jsonString);
+            return minimalPrompt.ToString();
+        }
+
         var glossaryPrompt = new StringBuilder();
         glossaryPrompt.AppendLine("The following glossary is provided in JSON format to assist with translation. Each concept entry contains:");
         glossaryPrompt.AppendLine("- Terms in different languages (language codes as keys)");

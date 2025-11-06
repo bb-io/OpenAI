@@ -26,4 +26,10 @@ public class PromptXliffRequest
 
     [Display("Filter glossary", Description = "By default, only glossary terms that appear in the source text will be included. Matching is exact (whole-term) and case-insensitive. Set to 'false' for including the whole glossary in prompt.")]
     public bool? FilterGlossary { get; set; }
+
+    [Display("Modified by")]
+    public string? ModifiedBy { get; set; }
+
+    [Display("Update locked segments")]
+    public bool? UpdateLockedSegments { get; set; }
 }

@@ -54,8 +54,8 @@ public class XliffActionTests : TestBase
             };
             string? systemMessage = null;
             var glossaryRequest = new GlossaryRequest();
-            
-            await Assert.ThrowsExceptionAsync<PluginMisconfigurationException>(async () =>
+
+            await Assert.ThrowsExactlyAsync<PluginMisconfigurationException>(async () =>
                 await actions.TranslateXliff(modelIdentifier, translateRequest, systemMessage, glossaryRequest)
             );
         }
@@ -141,9 +141,15 @@ public class XliffActionTests : TestBase
             // Arrange
             var xliffActions = new DeprecatedXliffActions(context, FileManagementClient);
             var model = new TextChatModelIdentifier { ModelId = "gpt-4.1" };
-            var request = new PromptXliffRequest { File = new FileReference { Name = "3 random sentences-en-de-T.mxliff" } };
-            var prompt = "Get the input list and reply with translations only. Do not modify translations, repply with them to validate connection.";
+            var request = new PromptXliffRequest 
+            { 
+                File = new FileReference { Name = "3 random sentences-en-de-T.mxliff" },
+                ModifiedBy = "Test"
+            };
+
             var systemPrompt = "You're validating connection to an LLM.";
+            var prompt = "Get the input list and reply with translations only. Do not modify translations, repply with them to validate connection.";
+
             var glossary = new GlossaryRequest();
             var baseChatRequest = new BaseChatRequest();
 

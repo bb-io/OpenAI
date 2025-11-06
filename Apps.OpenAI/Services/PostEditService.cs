@@ -77,7 +77,9 @@ public class PostEditService(
                     xliffDocument,
                     batchProcessingResult.Results,
                     tagOptions,
-                    request.DisableTagChecks);
+                    request.DisableTagChecks,
+                    request.FileExtension,
+                    request.ModifiedBy);
             }
 
             var stream = xliffService.SerializeXliffDocument(xliffDocument);
@@ -296,19 +298,23 @@ public class PostEditService(
         XliffDocument document,
         List<TranslationEntity> updatedEntities,
         TagHandlingOptions tagOptions,
-        bool disableTagChecks)
+        bool disableTagChecks,
+        string fileExtension,
+        string modifiedBy)
     {
         var translationDict = updatedEntities.ToDictionary(x => x.TranslationId, x => x.TranslatedText);
         var updatedTranslations = xliffService.CheckAndFixTagIssues(
             document.TranslationUnits, translationDict, disableTagChecks);
 
-        return UpdateXliffDocument(document, updatedTranslations, tagOptions.AddMissingTrailingTags);
+        return UpdateXliffDocument(document, updatedTranslations, tagOptions.AddMissingTrailingTags, fileExtension, modifiedBy);
     }
 
     private int UpdateXliffDocument(
         XliffDocument document,
         Dictionary<string, string> updatedTranslations,
-        bool addMissingTrailingTags)
+        bool addMissingTrailingTags,
+        string fileExtension,
+        string modifiedBy)
     {
         int updatedCount = 0;
         foreach (var (translationId, translatedText) in updatedTranslations)
@@ -325,6 +331,13 @@ public class PostEditService(
                 translationUnit.Target = addMissingTrailingTags
                     ? ApplyTagsIfNeeded(translationUnit.Source, translatedText)
                     : translatedText;
+
+                if (fileExtension == ".mxliff")
+                {
+                    long unixTimestampMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    translationUnit.Attributes["modified-at"] = unixTimestampMs.ToString();
+                    translationUnit.Attributes["modified-by"] = modifiedBy;
+                }
             }
         }
 

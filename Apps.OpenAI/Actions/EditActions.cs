@@ -319,4 +319,141 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             Usage = response.Usage,
         };
     }
+
+    [Action("Apply prompt to bilingual content (experimental)",
+        Description = "Runs prompt for each translation unit in the XLIFF file according to the provided instructions and updates the target text for each unit. Supports batching where multiple units will be put into a single prompt.")]
+    public async Task<ContentProcessingEditResult> Prompt(
+        [ActionParameter] TextChatModelIdentifier modelIdentifier,
+        [ActionParameter] EditContentRequest input,
+        [ActionParameter, Display("System prompt")] string systemPrompt,
+        [ActionParameter] GlossaryRequest glossary,
+        [ActionParameter] ReasoningEffortRequest reasoningEffortRequest,
+        [ActionParameter, Display("Bucket size", Description = "Specify the number of source texts to be edited at once. Default value: 1500. (See our documentation for an explanation)")] int? bucketSize = 1500)
+    {
+        var result = new ContentProcessingEditResult();
+
+        var neverFail = false;
+        var batchSize = bucketSize ?? 1500;
+
+        var inputFileStream = await fileManagementClient.DownloadAsync(input.File);
+        var content = await Transformation.Parse(inputFileStream, input.File.Name);
+
+        var batchProcessingService = new BatchProcessingService(UniversalClient, FileManagementClient);
+        var batchOptions = new BatchProcessingOptions(
+            UniversalClient.GetModel(modelIdentifier.ModelId),
+            content.SourceLanguage,
+            content.TargetLanguage,
+            Prompt: string.Empty,
+            systemPrompt,
+            OverwritePrompts: true,
+            glossary.Glossary,
+            FilterGlossary: true,
+            MaxRetryAttempts: 3,
+            MaxTokens: null,
+            reasoningEffortRequest.ReasoningEffort,
+            content.Notes);
+
+        var errors = new List<string>();
+        var usages = new List<UsageDto>();
+        int batchCounter = 0;
+
+        var systemprompt = string.Empty;
+
+        async Task<IEnumerable<TranslationEntity>> BatchTranslate(IEnumerable<(Unit Unit, Segment Segment)> batch)
+        {
+            var idSegments = batch.Select((x, i) => new { Id = i + 1, Value = x }).ToDictionary(x => x.Id.ToString(), x => x.Value.Segment);
+            var allResults = new List<TranslationEntity>();
+            batchCounter++;
+
+            try
+            {
+                var batchResult = await batchProcessingService.ProcessBatchAsync(idSegments, batchOptions, postEdit: true);
+                if (batchResult.IsSuccess)
+                {
+                    allResults.AddRange(batchResult.UpdatedTranslations);
+                }
+
+                systemprompt = batchResult.SystemPrompt;
+
+                var duplicates = batchResult.UpdatedTranslations.GroupBy(x => x.TranslationId)
+                    .Where(g => g.Count() > 1)
+                    .Select(g => new { TranslationId = g.Key, Count = g.Count() })
+                    .ToList();
+
+                errors.AddRange(duplicates.Select(duplicate => $"Duplicate translation ID found: {duplicate.TranslationId} appears {duplicate.Count} times"));
+                errors.AddRange(batchResult.ErrorMessages);
+                usages.Add(batchResult.Usage);
+
+                if (!batchResult.IsSuccess && !neverFail)
+                {
+                    throw new PluginApplicationException(
+                        $"Failed to process batch {batchCounter} (size: {batchSize}). Errors: {string.Join(", ", batchResult.ErrorMessages)}");
+                }
+            }
+            catch (Exception ex) when (neverFail)
+            {
+                errors.Add($"Error in batch {batchCounter} (size: {batchSize}): {ex.Message}");
+            }
+
+            return allResults;
+        }
+
+        var allUnits = content.GetUnits();
+        var allSegments = allUnits.SelectMany(x => x.Segments);
+        result.TotalSegmentsCount = allSegments.Count();
+
+        var translatedUnits = allUnits.Where(x => x.State == SegmentState.Translated);
+        var translatedSegments = translatedUnits.SelectMany(x => x.Segments);
+        result.TotalSegmentsReviewed = translatedSegments.Count();
+
+        var processedBatches = await translatedUnits.Batch(batchSize).Process(BatchTranslate);
+        result.ProcessedBatchesCount = batchCounter;
+        result.Usage = UsageDto.Sum(usages);
+        result.SystemPrompt = systemprompt;
+
+        var updatedCount = 0;
+
+        foreach (var (unit, results) in processedBatches)
+        {
+            foreach (var (segment, translation) in results)
+            {
+                if (segment.GetTarget() != translation.TranslatedText)
+                {
+                    updatedCount++;
+                    segment.SetTarget(translation.TranslatedText);
+                }
+                segment.State = SegmentState.Reviewed;
+            }
+
+            unit.Provenance.Review.Tool = UniversalClient.GetModel(modelIdentifier.ModelId);
+            unit.Provenance.Review.ToolReference = $"https://openai.com/{UniversalClient.GetModel(modelIdentifier.ModelId)}";
+        }
+
+        result.TotalSegmentsUpdated = updatedCount;
+
+        if (input.OutputFileHandling == "original")
+        {
+            var targetContent = content.Target();
+            result.File = await fileManagementClient.UploadAsync(
+                targetContent.Serialize().ToStream(),
+                targetContent.OriginalMediaType,
+                targetContent.OriginalName);
+        }
+        else if (input.OutputFileHandling == "xliff1")
+        {
+            result.File = await fileManagementClient.UploadAsync(
+                Xliff1Serializer.Serialize(content).ToStream(),
+                MediaTypes.Xliff,
+                content.XliffFileName);
+        }
+        else
+        {
+            result.File = await fileManagementClient.UploadAsync(
+                content.Serialize().ToStream(),
+                MediaTypes.Xliff,
+                content.XliffFileName);
+        }
+
+        return result;
+    }
 }
