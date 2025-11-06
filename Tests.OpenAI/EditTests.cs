@@ -117,7 +117,7 @@ public class EditTests : TestBase
             var actions = new EditActions(context, FileManagementClient);
             var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5-mini" };
             var editRequest = new EditContentRequest { File = new FileReference { Name = "mqm-min.xlf" } };
-            string? systemPrompt = "Reply with json array of objects for each traslation unit, repeating ID and setting Target to one";
+            var systemPrompt = "Reply with json array of objects for each traslation unit, repeating ID and setting Target to one";
             var glossaryRequest = new GlossaryRequest();
             var reasoningEffortRequest = new ReasoningEffortRequest();
 

@@ -325,7 +325,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     public async Task<ContentProcessingEditResult> Prompt(
         [ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] EditContentRequest input,
-        [ActionParameter, Display("System prompt")] string? systemPrompt,
+        [ActionParameter, Display("System prompt")] string systemPrompt,
         [ActionParameter] GlossaryRequest glossary,
         [ActionParameter] ReasoningEffortRequest reasoningEffortRequest,
         [ActionParameter, Display("Bucket size", Description = "Specify the number of source texts to be edited at once. Default value: 1500. (See our documentation for an explanation)")] int? bucketSize = 1500)
