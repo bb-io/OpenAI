@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
 	  <Product>OpenAI</Product>
 	  <Description>Creating safe artificial general intelligence that benefits all of humanity</Description>
-	  <Version>2.8.2</Version>
+	  <Version>2.8.3</Version>
 	  <AssemblyName>Apps.OpenAI</AssemblyName>
   </PropertyGroup>
 

@@ -32,7 +32,7 @@ public class EditTests : TestBase
             var glossaryRequest = new GlossaryRequest();
 
             var result = await actions.EditContent(modelIdentifier, editRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
-            
+
             Assert.IsNotNull(result);
             Assert.IsTrue(result.File.Name.Contains("contentful"));
             PrintResult(context, result);
@@ -58,7 +58,7 @@ public class EditTests : TestBase
             var glossaryRequest = new GlossaryRequest();
 
             var result = await actions.EditContent(modelIdentifier, editRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
-            
+
             Assert.IsNotNull(result);
             PrintResult(context, result);
         }
@@ -107,5 +107,29 @@ public class EditTests : TestBase
 
         // Assert          
         StringAssert.Contains(ex.Message, "which is not supported for batch jobs");
+    }
+
+    [TestMethod]
+    public async Task Prompt_Generates_FullyCustomPrompt()
+    {
+        foreach (var context in InvocationContext)
+        {
+            var actions = new EditActions(context, FileManagementClient);
+            var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5-mini" };
+            var editRequest = new EditContentRequest { File = new FileReference { Name = "mqm-min.xlf" } };
+            string? systemPrompt = "Reply with json array of objects for each traslation unit, repeating ID and setting Target to one";
+            var glossaryRequest = new GlossaryRequest();
+            var reasoningEffortRequest = new ReasoningEffortRequest();
+
+            var result = await actions.Prompt(
+                modelIdentifier,
+                editRequest,
+                systemPrompt,
+                glossaryRequest,
+                reasoningEffortRequest);
+
+            PrintResult(context, result);
+            Assert.Contains("mqm", result.File.Name);
+        }
     }
 }
