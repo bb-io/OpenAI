@@ -4,6 +4,7 @@ using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Models.Responses.Chat;
+using Apps.OpenAI.Utils;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
@@ -125,7 +126,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             {
                 var content = Encoding.UTF8.GetString(fileBytes);
 
-                CodedContent codedContent;
+                CodedContent codedContent = null;
                 if (Xliff2Serializer.IsXliff2(content))
                 {
                     var transformation = Transformation.Parse(content, input.File.Name);
@@ -133,7 +134,10 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 }
                 else
                 {
-                    codedContent = CodedContent.Parse(content, input.File.Name);
+                    TryCatchHelper.TryCatch(
+                        () => codedContent = CodedContent.Parse(content, input.File.Name), 
+                        $"Can't process an input file with type {input.File.ContentType}"
+                    );
                 }
 
                 var text = codedContent.GetPlaintext();

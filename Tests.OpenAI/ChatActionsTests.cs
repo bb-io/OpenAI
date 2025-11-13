@@ -3,6 +3,7 @@ using Apps.OpenAI.Constants;
 using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Chat;
 using Blackbird.Applications.Sdk.Common.Exceptions;
+using Blackbird.Applications.Sdk.Common.Files;
 using Tests.OpenAI.Base;
 
 namespace Tests.OpenAI;
@@ -19,7 +20,8 @@ public class ChatActionsTests : TestBase
         var model = new TextChatModelIdentifier { ModelId = "gpt-5" };
         var chatRequest = new ChatRequest
         {
-            Message = "Who are you? State your model, creator, and your main responsibilities."
+            Message = "Who are you? State your model, creator, and your main responsibilities.",
+            File = new FileReference { Name = "2-2025 payoneer.pdf", ContentType = "application/pdf" }
         };
         var glossary = new GlossaryRequest();
 
@@ -63,7 +65,7 @@ public class ChatActionsTests : TestBase
             var chatRequest = new ChatRequest
             {
                 Message = "Give a couple of SEO keywords",
-                File = new Blackbird.Applications.Sdk.Common.Files.FileReference
+                File = new FileReference
                 {
                     Name = "contentful.html",
                     ContentType = "text/html"
