@@ -133,7 +133,14 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 }
                 else
                 {
-                    codedContent = CodedContent.Parse(content, input.File.Name);
+                    try
+                    {
+                        codedContent = CodedContent.Parse(content, input.File.Name);
+                    } 
+                    catch (NotImplementedException) 
+                    {
+                        throw new PluginApplicationException($"Can't process an input file with type {input.File.ContentType}");
+                    }
                 }
 
                 var text = codedContent.GetPlaintext();
