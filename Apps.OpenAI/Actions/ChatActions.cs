@@ -136,7 +136,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 {
                     TryCatchHelper.TryCatch(
                         () => codedContent = CodedContent.Parse(content, input.File.Name), 
-                        "Can't process an input file with type {input.File.ContentType}"
+                        $"Can't process an input file with type {input.File.ContentType}"
                     );
                 }
 
