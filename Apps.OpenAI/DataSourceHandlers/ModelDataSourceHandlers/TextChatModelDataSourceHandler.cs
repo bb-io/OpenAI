@@ -11,7 +11,7 @@ public class TextChatModelDataSourceHandler(InvocationContext invocationContext)
     protected override IEnumerable<string> PriorityModels =>
     [
         "gpt-5.1",
-        "gpt-5-mini",
+        "gpt-5.1-codex-mini",
         "gpt-5",
         "gpt-5-mini",
         "gpt-5-nano",
