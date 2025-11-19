@@ -20,6 +20,7 @@ public class DataSourceHandlerTests : TestBase
 
             PrintResult(data, context);
             Assert.AreNotEqual(data.Count(), 0);
+            Assert.AreEqual(data.Select(x => x.Value).Count(), data.Select(x => x.Value).Distinct().Count());
         }
     }
 
