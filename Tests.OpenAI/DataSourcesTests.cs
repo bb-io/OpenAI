@@ -1,5 +1,4 @@
-﻿using Apps.OpenAI.Constants;
-using Apps.OpenAI.DataSourceHandlers;
+﻿using Apps.OpenAI.DataSourceHandlers;
 using Apps.OpenAI.DataSourceHandlers.ModelDataSourceHandlers;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Invocation;
@@ -8,83 +7,60 @@ using Tests.OpenAI.Base;
 namespace Tests.OpenAI;
 
 [TestClass]
-public class DataSourceHandlerTests : TestBase
+public class DataSourceHandlerTests : TestBaseWithContext
 {
-    [TestMethod]
-    public async Task GetDataAsync_ForTextChatModels_ReturnsNonEmptyCollection()
+    [TestMethod, ContextDataSource]
+    public async Task GetDataAsync_ForTextChatModels_ReturnsNonEmptyCollection(InvocationContext context)
     {
-        foreach (var context in InvocationContext)
-        {
-            var handler = new TextChatModelDataSourceHandler(context);
-            var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
+        var handler = new TextChatModelDataSourceHandler(context);
+        var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
 
-            PrintResult(data, context);
-            Assert.AreNotEqual(data.Count(), 0);
-            Assert.AreEqual(data.Select(x => x.Value).Count(), data.Select(x => x.Value).Distinct().Count());
-        }
+        PrintDataHandlerResult(data);
+        Assert.AreNotEqual(0, data.Count());
+        Assert.AreEqual(data.Select(x => x.Value).Count(), data.Select(x => x.Value).Distinct().Count());
     }
 
-    [TestMethod]
-    public async Task GetDataAsync_ForGenerateImagesModels_ReturnsNonEmptyCollection()
+    [TestMethod, ContextDataSource]
+    public async Task GetDataAsync_ForGenerateImagesModels_ReturnsNonEmptyCollection(InvocationContext context)
     {
-        foreach (var context in InvocationContext)
-        {
-            var handler = new ImageGenerationModelDataSourceHandler(context);
-            var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
+        var handler = new ImageGenerationModelDataSourceHandler(context);
+        var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
 
-            PrintResult(data, context);
-            Assert.AreNotEqual(data.Count(), 0);
-        }
+        PrintDataHandlerResult(data);
+        Assert.AreNotEqual(0, data.Count());
     }
 
-    [TestMethod]
-    public async Task GetDataAsync_ForAudioModels_ReturnsNonEmptyCollection()
+    [TestMethod, ContextDataSource]
+    public async Task GetDataAsync_ForAudioModels_ReturnsNonEmptyCollection(InvocationContext context)
     {
-        foreach (var context in InvocationContext)
-        {
-            var handler = new SpeechCreationModelDataSourceHandler(context);
-            var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
+        var handler = new SpeechCreationModelDataSourceHandler(context);
+        var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
 
-            PrintResult(data, context);
-            Assert.AreNotEqual(data.Count(), 0);
-        }
+        PrintDataHandlerResult(data);
+        Assert.AreNotEqual(0, data.Count());
     }
 
-    [TestMethod]
-    public async Task GetDataAsync_ForBatches_ReturnsNonEmptyCollection()
+    [TestMethod, ContextDataSource]
+    public async Task GetDataAsync_ForBatches_ReturnsNonEmptyCollection(InvocationContext context)
     {
-        foreach (var context in InvocationContext)
-        {
-            // Arrange
-            var handler = new BatchDataSourceHandler(context);
+        // Arrange
+        var handler = new BatchDataSourceHandler(context);
 
-            // Act
-            var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
+        // Act
+        var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
 
-            // Assert
-            PrintResult(data, context);
-            Assert.AreNotEqual(data.Count(), 0);
-        }
+        // Assert
+        PrintDataHandlerResult(data);
+        Assert.AreNotEqual(0, data.Count());
     }
 
-    [TestMethod]
-    public async Task Locales()
+    [TestMethod, ContextDataSource]
+    public async Task Locales(InvocationContext context)
     {
-        foreach (var context in InvocationContext)
-        {
-            var handler = new LocaleDataSourceHandler();
-            var data = handler.GetData();
+        var handler = new LocaleDataSourceHandler();
+        var data = handler.GetData();
 
-            PrintResult(data, context);
-            Assert.AreNotEqual(data.Count(), 0);
-        }
-    }
-
-    private static void PrintResult(IEnumerable<DataSourceItem> data, InvocationContext context)
-    {
-        Console.WriteLine(context.AuthenticationCredentialsProviders.First(x => x.KeyName == CredNames.ConnectionType).Value);
-        foreach (var item in data)
-            Console.WriteLine($"{item.Value}: {item.DisplayName}");
-        Console.WriteLine();
+        PrintResult(data);
+        Assert.AreNotEqual(0, data.Count());
     }
 }

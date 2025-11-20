@@ -1,20 +1,19 @@
 ﻿using Apps.OpenAI.Actions;
-using Apps.OpenAI.Constants;
 using Apps.OpenAI.Models.Requests.Background;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Files;
+using Blackbird.Applications.Sdk.Common.Invocation;
 using Tests.OpenAI.Base;
 
 namespace Tests.OpenAI;
 
 [TestClass]
-public class ReportingActionsTests : TestBase
+public class ReportingActionsTests : TestBaseWithContext
 {
-    [TestMethod]
-    public async Task CreateMqmReportInBackground_OpenAiEmbeddedXliffFile_Success()
+    [TestMethod, ContextDataSource]
+    public async Task CreateMqmReportInBackground_OpenAiEmbeddedXliffFile_Success(InvocationContext context)
     {
         // Arrange
-        var context = GetInvocationContext(ConnectionTypes.OpenAiEmbedded);
         var actions = new ReportingActions(context, FileManagementClient);
         var request = new CreateMqmReportInBackgroundRequest()
         {
@@ -28,14 +27,13 @@ public class ReportingActionsTests : TestBase
 
         // Assert           
         Assert.IsNotNull(result);
-        PrintResult(context, result);
+        PrintResult(result);
     }
 
-    [TestMethod]
-    public async Task CreateMqmReportInBackground_AzureOpenAiXliffFile_Success()
+    [TestMethod, ContextDataSource]
+    public async Task CreateMqmReportInBackground_AzureOpenAiXliffFile_Success(InvocationContext context)
     {
         // Arrange
-        var context = GetInvocationContext(ConnectionTypes.AzureOpenAi);
         var actions = new ReportingActions(context, FileManagementClient);
         var request = new CreateMqmReportInBackgroundRequest()
         {
@@ -50,6 +48,6 @@ public class ReportingActionsTests : TestBase
         );
 
         // Assert
-        StringAssert.Contains(ex.Message, "which is not supported for batch jobs");
+        Assert.Contains("which is not supported for batch jobs", ex.Message);
     }
 }

@@ -1,17 +1,17 @@
-﻿using Apps.OpenAI.Constants;
-using Apps.OpenAI.Models.Responses.Chat;
-using Blackbird.Applications.Sdk.Common.Authentication;
-using Blackbird.Applications.Sdk.Common.Invocation;
+﻿using Newtonsoft.Json;
+using Apps.OpenAI.Constants;
 using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
+using Blackbird.Applications.Sdk.Common.Invocation;
+using Blackbird.Applications.Sdk.Common.Authentication;
 
 namespace Tests.OpenAI.Base;
 
 public class TestBase
 {
     public List<IEnumerable<AuthenticationCredentialsProvider>> CredentialGroups { get; private set; }
-    public List<InvocationContext> InvocationContext { get; private set; }
+    public List<InvocationContext> InvocationContexts { get; private set; }
     public FileManagementClient FileManagementClient { get; private set; }
+    public TestContext? TestContext { get; set; }
 
     public TestBase()
     {
@@ -22,17 +22,10 @@ public class TestBase
 
     public InvocationContext GetInvocationContext(string connectionType)
     {
-        var context = InvocationContext.FirstOrDefault(x => x.AuthenticationCredentialsProviders.Any(y => y.Value == connectionType));
+        var context = InvocationContexts.FirstOrDefault(x => x.AuthenticationCredentialsProviders.Any(y => y.Value == connectionType));
         if (context == null)
             throw new Exception($"Invocation context was not found for this connection type: {connectionType}");
         else return context;
-    }
-
-    protected static void PrintResult(InvocationContext context, object result)
-    {
-        Console.WriteLine(context.AuthenticationCredentialsProviders.First(x => x.KeyName == CredNames.ConnectionType).Value);
-        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
-        Console.WriteLine();
     }
 
     private void InitializeCredentials()
@@ -49,10 +42,10 @@ public class TestBase
 
     private void InitializeInvocationContext()
     {
-        InvocationContext = new List<InvocationContext>();
+        InvocationContexts = new List<InvocationContext>();
         foreach (var credentialGroup in CredentialGroups)
         {
-            InvocationContext.Add(new InvocationContext
+            InvocationContexts.Add(new InvocationContext
             {
                 AuthenticationCredentialsProviders = credentialGroup
             });

@@ -48,7 +48,9 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         var result = new ContentProcessingEditResult();
         var stream = await fileManagementClient.DownloadAsync(input.File);
 
-        var content = await Transformation.Parse(stream, input.File.Name);
+        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(async () => 
+            await Transformation.Parse(stream, input.File.Name)
+        );
 
         var batchProcessingService = new BatchProcessingService(UniversalClient, FileManagementClient);
         var batchOptions = new BatchProcessingOptions(
@@ -164,7 +166,9 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     public async Task<BackgroundProcessingResponse> EditInBackground([ActionParameter] StartBackgroundProcessRequest processRequest)
     {
         var stream = await fileManagementClient.DownloadAsync(processRequest.File);
-        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => Transformation.Parse(stream, processRequest.File.Name));
+        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(async () => 
+            await Transformation.Parse(stream, processRequest.File.Name)
+        );
 
         var units = content.GetUnits();
         var segments = units.SelectMany(x => x.Segments);
@@ -336,7 +340,9 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         var batchSize = bucketSize ?? 1500;
 
         var inputFileStream = await fileManagementClient.DownloadAsync(input.File);
-        var content = await Transformation.Parse(inputFileStream, input.File.Name);
+        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(async () => 
+            await Transformation.Parse(inputFileStream, input.File.Name)
+        );
 
         var batchProcessingService = new BatchProcessingService(UniversalClient, FileManagementClient);
         var batchOptions = new BatchProcessingOptions(
