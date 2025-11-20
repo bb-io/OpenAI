@@ -209,6 +209,7 @@ public class DeprecatedXliffActions(InvocationContext invocationContext, IFileMa
             new PromptBuilderService(), 
             FileManagementClient);
 
+        var fileExtension = Path.GetExtension(input.File.Name)?.ToLowerInvariant() ?? string.Empty;
         var result = await postEditService.PostEditXliffAsync(new OpenAiXliffInnerRequest
         {
             ModelId = UniversalClient.GetModel(modelIdentifier.ModelId),
@@ -227,6 +228,7 @@ public class DeprecatedXliffActions(InvocationContext invocationContext, IFileMa
             MaxTokens = input.MaxTokens,
             ModifiedBy = input.ModifiedBy ?? "Blackbird",
             DisableTagChecks = input.DisableTagChecks ?? false,
+            FileExtension = fileExtension,
         });
 
         return new PostEditXliffResponse(result);
