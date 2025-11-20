@@ -15,7 +15,7 @@ public static class ErrorHandler
         catch (Exception ex)
         {
             if (IsError(ex))
-                throw new PluginMisconfigurationException(ex.Message);
+                throw new PluginMisconfigurationException(MapErrorMessage(ex.Message));
 
             throw new PluginApplicationException(ex.Message);
         }
@@ -30,7 +30,7 @@ public static class ErrorHandler
         catch (Exception ex)
         {
             if (IsError(ex))
-                throw new PluginMisconfigurationException(ex.Message);
+                throw new PluginMisconfigurationException(MapErrorMessage(ex.Message));
 
             throw new PluginApplicationException(ex.Message);
         }
@@ -45,7 +45,7 @@ public static class ErrorHandler
         catch (Exception ex)
         {
             if (IsError(ex))
-                throw new PluginMisconfigurationException(ex.Message);
+                throw new PluginMisconfigurationException(MapErrorMessage(ex.Message));
 
             throw new PluginApplicationException(ex.Message);
         }
@@ -57,5 +57,12 @@ public static class ErrorHandler
             || ex.Message.Contains("xliff", StringComparison.OrdinalIgnoreCase)
             || ex.Message.Contains("Namespace Manager or XsltContext needed", StringComparison.OrdinalIgnoreCase)
             || ex.Message.Contains("Could not detect any valid content type this library can process", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string MapErrorMessage(string message)
+    {
+        if (message == "Could not detect any valid content type this library can process")
+            return "This file is not supported";
+        else return message;
     }
 }
