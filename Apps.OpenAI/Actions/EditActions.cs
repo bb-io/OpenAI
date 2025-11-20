@@ -43,14 +43,14 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         [ActionParameter] ReasoningEffortRequest reasoningEffortRequest,
         [ActionParameter, Display("Bucket size", Description = "Specify the number of source texts to be edited at once. Default value: 1500. (See our documentation for an explanation)")] int? bucketSize = null)
     {
-        ValidatorHelper.ValidateInputFileContentType(input.File, MimeType.Xliff1, MimeType.Xliff2, MimeType.Html);
-
         var neverFail = false;
         var batchSize = bucketSize ?? 1500;
         var result = new ContentProcessingEditResult();
         var stream = await fileManagementClient.DownloadAsync(input.File);
 
-        var content = await Transformation.Parse(stream, input.File.Name);
+        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(async () => 
+            await Transformation.Parse(stream, input.File.Name)
+        );
 
         var batchProcessingService = new BatchProcessingService(UniversalClient, FileManagementClient);
         var batchOptions = new BatchProcessingOptions(
@@ -165,10 +165,10 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         Description = "Start background editing process for a translated file. This action will return a batch ID that can be used to download the results later.")]
     public async Task<BackgroundProcessingResponse> EditInBackground([ActionParameter] StartBackgroundProcessRequest processRequest)
     {
-        ValidatorHelper.ValidateInputFileContentType(processRequest.File, MimeType.Xliff1, MimeType.Xliff2, MimeType.Html);
-
         var stream = await fileManagementClient.DownloadAsync(processRequest.File);
-        var content = await Transformation.Parse(stream, processRequest.File.Name);
+        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(async () => 
+            await Transformation.Parse(stream, processRequest.File.Name)
+        );
 
         var units = content.GetUnits();
         var segments = units.SelectMany(x => x.Segments);
@@ -334,15 +334,15 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         [ActionParameter] ReasoningEffortRequest reasoningEffortRequest,
         [ActionParameter, Display("Bucket size", Description = "Specify the number of source texts to be edited at once. Default value: 1500. (See our documentation for an explanation)")] int? bucketSize = 1500)
     {
-        ValidatorHelper.ValidateInputFileContentType(input.File, MimeType.Xliff1, MimeType.Xliff2);
-
         var result = new ContentProcessingEditResult();
 
         var neverFail = false;
         var batchSize = bucketSize ?? 1500;
 
         var inputFileStream = await fileManagementClient.DownloadAsync(input.File);
-        var content = await Transformation.Parse(inputFileStream, input.File.Name);
+        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(async () => 
+            await Transformation.Parse(inputFileStream, input.File.Name)
+        );
 
         var batchProcessingService = new BatchProcessingService(UniversalClient, FileManagementClient);
         var batchOptions = new BatchProcessingOptions(

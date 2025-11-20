@@ -21,7 +21,7 @@ public class EditTests : TestBaseWithContext
         var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o" };
         var editRequest = new EditContentRequest
         {
-            File = new FileReference { Name = "contentful.html.xlf", ContentType = "application/x-xliff+xml" },
+            File = new FileReference { Name = "123.pptx" },
         };
         var reasoningEffortRequest = new ReasoningEffortRequest
         {
