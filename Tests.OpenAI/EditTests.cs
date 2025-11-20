@@ -7,6 +7,7 @@ using Apps.OpenAI.Models.Requests.Background;
 using Tests.OpenAI.Base;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using Apps.OpenAI.Constants;
 
 namespace Tests.OpenAI;
 
@@ -20,7 +21,7 @@ public class EditTests : TestBaseWithContext
         var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o" };
         var editRequest = new EditContentRequest
         {
-            File = new FileReference { Name = "contentful.html.xlf" },
+            File = new FileReference { Name = "contentful.html.xlf", ContentType = "application/x-xliff+xml" },
         };
         var reasoningEffortRequest = new ReasoningEffortRequest
         {
@@ -36,14 +37,14 @@ public class EditTests : TestBaseWithContext
         PrintResult(result);
     }
 
-    [TestMethod, ContextDataSource]
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded)]
     public async Task Taus_edit(InvocationContext context)
     {
         var actions = new EditActions(context, FileManagementClient);
         var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4.1" };
         var editRequest = new EditContentRequest
         {
-            File = new FileReference { Name = "taus.xliff" },
+            File = new FileReference { Name = "taus.xliff", ContentType = "application/vnd.oasis.xliff+xml" },
         };
         var reasoningEffortRequest = new ReasoningEffortRequest
         {
@@ -58,16 +59,21 @@ public class EditTests : TestBaseWithContext
         PrintResult(result);
     }
 
-    [TestMethod, ContextDataSource]
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded)]
     public async Task EditInBackground_OpenAiEmbeddedWithXliffFile_Success(InvocationContext context)
     {
         // Arrange
         var actions = new EditActions(context, FileManagementClient);
+        var file = new FileReference 
+        { 
+            Name = "The Hobbit, or There and Back Again_en-US.html.xlf", 
+            ContentType = "application/vnd.oasis.xliff+xml" 
+        };
 
         var editRequest = new StartBackgroundProcessRequest
         {
             ModelId = "gpt-4.1",
-            File = new FileReference { Name = "The Hobbit, or There and Back Again_en-US.html.xlf" },
+            File = file,
             TargetLanguage = "fr"
         };
 
@@ -80,15 +86,20 @@ public class EditTests : TestBaseWithContext
         PrintResult(response);
     }
 
-    [TestMethod, ContextDataSource]
-    public async Task EditInBackground_AzureOpenAiWithXliffFile_ThrowsExceptionWithCorrectMessage(InvocationContext context)
+    [TestMethod, ContextDataSource(ConnectionTypes.AzureOpenAi)]
+    public async Task EditInBackground_AzureOpenAiWithXliffFile_ThrowsMisconfigException(InvocationContext context)
     {
         // Arrange
         var actions = new EditActions(context, FileManagementClient);
+        var file = new FileReference 
+        { 
+            Name = "The Hobbit, or There and Back Again_en-US.html.xlf", 
+            ContentType = "application/x-xliff+xml" 
+        };
 
         var editRequest = new StartBackgroundProcessRequest
         {
-            File = new FileReference { Name = "The Hobbit, or There and Back Again_en-US.html.xlf" },
+            File = file,
             TargetLanguage = "fr"
         };
 
@@ -101,12 +112,13 @@ public class EditTests : TestBaseWithContext
         StringAssert.Contains(ex.Message, "which is not supported for batch jobs");
     }
 
-    [TestMethod, ContextDataSource]
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]
     public async Task Prompt_Generates_FullyCustomPrompt(InvocationContext context)
     {
         var actions = new EditActions(context, FileManagementClient);
         var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5-mini" };
-        var editRequest = new EditContentRequest { File = new FileReference { Name = "mqm-min.xlf" } };
+        var file = new FileReference { Name = "mqm-min.xlf", ContentType = "application/x-xliff+xml" };
+        var editRequest = new EditContentRequest { File = file };
         var systemPrompt = "Reply with json array of objects for each traslation unit, repeating ID and setting Target to one";
         var glossaryRequest = new GlossaryRequest();
         var reasoningEffortRequest = new ReasoningEffortRequest();
