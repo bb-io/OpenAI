@@ -115,8 +115,8 @@ public class PostEditService(
     private IEnumerable<TranslationUnit> FilterTranslationUnits(IEnumerable<TranslationUnit> units, bool processLocked, string targetStateToFilter)
     {
         if (!string.IsNullOrEmpty(targetStateToFilter))
-        { 
-            units = units.Where(x => x.TargetAttributes.TryGetValue("state", out string value) && x.TargetAttributes["state"] == targetStateToFilter); 
+        {
+            units = units.Where(x => x.TargetAttributes?.TryGetValue("state", out string value) is true && value == targetStateToFilter);
         }
 
         return processLocked ? units : units.Where(x => !x.IsLocked());
@@ -263,7 +263,7 @@ public class PostEditService(
                 new BaseChatRequest { Temperature = modelId.Contains("gpt") ? 0.1f : 1f, MaximumTokens = userMaxTokens },
                 ResponseFormats.GetXliffResponseFormat());
 
-            if (!chatCompletionResult.Success)
+            if (!chatCompletionResult.Success || chatCompletionResult.ChatCompletion?.Choices == null || !chatCompletionResult.ChatCompletion.Choices.Any())
             {
                 var errorMessage = $"Attempt {currentAttempt}/{maxRetryAttempts}: API call failed - {chatCompletionResult.Error ?? "Unknown error during OpenAI completion"}";
                 errors.Add(errorMessage);
@@ -335,6 +335,8 @@ public class PostEditService(
                 if (fileExtension == ".mxliff")
                 {
                     long unixTimestampMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                    translationUnit.Attributes ??= new Dictionary<string, string>();
                     translationUnit.Attributes["modified-at"] = unixTimestampMs.ToString();
                     translationUnit.Attributes["modified-by"] = modifiedBy;
                 }
