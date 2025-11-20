@@ -5,70 +5,63 @@ using Apps.OpenAI.Models.Requests.Content;
 using Blackbird.Applications.Sdk.Common.Files;
 using Apps.OpenAI.Models.Requests.Background;
 using Tests.OpenAI.Base;
-using Apps.OpenAI.Constants;
 using Blackbird.Applications.Sdk.Common.Exceptions;
+using Blackbird.Applications.Sdk.Common.Invocation;
 
 namespace Tests.OpenAI;
 
 [TestClass]
-public class EditTests : TestBase
+public class EditTests : TestBaseWithContext
 {
-    [TestMethod]
-    public async Task Edit_xliff()
+    [TestMethod, ContextDataSource]
+    public async Task Edit_xliff(InvocationContext context)
     {
-        foreach (var context in InvocationContext)
+        var actions = new EditActions(context, FileManagementClient);
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o" };
+        var editRequest = new EditContentRequest
         {
-            var actions = new EditActions(context, FileManagementClient);
-            var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o" };
-            var editRequest = new EditContentRequest
-            {
-                File = new FileReference { Name = "contentful.html.xlf" },
-            };
-            var reasoningEffortRequest = new ReasoningEffortRequest
-            {
-                ReasoningEffort = "low"
-            };
-            string? systemMessage = null;
-            var glossaryRequest = new GlossaryRequest();
+            File = new FileReference { Name = "contentful.html.xlf" },
+        };
+        var reasoningEffortRequest = new ReasoningEffortRequest
+        {
+            ReasoningEffort = "low"
+        };
+        string? systemMessage = null;
+        var glossaryRequest = new GlossaryRequest();
 
-            var result = await actions.EditContent(modelIdentifier, editRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
+        var result = await actions.EditContent(modelIdentifier, editRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
 
-            Assert.IsNotNull(result);
-            Assert.IsTrue(result.File.Name.Contains("contentful"));
-            PrintResult(context, result);
-        }
+        Assert.IsNotNull(result);
+        Assert.Contains("contentful", result.File.Name);
+        PrintResult(result);
     }
 
-    [TestMethod]
-    public async Task Taus_edit()
+    [TestMethod, ContextDataSource]
+    public async Task Taus_edit(InvocationContext context)
     {
-        foreach (var context in InvocationContext)
+        var actions = new EditActions(context, FileManagementClient);
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4.1" };
+        var editRequest = new EditContentRequest
         {
-            var actions = new EditActions(context, FileManagementClient);
-            var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4.1" };
-            var editRequest = new EditContentRequest
-            {
-                File = new FileReference { Name = "taus.xliff" },
-            };
-            var reasoningEffortRequest = new ReasoningEffortRequest
-            {
-                ReasoningEffort = "low"
-            };
-            string? systemMessage = null;
-            var glossaryRequest = new GlossaryRequest();
+            File = new FileReference { Name = "taus.xliff" },
+        };
+        var reasoningEffortRequest = new ReasoningEffortRequest
+        {
+            ReasoningEffort = "low"
+        };
+        string? systemMessage = null;
+        var glossaryRequest = new GlossaryRequest();
 
-            var result = await actions.EditContent(modelIdentifier, editRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
+        var result = await actions.EditContent(modelIdentifier, editRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
 
-            Assert.IsNotNull(result);
-            PrintResult(context, result);
-        }
+        Assert.IsNotNull(result);
+        PrintResult(result);
     }
 
-    [TestMethod]
-    public async Task EditInBackground_OpenAiEmbeddedWithXliffFile_Success()
+    [TestMethod, ContextDataSource]
+    public async Task EditInBackground_OpenAiEmbeddedWithXliffFile_Success(InvocationContext context)
     {
         // Arrange
-        var context = GetInvocationContext(ConnectionTypes.OpenAi);
         var actions = new EditActions(context, FileManagementClient);
 
         var editRequest = new StartBackgroundProcessRequest
@@ -84,14 +77,13 @@ public class EditTests : TestBase
         // Assert          
         Assert.IsNotNull(response);
         Assert.IsNotNull(response.BatchId);
-        PrintResult(context, response);
+        PrintResult(response);
     }
 
-    [TestMethod]
-    public async Task EditInBackground_AzureOpenAiWithXliffFile_ThrowsExceptionWithCorrectMessage()
+    [TestMethod, ContextDataSource]
+    public async Task EditInBackground_AzureOpenAiWithXliffFile_ThrowsExceptionWithCorrectMessage(InvocationContext context)
     {
         // Arrange
-        var context = GetInvocationContext(ConnectionTypes.AzureOpenAi);
         var actions = new EditActions(context, FileManagementClient);
 
         var editRequest = new StartBackgroundProcessRequest
@@ -109,27 +101,24 @@ public class EditTests : TestBase
         StringAssert.Contains(ex.Message, "which is not supported for batch jobs");
     }
 
-    [TestMethod]
-    public async Task Prompt_Generates_FullyCustomPrompt()
+    [TestMethod, ContextDataSource]
+    public async Task Prompt_Generates_FullyCustomPrompt(InvocationContext context)
     {
-        foreach (var context in InvocationContext)
-        {
-            var actions = new EditActions(context, FileManagementClient);
-            var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5-mini" };
-            var editRequest = new EditContentRequest { File = new FileReference { Name = "mqm-min.xlf" } };
-            var systemPrompt = "Reply with json array of objects for each traslation unit, repeating ID and setting Target to one";
-            var glossaryRequest = new GlossaryRequest();
-            var reasoningEffortRequest = new ReasoningEffortRequest();
+        var actions = new EditActions(context, FileManagementClient);
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5-mini" };
+        var editRequest = new EditContentRequest { File = new FileReference { Name = "mqm-min.xlf" } };
+        var systemPrompt = "Reply with json array of objects for each traslation unit, repeating ID and setting Target to one";
+        var glossaryRequest = new GlossaryRequest();
+        var reasoningEffortRequest = new ReasoningEffortRequest();
 
-            var result = await actions.Prompt(
-                modelIdentifier,
-                editRequest,
-                systemPrompt,
-                glossaryRequest,
-                reasoningEffortRequest);
+        var result = await actions.Prompt(
+            modelIdentifier,
+            editRequest,
+            systemPrompt,
+            glossaryRequest,
+            reasoningEffortRequest);
 
-            PrintResult(context, result);
-            Assert.Contains("mqm", result.File.Name);
-        }
+        PrintResult(result);
+        Assert.Contains("mqm", result.File.Name);
     }
 }

@@ -1,103 +1,94 @@
 ﻿using Apps.OpenAI.Actions;
+using Apps.OpenAI.Constants;
 using Apps.OpenAI.Models.Identifiers;
+using Apps.OpenAI.Models.Requests.Background;
 using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Models.Requests.Content;
 using Blackbird.Applications.Sdk.Common.Files;
+using Blackbird.Applications.Sdk.Common.Invocation;
 using Newtonsoft.Json;
-using Apps.OpenAI.Models.Requests.Background;
 using Tests.OpenAI.Base;
-using Apps.OpenAI.Constants;
 
 namespace Tests.OpenAI;
 
 [TestClass]
-public class TranslationActionsTests : TestBase
+public class TranslationActionsTests : TestBaseWithContext
 {
-    [TestMethod]
-    public async Task Translate_html()
+    [TestMethod, ContextDataSource]
+    public async Task Translate_html(InvocationContext context)
     {
-        foreach (var context in InvocationContext)
+        var actions = new TranslationActions(context, FileManagementClient);
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5" };
+        var translateRequest = new TranslateContentRequest
         {
-            var actions = new TranslationActions(context, FileManagementClient);
-            var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5" };
-            var translateRequest = new TranslateContentRequest
-            {
-                File = new FileReference { Name = "contentful.html" },
-                TargetLanguage = "nl"
-            };
-            var reasoningEffortRequest = new ReasoningEffortRequest
-            {
-                ReasoningEffort = "low"
-            };
-            string? systemMessage = null;
-            var glossaryRequest = new GlossaryRequest();
+            File = new FileReference { Name = "contentful.html" },
+            TargetLanguage = "nl"
+        };
+        var reasoningEffortRequest = new ReasoningEffortRequest
+        {
+            ReasoningEffort = "low"
+        };
+        string? systemMessage = null;
+        var glossaryRequest = new GlossaryRequest();
 
-            var result = await actions.TranslateContent(modelIdentifier, translateRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
-            Assert.IsNotNull(result);
-            Assert.IsTrue(result.File.Name.Contains("contentful"));
+        var result = await actions.TranslateContent(modelIdentifier, translateRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
+        Assert.IsNotNull(result);
+        Assert.Contains("contentful", result.File.Name);
 
-            Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
-        }
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
 
-    [TestMethod]
-    public async Task Translate_xlf()
+    [TestMethod, ContextDataSource]
+    public async Task Translate_xlf(InvocationContext context)
     {
-        foreach (var context in InvocationContext)
+        var actions = new TranslationActions(context, FileManagementClient);
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5" };
+        var translateRequest = new TranslateContentRequest
         {
-            var actions = new TranslationActions(context, FileManagementClient);
-            var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5" };
-            var translateRequest = new TranslateContentRequest
-            {
-                File = new FileReference { Name = "contentful.untranslated.xlf" },
-                TargetLanguage = "nl"
-            };
-            var reasoningEffortRequest = new ReasoningEffortRequest
-            {
-                ReasoningEffort = "low"
-            };
-            string? systemMessage = null;
-            var glossaryRequest = new GlossaryRequest();
+            File = new FileReference { Name = "contentful.untranslated.xlf" },
+            TargetLanguage = "nl"
+        };
+        var reasoningEffortRequest = new ReasoningEffortRequest
+        {
+            ReasoningEffort = "low"
+        };
+        string? systemMessage = null;
+        var glossaryRequest = new GlossaryRequest();
 
-            var result = await actions.TranslateContent(modelIdentifier, translateRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
-            Assert.IsNotNull(result);
-            Assert.IsTrue(result.File.Name.Contains("contentful"));
+        var result = await actions.TranslateContent(modelIdentifier, translateRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
+        Assert.IsNotNull(result);
+        Assert.Contains("contentful", result.File.Name);
 
-            Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
-        }
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
 
-    [TestMethod]
-    public async Task Translate_xlf12()
+    [TestMethod, ContextDataSource]
+    public async Task Translate_xlf12(InvocationContext context)
     {
-        foreach (var context in InvocationContext)
+        var actions = new TranslationActions(context, FileManagementClient);
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5" };
+        var translateRequest = new TranslateContentRequest
         {
-            var actions = new TranslationActions(context, FileManagementClient);
-            var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5" };
-            var translateRequest = new TranslateContentRequest
-            {
-                File = new FileReference { Name = "contentful12.xliff" },
-                TargetLanguage = "nl"
-            };
-            var reasoningEffortRequest = new ReasoningEffortRequest
-            {
-                ReasoningEffort = "low"
-            };
-            string? systemMessage = null;
-            var glossaryRequest = new GlossaryRequest();
+            File = new FileReference { Name = "contentful12.xliff" },
+            TargetLanguage = "nl"
+        };
+        var reasoningEffortRequest = new ReasoningEffortRequest
+        {
+            ReasoningEffort = "low"
+        };
+        string? systemMessage = null;
+        var glossaryRequest = new GlossaryRequest();
 
-            var result = await actions.TranslateContent(modelIdentifier, translateRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
-            Assert.IsNotNull(result);
-            Assert.IsTrue(result.File.Name.Contains("contentful"));
+        var result = await actions.TranslateContent(modelIdentifier, translateRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
+        Assert.IsNotNull(result);
+        Assert.Contains("contentful", result.File.Name);
 
-            Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
-        }
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
 
-    [TestMethod]
-    public async Task TranslateInBackground_OpenAiEmbedded_WithXliffFile_Success()
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded)]
+    public async Task TranslateInBackground_OpenAiEmbedded_WithXliffFile_Success(InvocationContext context)
     {
-        var context = GetInvocationContext(ConnectionTypes.OpenAiEmbedded);
         var actions = new TranslationActions(context, FileManagementClient);
             
         var translateRequest = new StartBackgroundProcessRequest
@@ -114,30 +105,27 @@ public class TranslationActionsTests : TestBase
         Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
     }
 
-    [TestMethod]
-    public async Task TranslateText_WithSerbianLocale_ReturnsLocalizedText()
+    [TestMethod, ContextDataSource]
+    public async Task TranslateText_WithSerbianLocale_ReturnsLocalizedText(InvocationContext context)
     {
-        foreach (var context in InvocationContext)
+        var actions = new TranslationActions(context, FileManagementClient);
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4.1" };
+        var localizeRequest = new LocalizeTextRequest
         {
-            var actions = new TranslationActions(context, FileManagementClient);
-            var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4.1" };
-            var localizeRequest = new LocalizeTextRequest
-            {
-                Text = "Develop and implement an HR strategy that drives organizational productivity and supports company's business goals. Design and oversee processes that promote team efficiency and operational effectiveness while reducing complexity and redundancies.",
-                TargetLanguage = "sr-Latn-RS"
-            };
+            Text = "Develop and implement an HR strategy that drives organizational productivity and supports company's business goals. Design and oversee processes that promote team efficiency and operational effectiveness while reducing complexity and redundancies.",
+            TargetLanguage = "sr-Latn-RS"
+        };
 
-            var glossaryRequest = new GlossaryRequest();
+        var glossaryRequest = new GlossaryRequest();
 
-            var result = await actions.LocalizeText(modelIdentifier, localizeRequest, glossaryRequest);
+        var result = await actions.LocalizeText(modelIdentifier, localizeRequest, glossaryRequest);
 
-            Assert.IsNotNull(result);
-            Assert.IsNotNull(result.TranslatedText);
-            Console.WriteLine("Original: " + localizeRequest.Text);
-            Console.WriteLine("Localized: " + result.TranslatedText);
+        Assert.IsNotNull(result);
+        Assert.IsNotNull(result.TranslatedText);
+        Console.WriteLine("Original: " + localizeRequest.Text);
+        Console.WriteLine("Localized: " + result.TranslatedText);
 
-            // Additional validation to ensure response is not empty and contains Serbian characters
-            Assert.IsTrue(result.TranslatedText.Length > 0);
-        }
+        // Additional validation to ensure response is not empty and contains Serbian characters
+        Assert.IsGreaterThan(0, result.TranslatedText.Length);
     }
 }

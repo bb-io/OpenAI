@@ -1,12 +1,13 @@
 using Apps.OpenAI.Services;
 using Blackbird.Applications.Sdk.Common.Files;
+using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Xliff.Utils.Models;
 using Tests.OpenAI.Base;
 
 namespace Tests.OpenAI;
 
 [TestClass]
-public class GlossaryServiceTests : TestBase
+public class GlossaryServiceTests : TestBaseWithContext
 {
     private GlossaryService _glossaryService = null!;
     private FileReference _glossaryFile = null!;
@@ -18,105 +19,93 @@ public class GlossaryServiceTests : TestBase
         _glossaryFile = new FileReference { Name = "glossary.tbx" };
     }
     
-    [TestMethod]
-    public async Task BuildGlossaryPromptPartAsync_WithoutFiltering_ReturnsAllEntries()
+    [TestMethod, ContextDataSource]
+    public async Task BuildGlossaryPromptPartAsync_WithoutFiltering_ReturnsAllEntries(InvocationContext context)
     {
-        foreach (var context in InvocationContext)
+        // Arrange
+        var translationUnits = new List<TranslationUnit>
         {
-            // Arrange
-            var translationUnits = new List<TranslationUnit>
-            {
-                new() { Id = "1", Source = "This is a test source text" }
-            };
+            new() { Id = "1", Source = "This is a test source text" }
+        };
             
-            // Act
-            var result = await _glossaryService.BuildGlossaryPromptAsync(_glossaryFile, translationUnits, false);
+        // Act
+        var result = await _glossaryService.BuildGlossaryPromptAsync(_glossaryFile, translationUnits, false);
             
-            // Assert
-            Assert.IsNotNull(result);
-            PrintResult(context, result);
+        // Assert
+        Assert.IsNotNull(result);
+        PrintResult(result);
             
-            Assert.IsTrue(result.Contains("Glossary entries"));
-            Assert.IsTrue(result.Contains("Entry:"));
-            Assert.IsTrue(result.Contains("en:"));
-            Assert.IsTrue(result.Contains("fr:"));
-        }
+        Assert.Contains("Glossary entries", result);
+        Assert.Contains("Entry:", result);
+        Assert.Contains("en:", result);
+        Assert.Contains("fr:", result);
     }
     
-    [TestMethod]
-    public async Task BuildGlossaryPromptPartAsync_WithFiltering_ReturnsOnlyRelevantEntries()
+    [TestMethod, ContextDataSource]
+    public async Task BuildGlossaryPromptPartAsync_WithFiltering_ReturnsOnlyRelevantEntries(InvocationContext context)
     {
-        foreach (var context in InvocationContext)
+        // Arrange
+        var translationUnits = new List<TranslationUnit>
         {
-            // Arrange
-            var translationUnits = new List<TranslationUnit>
-            {
-                new() { Id = "1", Source = "text segment that contains some specific terms" }
-            };
+            new() { Id = "1", Source = "text segment that contains some specific terms" }
+        };
             
-            // Act
-            var result = await _glossaryService.BuildGlossaryPromptAsync(_glossaryFile, translationUnits, true);
+        // Act
+        var result = await _glossaryService.BuildGlossaryPromptAsync(_glossaryFile, translationUnits, true);
             
-            // Assert
-            Assert.IsNotNull(result);
-            PrintResult(context, result);
+        // Assert
+        Assert.IsNotNull(result);
+        PrintResult(result);
 
-            Assert.IsTrue(result.Contains("Glossary entries"));
-            Assert.IsTrue(result.Contains("Entry:"));
+        Assert.Contains("Glossary entries", result);
+        Assert.Contains("Entry:", result);
             
-            Assert.IsTrue(result.Contains("text segment") || 
-                          result.Contains("specific terms") || 
-                          result.Contains("terms"));
+        Assert.IsTrue(result.Contains("text segment") || 
+                        result.Contains("specific terms") || 
+                        result.Contains("terms"));
+    }
+    
+    [TestMethod, ContextDataSource]
+    public async Task BuildGlossaryPromptPartAsync_WithFilteringAndNoRelevantEntries_ReturnsNull(InvocationContext context)
+    {
+        // Arrange
+        var translationUnits = new List<TranslationUnit>
+        {
+            new() { Id = "1", Source = "xyz123 completely unrelated content" }
+        };
+            
+        // Act
+        var result = await _glossaryService.BuildGlossaryPromptAsync(_glossaryFile, translationUnits, true);
+            
+        // Assert
+        if (result == null)
+        {
+            Assert.IsNull(result);
+        }
+        else
+        {
+            PrintResult(result);
+            Assert.Contains("Glossary entries", result);
         }
     }
     
-    [TestMethod]
-    public async Task BuildGlossaryPromptPartAsync_WithFilteringAndNoRelevantEntries_ReturnsNull()
+    [TestMethod, ContextDataSource]
+    public async Task BuildGlossaryPromptPartAsync_IncludesUsageExamples_WhenAvailable(InvocationContext context)
     {
-        foreach (var context in InvocationContext)
+        // Arrange
+        var translationUnits = new List<TranslationUnit>
         {
-            // Arrange
-            var translationUnits = new List<TranslationUnit>
-            {
-                new() { Id = "1", Source = "xyz123 completely unrelated content" }
-            };
+            new() { Id = "1", Source = "This is a test for usage examples" }
+        };
             
-            // Act
-            var result = await _glossaryService.BuildGlossaryPromptAsync(_glossaryFile, translationUnits, true);
+        // Act
+        var result = await _glossaryService.BuildGlossaryPromptAsync(_glossaryFile, translationUnits, false);
             
-            // Assert
-            if (result == null)
-            {
-                Assert.IsNull(result);
-            }
-            else
-            {
-                PrintResult(context, result);
-                Assert.IsTrue(result.Contains("Glossary entries"));
-            }
-        }
-    }
-    
-    [TestMethod]
-    public async Task BuildGlossaryPromptPartAsync_IncludesUsageExamples_WhenAvailable()
-    {
-        foreach (var context in InvocationContext)
-        {
-            // Arrange
-            var translationUnits = new List<TranslationUnit>
-            {
-                new() { Id = "1", Source = "This is a test for usage examples" }
-            };
-            
-            // Act
-            var result = await _glossaryService.BuildGlossaryPromptAsync(_glossaryFile, translationUnits, false);
-            
-            // Assert
-            Assert.IsNotNull(result);
-            PrintResult(context, result);
+        // Assert
+        Assert.IsNotNull(result);
+        PrintResult(result);
 
-            bool hasUsageExamples = result.Contains("Usage example:");
-            Console.WriteLine($"Glossary contains usage examples: {hasUsageExamples}");
-        }
+        bool hasUsageExamples = result.Contains("Usage example:");
+        Console.WriteLine($"Glossary contains usage examples: {hasUsageExamples}");
     }
 }

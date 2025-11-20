@@ -2,35 +2,37 @@
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Models.Requests.Background;
 using Blackbird.Applications.Sdk.Common.Files;
-using Newtonsoft.Json;
+using Blackbird.Applications.Sdk.Common.Invocation;
 using Tests.OpenAI.Base;
 
 namespace Tests.OpenAI;
 
 [TestClass]
-public class BackgroundActionsTests : TestBase
+public class BackgroundActionsTests : TestBaseWithContext
 {
-    [TestMethod]
-    public async Task DownloadContentFromBackground_OpenAiCompletedBatchWithXliffFile_Success()
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded)]
+    public async Task DownloadContentFromBackground_OpenAiCompletedBatchWithXliffFile_Success(InvocationContext context)
     {
-        var context = GetInvocationContext(ConnectionTypes.OpenAi);
+        // Arrange
         var actions = new BackgroundActions(context, FileManagementClient);
         var downloadRequest = new BackgroundDownloadRequest
         {
             BatchId = "batch_68e4a64badd8819082197f5fef3306b5",
             TransformationFile = new FileReference { Name = "The Hobbit, or There and Back Again_en-US.html.xlf" }
         };
-            
+
+        // Act
         var result = await actions.DownloadContentFromBackground(downloadRequest);
 
-        PrintResult(context, result);
+        // Assert
+        PrintResult(result);
         Assert.IsNotNull(result);
     }
 
-    [TestMethod]
-    public async Task DownloadContentFromBackground_AzureOpenAiCompletedBatchWithXliffFile_Success()
+    [TestMethod, ContextDataSource(ConnectionTypes.AzureOpenAi)]
+    public async Task DownloadContentFromBackground_AzureOpenAiCompletedBatchWithXliffFile_Success(InvocationContext context)
     {
-        var context = GetInvocationContext(ConnectionTypes.AzureOpenAi);
+        // Arrange
         var actions = new BackgroundActions(context, FileManagementClient);
         var downloadRequest = new BackgroundDownloadRequest
         {
@@ -38,33 +40,37 @@ public class BackgroundActionsTests : TestBase
             TransformationFile = new FileReference { Name = "The Hobbit, or There and Back Again_en-US.html.xlf" }
         };
 
+        // Act
         var result = await actions.DownloadContentFromBackground(downloadRequest);
 
-        PrintResult(context, result);
+        // Assert
+        PrintResult(result);
         Assert.IsNotNull(result);
     }
 
-    [TestMethod]
-    public async Task GetMqmReportFromBackground_OpenAiEmbeddedCompletedBatch_Success()
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded)]
+    public async Task GetMqmReportFromBackground_OpenAiEmbeddedCompletedBatch_Success(InvocationContext context)
     {
-        var context = GetInvocationContext(ConnectionTypes.OpenAiEmbedded);
+        // Arrange
         var actions = new BackgroundActions(context, FileManagementClient);
         var downloadRequest = new BackgroundDownloadRequest
         {
             BatchId = "batch_68e4168ac48c81909609edd7ea536873",
             TransformationFile = new FileReference { Name = "mqm.xlf" }
         };
-            
+
+        // Act            
         var result = await actions.GetMqmReportFromBackground(downloadRequest);
-            
+
+        // Assert
+        PrintResult(result);
         Assert.IsNotNull(result);
-        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
 
-    [TestMethod]
-    public async Task GetMqmReportFromBackground_AzureOpenAiCompletedBatch_Success()
+    [TestMethod, ContextDataSource(ConnectionTypes.AzureOpenAi)]
+    public async Task GetMqmReportFromBackground_AzureOpenAiCompletedBatch_Success(InvocationContext context)
     {
-        var context = GetInvocationContext(ConnectionTypes.AzureOpenAi);
+        // Arrange
         var actions = new BackgroundActions(context, FileManagementClient);
         var downloadRequest = new BackgroundDownloadRequest
         {
@@ -72,9 +78,11 @@ public class BackgroundActionsTests : TestBase
             TransformationFile = new FileReference { Name = "mqm.xlf" }
         };
 
+        // Act
         var result = await actions.GetMqmReportFromBackground(downloadRequest);
 
+        // Assert
+        PrintResult(result);
         Assert.IsNotNull(result);
-        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
 }
