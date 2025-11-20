@@ -62,7 +62,7 @@ public static class ErrorHandler
     private static string MapErrorMessage(string message)
     {
         if (message == "Could not detect any valid content type this library can process")
-            return "This file is not supported";
+            return "This file type is not supported";
         else return message;
     }
 }

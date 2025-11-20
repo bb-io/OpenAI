@@ -14,14 +14,14 @@ namespace Tests.OpenAI;
 [TestClass]
 public class EditTests : TestBaseWithContext
 {
-    [TestMethod, ContextDataSource]
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded)]
     public async Task Edit_xliff(InvocationContext context)
     {
         var actions = new EditActions(context, FileManagementClient);
         var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o" };
         var editRequest = new EditContentRequest
         {
-            File = new FileReference { Name = "123.pptx" },
+            File = new FileReference { Name = "contentful.html.xliff" },
         };
         var reasoningEffortRequest = new ReasoningEffortRequest
         {
