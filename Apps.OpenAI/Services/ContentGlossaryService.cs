@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -33,7 +35,10 @@ public class ContentGlossaryService(IFileManagementClient fileManagementClient)
         }
 
         var glossaryStream = await fileManagementClient.DownloadAsync(glossary);
-        var blackbirdGlossary = await glossaryStream.ConvertFromTbx();
+
+        using var sanitizedGlossaryStream = await glossaryStream.SanitizeTbxXmlAsync();
+
+        var blackbirdGlossary = await sanitizedGlossaryStream.ConvertFromTbx();
 
         var jsonGlossary = new GlossaryJson();
         var entriesIncluded = false;
@@ -109,5 +114,36 @@ public class ContentGlossaryService(IFileManagementClient fileManagementClient)
         return terms.Any(term => 
             sourcesContent.Any(source => 
                 Regex.IsMatch(source, $@"\b{Regex.Escape(term)}\b", RegexOptions.IgnoreCase)));
+    }
+}
+
+public static class TbxStreamExtensions
+{
+    public static async Task<Stream> SanitizeTbxXmlAsync(this Stream original)
+    {
+        if (original == null)
+            throw new ArgumentNullException(nameof(original));
+
+        if (original.CanSeek)
+            original.Position = 0;
+
+        using var reader = new StreamReader(
+            original,
+            Encoding.UTF8,
+            detectEncodingFromByteOrderMarks: true);
+
+        var text = await reader.ReadToEndAsync();
+
+        text = text.TrimStart(
+            '\uFEFF',
+            '\u200B',
+            '\u0000',
+            '\u00A0',
+            ' ', '\t', '\r', '\n');
+
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var ms = new MemoryStream(bytes);
+        ms.Position = 0;
+        return ms;
     }
 }
