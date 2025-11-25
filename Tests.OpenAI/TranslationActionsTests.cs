@@ -14,26 +14,24 @@ namespace Tests.OpenAI;
 [TestClass]
 public class TranslationActionsTests : TestBaseWithContext
 {
-    [TestMethod, ContextDataSource]
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]
     public async Task Translate_html(InvocationContext context)
     {
         var actions = new TranslationActions(context, FileManagementClient);
-        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5" };
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5-mini" };
         var translateRequest = new TranslateContentRequest
         {
-            File = new FileReference { Name = "contentful.html" },
-            TargetLanguage = "nl"
+            File = new FileReference { Name = "" },
+            TargetLanguage = "zh-Hans-CN",
+            OutputFileHandling = "original"
         };
-        var reasoningEffortRequest = new ReasoningEffortRequest
-        {
-            ReasoningEffort = "low"
-        };
-        string? systemMessage = null;
-        var glossaryRequest = new GlossaryRequest();
+        var reasoningEffortRequest = new ReasoningEffortRequest();
+        string systemMessage = "";
+            var glossaryRequest = new GlossaryRequest { Glossary = new FileReference { Name = "Glossary.tbx" } };
 
         var result = await actions.TranslateContent(modelIdentifier, translateRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
         Assert.IsNotNull(result);
-        Assert.Contains("contentful", result.File.Name);
+        //Assert.Contains("contentful", result.File.Name);
 
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }

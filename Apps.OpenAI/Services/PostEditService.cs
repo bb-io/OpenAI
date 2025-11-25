@@ -161,7 +161,7 @@ public class PostEditService(
                 errors.AddRange(batchResult.ErrorMessages);
                 usages.Add(batchResult.Usage);
 
-                if (!batchResult.IsSuccess && !neverFail)
+                if (!neverFail && (!batchResult.IsSuccess || batchResult.ErrorMessages.Any()))
                 {
                     throw new PluginApplicationException(
                         $"Failed to process batch {batchCounter} (size: {batchSize}). Errors: {string.Join(", ", batchResult.ErrorMessages)}");
