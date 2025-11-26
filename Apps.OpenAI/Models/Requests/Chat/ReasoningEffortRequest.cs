@@ -8,5 +8,5 @@ public class ReasoningEffortRequest
 {
     [Display("Reasoning effort")]
     [StaticDataSource(typeof(ReasoningEffortDataSourceHandler))]
-    public string? ReasoningEffort { get; set; }
+    public string? ReasoningEffort { get; set; } = "medium";
 }

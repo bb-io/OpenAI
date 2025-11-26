@@ -107,11 +107,35 @@ public class TranslationActionsTests : TestBaseWithContext
     public async Task TranslateText_WithSerbianLocale_ReturnsLocalizedText(InvocationContext context)
     {
         var actions = new TranslationActions(context, FileManagementClient);
-        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4.1" };
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5.1" };
         var localizeRequest = new LocalizeTextRequest
         {
             Text = "Develop and implement an HR strategy that drives organizational productivity and supports company's business goals. Design and oversee processes that promote team efficiency and operational effectiveness while reducing complexity and redundancies.",
             TargetLanguage = "sr-Latn-RS"
+        };
+
+        var glossaryRequest = new GlossaryRequest();
+
+        var result = await actions.LocalizeText(modelIdentifier, localizeRequest, glossaryRequest);
+
+        Assert.IsNotNull(result);
+        Assert.IsNotNull(result.TranslatedText);
+        Console.WriteLine("Original: " + localizeRequest.Text);
+        Console.WriteLine("Localized: " + result.TranslatedText);
+
+        // Additional validation to ensure response is not empty and contains Serbian characters
+        Assert.IsGreaterThan(0, result.TranslatedText.Length);
+    }
+
+    [TestMethod, ContextDataSource]
+    public async Task Translate_Text_Stork_Test(InvocationContext context)
+    {
+        var actions = new TranslationActions(context, FileManagementClient);
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5.1" };
+        var localizeRequest = new LocalizeTextRequest
+        {
+            Text = "Brat mir einer einen Storch.",
+            TargetLanguage = "en-US"
         };
 
         var glossaryRequest = new GlossaryRequest();

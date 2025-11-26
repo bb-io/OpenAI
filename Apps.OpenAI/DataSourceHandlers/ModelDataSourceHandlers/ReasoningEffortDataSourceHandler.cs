@@ -10,6 +10,7 @@ public class ReasoningEffortDataSourceHandler : IStaticDataSourceItemHandler
     {
         return
         [
+            new("none", "None"),
             new("low", "Low"),
             new("medium", "Medium"),
             new("high", "High")
