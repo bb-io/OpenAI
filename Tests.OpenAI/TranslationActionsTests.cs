@@ -21,12 +21,13 @@ public class TranslationActionsTests : TestBaseWithContext
         var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5-mini" };
         var translateRequest = new TranslateContentRequest
         {
-            File = new FileReference { Name = "" },
+            File = new FileReference { Name = "Pasted text-en-ko-Tr.mxliff" },
             TargetLanguage = "zh-Hans-CN",
-            OutputFileHandling = "original"
+            OutputFileHandling = "original",
+            
         };
-        var reasoningEffortRequest = new ReasoningEffortRequest();
-        string systemMessage = "";
+        var reasoningEffortRequest = new ReasoningEffortRequest { };
+        string systemMessage = "The content is intended to introduce products and services to potential customers. Your task is to ensure the translation is accurate, engaging, and easy to understand by correcting critical errors, while maintaining a formal tone.  \r\nCritical errors include tag misplacements, malformed tags, number mismatches, translation omissions, or glossary term violations.  Tags appear as combinations of {, }, <, or > with a number (e.g., {1}, <2}, {3>), and these must match the source exactly. Tags define font styles of texts between two tags or represent inserted links and line breaks.  \r\nDo not change the existing translation unless a critical error or translation mistake is present. Do not add punctuations which do not exist in the source. \r\n";
             var glossaryRequest = new GlossaryRequest { Glossary = new FileReference { Name = "Glossary.tbx" } };
 
         var result = await actions.TranslateContent(modelIdentifier, translateRequest, systemMessage, glossaryRequest, reasoningEffortRequest);

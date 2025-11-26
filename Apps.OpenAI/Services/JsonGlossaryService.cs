@@ -34,7 +34,8 @@ public class JsonGlossaryService(IFileManagementClient fileManagementClient) : I
         }
 
         var glossaryStream = await fileManagementClient.DownloadAsync(glossary);
-        var blackbirdGlossary = await glossaryStream.ConvertFromTbx();
+        using var sanitizedGlossaryStream = await glossaryStream.SanitizeTbxXmlAsync();
+        var blackbirdGlossary = await sanitizedGlossaryStream.ConvertFromTbx();
 
         var jsonGlossary = new GlossaryJson();
         var entriesIncluded = false;

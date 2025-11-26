@@ -6,30 +6,33 @@ using Apps.OpenAI.Models.Requests.Xliff;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using Apps.OpenAI.Constants;
 
 namespace Tests.OpenAI;
 
 [TestClass]
 public class XliffActionTests : TestBaseWithContext
 {   
-    [TestMethod, ContextDataSource]
+    [TestMethod, ContextDataSource(ConnectionTypes.AzureOpenAi)]
     public async Task PostEditXLIFF_WithValidXlfFile_ProcessesSuccessfully(InvocationContext context)
     {
         // Arrange
         var actions = new DeprecatedXliffActions(context, FileManagementClient);
-        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4.1" };
-        var prompt = "You are a Swiss machine translation post-editor. You edit texts from German into Italian. Your task is to post-edit a translation. You need to take the source segment into account when post-editing the translation. Check each target segment and perform the following tasks:\r\n- Replace the character \"'\" with the character \"’\". Example: write \"l’indice\" instead of \"l'indice\".\r\n- Make sure that the quotation marks \"«»\" are used in the target text. Example: write «I prezzi aumentano» instead of \"I prezzi aumentano\".\r\n- Make sure percentages are expressed with the symbol \"%\". Make sure there aren't spaces between the number and the symbol. Example: write \"10%\" instead of “10 per cento”.\r\n- Perform a grammar and punctuation check. Focus on spelling, gender and number. Ensure internal consistency and fluency. Try to use impersonal formulations when possible.\r\n- Perform a terminology check. The attached glossary contains the terms that need to be strictly applied to the translation, ensuring grammatical correctness, gender, inflections and plurals.\r\nReturn the new .xliff file. ";
-
+        var modelIdentifier = new TextChatModelIdentifier { /*ModelId = "gpt-4.1" */};
+        var prompt = "";
         var editRequest = new PostEditXliffRequest
         {
-            DisableTagChecks = true,
-            File = new FileReference { Name = "contentful.html.xliff" },
-            SourceLanguage = "German",
-            TargetLanguage = "Italian",
-
+            //DisableTagChecks = true,
+            File = new FileReference { Name = "Pasted text-en-ko-Tr.mxliff" },
+            //SourceLanguage = "German",
+            //TargetLanguage = "Italian",
+            NeverFail = false,
+            ModifiedBy= "1441948",
+            FilterGlossary=true,
+            PostEditLockedSegments = false
         };
         string? systemMessage = prompt;
-        var glossaryRequest = new GlossaryRequest { Glossary = new FileReference { Name = "glossary.tbx" } };
+        var glossaryRequest = new GlossaryRequest { Glossary = new FileReference { Name = "TermWeb_Safe For AI.tbx" } };
 
         // Act
         var result = await actions.PostEditXLIFF(modelIdentifier, editRequest, systemMessage, glossaryRequest);

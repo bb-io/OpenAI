@@ -239,7 +239,7 @@ public class PostEditService(
         catch (Exception ex)
         {
             result.IsSuccess = false;
-            result.ErrorMessages.Add($"Unexpected error processing batch: {ex.Message}");
+            result.ErrorMessages.Add($"Unexpected error processing batch: {ex.GetType().Name}: {ex.Message}");
             return result;
         }
     }
