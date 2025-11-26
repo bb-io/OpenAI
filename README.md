@@ -237,7 +237,9 @@ Check downloadable workflow prototypes featuring this app that you can import to
 
 ### Reasoning effort
 
-- GPT 5.1 introduced the configurable input of "Reasoning effort". All models prior to 5.1 ignore this input and use "medium" reasoning effort. In Blackbird, if you don't provide any input to reasoning effort then by default it passes "medium" to OpenAI.
+GPT 5.1 introduced the configurable input of "Reasoning effort". All models prior to 5.1 ignore this input and use "medium" reasoning effort. In Blackbird, if you don't provide any input to reasoning effort then by default it passes "medium" to OpenAI.
+
+With GPT-5, you can now directly control how much the model says using the verbosity parameter. Set it to low for concise answers, medium for balanced detail, or high for in-depth explanations.
 
 ### How to know if the batch process is completed? 
 
