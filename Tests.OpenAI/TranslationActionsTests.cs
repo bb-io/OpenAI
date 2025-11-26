@@ -21,13 +21,14 @@ public class TranslationActionsTests : TestBaseWithContext
         var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5-mini" };
         var translateRequest = new TranslateContentRequest
         {
-            File = new FileReference { Name = "" },
+            File = new FileReference { Name = "Pasted text-en-ko-Tr.mxliff" },
             TargetLanguage = "zh-Hans-CN",
-            OutputFileHandling = "original"
+            OutputFileHandling = "original",
+            
         };
-        var reasoningEffortRequest = new ReasoningEffortRequest();
+        var reasoningEffortRequest = new ReasoningEffortRequest { };
         string systemMessage = "";
-            var glossaryRequest = new GlossaryRequest { Glossary = new FileReference { Name = "Glossary.tbx" } };
+         var glossaryRequest = new GlossaryRequest { Glossary = new FileReference { Name = "Glossary.tbx" } };
 
         var result = await actions.TranslateContent(modelIdentifier, translateRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
         Assert.IsNotNull(result);
