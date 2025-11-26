@@ -301,7 +301,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         [ActionParameter] GlossaryRequest glossary)
     {
         var systemPrompt = "You are a text localizer. Localize the provided text for the specified locale while " +
-                           "preserving the original text structure. Respond with localized text.";
+                           "preserving the original text structure. Respond with localized text and only localized text, nothing else.";
 
         var userPrompt = @$"
                     Original text: {input.Text}

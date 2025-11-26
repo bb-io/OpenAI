@@ -235,6 +235,10 @@ Check downloadable workflow prototypes featuring this app that you can import to
 
 - The maximum number of translation units in the XLIFF file is `50 000` because a single batch may include up to 50,000 requests
 
+### Reasoning effort
+
+- GPT 5.1 introduced the configurable input of "Reasoning effort". All models prior to 5.1 ignore this input and use "medium" reasoning effort. In Blackbird, if you don't provide any input to reasoning effort then by default it passes "medium" to OpenAI.
+
 ### How to know if the batch process is completed? 
 
 You have 3 options here:
@@ -255,15 +259,6 @@ We recommend using the `On background job finished` event trigger as it is more 
 
 ![1694620196801](image/README/1694620196801.png)
 This simple example how OpenAI can be used to communicate with the Blackbird Slack app. Whenever the app is mentioned, the message will be send to Chat to generate an answer. We then use Amazon Polly to turn the textual response into a spoken-word resopnse and return it in the same channel.
-
-## Missing features
-
-In the future we can add actions for:
-
-- Moderation
-- Fine-tuning
-
-Let us know if you're interested!
 
 ## Actions limitations
 
