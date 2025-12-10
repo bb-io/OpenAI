@@ -147,8 +147,10 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
                 }
             }
 
-            unit.Provenance.Translation.Tool = UniversalClient.GetModel(modelIdentifier.ModelId);
-            unit.Provenance.Translation.ToolReference = $"https://openai.com/{UniversalClient.GetModel(modelIdentifier.ModelId)}";
+            var model = UniversalClient.GetModel(modelIdentifier.ModelId);
+            unit.Provenance.Translation.Tool = model;
+            double tokens = result.Usage.TotalTokens / processedBatches.Count();
+            unit.AddUsage(model, Math.Round(tokens, 0), UsageUnit.Tokens);
         }
 
         result.TargetsUpdatedCount = updatedCount;

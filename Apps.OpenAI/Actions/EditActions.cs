@@ -137,8 +137,10 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                 segment.State = SegmentState.Reviewed;
             }
 
-            unit.Provenance.Review.Tool = UniversalClient.GetModel(modelIdentifier.ModelId);
-            unit.Provenance.Review.ToolReference = $"https://openai.com/{UniversalClient.GetModel(modelIdentifier.ModelId)}";
+            var model = UniversalClient.GetModel(modelIdentifier.ModelId);
+            unit.Provenance.Review.Tool = model;
+            double tokens = result.Usage.TotalTokens / processedBatches.Count();
+            unit.AddUsage(model, Math.Round(tokens, 0), UsageUnit.Tokens);
         }
 
         result.TotalSegmentsUpdated = updatedCount;
@@ -431,8 +433,10 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                 segment.State = SegmentState.Reviewed;
             }
 
-            unit.Provenance.Review.Tool = UniversalClient.GetModel(modelIdentifier.ModelId);
-            unit.Provenance.Review.ToolReference = $"https://openai.com/{UniversalClient.GetModel(modelIdentifier.ModelId)}";
+            var model = UniversalClient.GetModel(modelIdentifier.ModelId);
+            unit.Provenance.Review.Tool = model;
+            double tokens = result.Usage.TotalTokens / processedBatches.Count();
+            unit.AddUsage(model, Math.Round(tokens, 0), UsageUnit.Tokens);
         }
 
         result.TotalSegmentsUpdated = updatedCount;
