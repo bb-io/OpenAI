@@ -14,6 +14,7 @@ namespace Apps.OpenAI.DataSourceHandlers.ModelDataSourceHandlers
         {
             return new List<DataSourceItem>
             {
+                new("gpt-5.2", "gpt-5.2"),
                 new( "gpt-4o", "gpt-4o"),
                 new( "gpt-4o-mini", "gpt-4o-mini" ),
                 new( "chatgpt-4o-latest", "chatgpt-4o-latest" ),
