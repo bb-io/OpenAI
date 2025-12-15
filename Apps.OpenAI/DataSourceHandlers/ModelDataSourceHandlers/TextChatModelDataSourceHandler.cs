@@ -13,7 +13,6 @@ public class TextChatModelDataSourceHandler(InvocationContext invocationContext)
         "gpt-5.1",
         "gpt-5.1-codex-mini",
         "gpt-5.2",
-        "gpt-5.2-pro",
         "gpt-5",
         "gpt-5-mini",
         "gpt-5-nano",
