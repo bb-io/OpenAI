@@ -1,14 +1,16 @@
-using Tests.OpenAI.Base;
 using Apps.OpenAI.Connections;
+using Apps.OpenAI.Constants;
 using Blackbird.Applications.Sdk.Common.Authentication;
+using Blackbird.Applications.Sdk.Common.Invocation;
+using Tests.OpenAI.Base;
 
 namespace Tests.OpenAI;
 
 [TestClass]
-public class ConnectionValidatorTests : TestBase
+public class ConnectionValidatorTests : TestBaseWithContext
 {
-    [TestMethod]
-    public async Task ValidateConnection_WithCorrectCredentials_ReturnsValidResult()
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]
+    public async Task ValidateConnection_WithCorrectCredentials_ReturnsValidResult(InvocationContext context)
     {
         var validator = new ConnectionValidator();
 
