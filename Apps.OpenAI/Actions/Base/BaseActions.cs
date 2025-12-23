@@ -185,11 +185,36 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         }
 
         var glossaryStream = await FileManagementClient.DownloadAsync(glossary);
-        var blackbirdGlossary = await glossaryStream.ConvertFromTbx();
+        using var sanitizedStream = await ToSanitizedMemoryStreamAsync(glossaryStream);
+
+        var blackbirdGlossary = await sanitizedStream.ConvertFromTbx();
         
         return GetGlossaryPromptPart(blackbirdGlossary, sourceContent, filter);
     }
-    
+
+    private static async Task<MemoryStream> ToSanitizedMemoryStreamAsync(Stream input)
+    {
+        var memoryStream = new MemoryStream();
+        await input.CopyToAsync(memoryStream);
+        memoryStream.Position = 0;
+
+        if (memoryStream.Length >= 3)
+        {
+            var bom = new byte[3];
+            var read = await memoryStream.ReadAsync(bom, 0, 3);
+            if (read == 3 && bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF)
+            {
+                var cleaned = new MemoryStream();
+                await memoryStream.CopyToAsync(cleaned);
+                cleaned.Position = 0;
+                return cleaned;
+            }
+            memoryStream.Position = 0;
+        }
+
+        return memoryStream;
+    }
+
     protected async Task<XliffDocument> DownloadXliffDocumentAsync(FileReference file)
     {
         var fileStream = await FileManagementClient.DownloadAsync(file);

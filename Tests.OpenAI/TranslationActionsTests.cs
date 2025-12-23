@@ -115,7 +115,9 @@ public class TranslationActionsTests : TestBaseWithContext
             TargetLanguage = "sr-Latn-RS"
         };
 
-        var glossaryRequest = new GlossaryRequest();
+        var glossaryRequest = new GlossaryRequest { 
+        Glossary = new FileReference { Name= "Glossary for Serbian JD projects.tbx" }
+        };
 
         var result = await actions.LocalizeText(modelIdentifier, localizeRequest, glossaryRequest);
 
