@@ -1,9 +1,9 @@
-﻿using Apps.OpenAI.Actions;
+﻿using Tests.OpenAI.Base;
+using Apps.OpenAI.Actions;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Models.Requests.Background;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
-using Tests.OpenAI.Base;
 
 namespace Tests.OpenAI;
 
