@@ -1,9 +1,9 @@
-﻿using Apps.OpenAI.Actions;
+﻿using Tests.OpenAI.Base;
+using Apps.OpenAI.Actions;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Models.Requests.Background;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
-using Tests.OpenAI.Base;
 
 namespace Tests.OpenAI;
 
@@ -48,18 +48,18 @@ public class BackgroundActionsTests : TestBaseWithContext
         Assert.IsNotNull(result);
     }
 
-    [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded)]
-    public async Task GetMqmReportFromBackground_OpenAiEmbeddedCompletedBatch_Success(InvocationContext context)
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]
+    public async Task GetMqmReportFromBackground_OpenAiCompletedBatch_Success(InvocationContext context)
     {
         // Arrange
         var actions = new BackgroundActions(context, FileManagementClient);
         var downloadRequest = new BackgroundDownloadRequest
         {
-            BatchId = "batch_68e4168ac48c81909609edd7ea536873",
-            TransformationFile = new FileReference { Name = "mqm.xlf" }
+            BatchId = "batch_6981d173a1248190ae03665c6fa26b74",
+            TransformationFile = new FileReference { Name = "The Hobbit, or There and Back Again_en-US.html.xlf" }
         };
 
-        // Act            
+        // Act
         var result = await actions.GetMqmReportFromBackground(downloadRequest);
 
         // Assert

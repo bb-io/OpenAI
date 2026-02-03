@@ -31,6 +31,10 @@ public class BatchResponse
     
     [JsonProperty("expectedCompletionTime")]
     public string ExpectedCompletionTime { get; set; }
+
+    [DefinitionIgnore]
+    [JsonProperty("error_file_id")]
+    public string ErrorFileId { get; set; } = string.Empty;
 }
 
 public class BatchPaginationResponse

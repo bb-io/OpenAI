@@ -245,6 +245,15 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
 
     protected async Task<ChatCompletionDto> ExecuteChatCompletion(IEnumerable<object> messages, string model, BaseChatRequest input = null, object responseFormat = null)
     {
+        var body = GenerateChatBody(messages, model, input);
+        return await UniversalClient.ExecuteChatCompletion(body);
+    }
+
+    protected static Dictionary<string, object> GenerateChatBody(
+        IEnumerable<object> messages,
+        string model,
+        BaseChatRequest input = null)
+    {
         var body = new Dictionary<string, object>
         {
             { "model", model },
@@ -254,15 +263,19 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
             { "frequency_penalty", input?.FrequencyPenalty ?? 0 }
         };
 
-        if (!string.IsNullOrEmpty(model) && !model.Contains("gpt-5"))
+        bool usesLegacyParams = model.Contains("gpt-3") || model.Contains("gpt-4");
+        if (usesLegacyParams)
         {
             body.AppendIfNotNull("temperature", input?.Temperature);
+            body.AppendIfNotNull("max_tokens", input?.MaximumTokens);
+        }
+        else
+        {
+            body.AppendIfNotNull("max_completion_tokens", input?.MaximumTokens);
+            body.AppendIfNotNull("reasoning_effort", input?.ReasoningEffort);
         }
 
-        body.AppendIfNotNull("max_completion_tokens", input?.MaximumTokens);
-        body.AppendIfNotNull("reasoning_effort", input?.ReasoningEffort);
-
-        return await UniversalClient.ExecuteChatCompletion(body);
+        return body;
     }
 
     protected async Task<string> IdentifySourceLanguage(TextChatModelIdentifier modelIdentifier, string content)
