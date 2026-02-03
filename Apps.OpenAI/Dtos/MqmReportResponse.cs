@@ -7,5 +7,5 @@ namespace Apps.OpenAI.Dtos;
 public class MqmReportResponse
 {
     [JsonProperty("reports")]
-    public List<MqmReportEntity> Reports { get; set; }
+    public List<MqmReportEntity> Reports { get; set; } = [];
 }

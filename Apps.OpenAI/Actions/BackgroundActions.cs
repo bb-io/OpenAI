@@ -223,6 +223,9 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
                 {
                     mqmResponse = JsonConvert.DeserializeObject<MqmReportResponse>(cleaned)
                         ?? throw new PluginApplicationException($"Invalid JSON MQM report format in batch {bucketIndex}.");
+
+                    if (mqmResponse == null || mqmResponse.Reports == null)
+                        mqmResponse = new MqmReportResponse();
                 }
                 else
                 {

@@ -55,7 +55,7 @@ public class BackgroundActionsTests : TestBaseWithContext
         var actions = new BackgroundActions(context, FileManagementClient);
         var downloadRequest = new BackgroundDownloadRequest
         {
-            BatchId = "batch_6982072a17bc8190aee422d34b698d0a",
+            BatchId = "batch_6981d173a1248190ae03665c6fa26b74",
             TransformationFile = new FileReference { Name = "The Hobbit, or There and Back Again_en-US.html.xlf" }
         };
 
