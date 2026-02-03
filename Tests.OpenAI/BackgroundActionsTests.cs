@@ -48,18 +48,18 @@ public class BackgroundActionsTests : TestBaseWithContext
         Assert.IsNotNull(result);
     }
 
-    [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded)]
-    public async Task GetMqmReportFromBackground_OpenAiEmbeddedCompletedBatch_Success(InvocationContext context)
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]
+    public async Task GetMqmReportFromBackground_OpenAiCompletedBatch_Success(InvocationContext context)
     {
         // Arrange
         var actions = new BackgroundActions(context, FileManagementClient);
         var downloadRequest = new BackgroundDownloadRequest
         {
-            BatchId = "batch_68e4168ac48c81909609edd7ea536873",
-            TransformationFile = new FileReference { Name = "mqm.xlf" }
+            BatchId = "batch_6982072a17bc8190aee422d34b698d0a",
+            TransformationFile = new FileReference { Name = "The Hobbit, or There and Back Again_en-US.html.xlf" }
         };
 
-        // Act            
+        // Act
         var result = await actions.GetMqmReportFromBackground(downloadRequest);
 
         // Assert

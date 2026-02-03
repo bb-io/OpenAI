@@ -1,16 +1,11 @@
-﻿using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Apps.OpenAI.Actions.Base;
+﻿using Apps.OpenAI.Actions.Base;
 using Apps.OpenAI.Api.Requests;
-using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Entities;
 using Apps.OpenAI.Models.Requests.Background;
 using Apps.OpenAI.Models.Responses.Background;
 using Apps.OpenAI.Models.Responses.Batch;
+using Apps.OpenAI.Models.Responses.Batch.Error;
 using Apps.OpenAI.Models.Responses.Review;
 using Apps.OpenAI.Utils;
 using Blackbird.Applications.Sdk.Common;
@@ -26,6 +21,11 @@ using Blackbird.Filters.Transformations;
 using Blackbird.Filters.Xliff.Xliff1;
 using Newtonsoft.Json;
 using RestSharp;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Apps.OpenAI.Actions;
 
@@ -186,20 +186,13 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
         };
     }
     
-    [Action("Get background result", 
-        Description = "Get the MQM report results from a background batch process")]
+    [Action("Get background result", Description = "Get the MQM report results from a background batch process")]
     public async Task<MqmBackgroundResponse> GetMqmReportFromBackground(
         [ActionParameter] BackgroundDownloadRequest request)
     {
         var batchRequests = await GetBatchRequestsAsync(request.BatchId);
         var batchResponse = await GetBatchStatusAsync(request.BatchId);
-        
-        if (batchResponse.Status != "completed")
-        {
-            throw new PluginApplicationException(
-                $"The batch process is not completed yet. Current status: {batchResponse.Status}");
-        }
-        
+
         var stream = await fileManagementClient.DownloadAsync(request.TransformationFile);
         var content = await Transformation.Parse(stream, request.TransformationFile.Name);
         var units = content.GetUnits();
@@ -324,8 +317,15 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
                 $"The batch process failed. Errors: {batch.Errors}");
         }
 
-        var fileContentResponse = await UniversalClient.ExecuteWithErrorHandling(
-            new OpenAIRequest($"/files/{batch.OutputFileId}/content", Method.Get));
+        if (string.IsNullOrEmpty(batch.OutputFileId) && !string.IsNullOrEmpty(batch.ErrorFileId))
+        {
+            var errorRequest = new OpenAIRequest($"/files/{batch.ErrorFileId}/content", Method.Get);
+            var errorBatchResponse = await UniversalClient.ExecuteWithErrorHandling<BatchItemErrorResponse>(errorRequest);
+            throw new PluginApplicationException(errorBatchResponse.Response.Body.Error.Message);
+        }
+
+        var fileContentRequest = new OpenAIRequest($"/files/{batch.OutputFileId}/content", Method.Get);
+        var fileContentResponse = await UniversalClient.ExecuteWithErrorHandling(fileContentRequest);
 
         var batchRequests = new List<BatchRequestDto>();
         using var reader = new StringReader(fileContentResponse.Content!);
@@ -345,19 +345,4 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
     }
 
     #endregion
-
-    private class MqmReportResponse
-    {
-        [JsonProperty("reports")]
-        public List<MqmReportEntity> Reports { get; set; } = new();
-    }
-
-    private class MqmReportEntity
-    {
-        [JsonProperty("segment_id")]
-        public string SegmentId { get; set; } = string.Empty;
-
-        [JsonProperty("mqm_report")]
-        public string MqmReport { get; set; } = string.Empty;
-    }
 }
