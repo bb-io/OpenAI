@@ -28,6 +28,7 @@ using Apps.OpenAI.Models.Requests.Background;
 using Apps.OpenAI.Models.Responses.Background;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
 using Blackbird.Filters.Xliff.Xliff1;
+using System.Xml.Linq;
 
 namespace Apps.OpenAI.Actions;
 
@@ -51,19 +52,24 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(async () => 
             await Transformation.Parse(stream, input.File.Name)
         );
+        
+        var sourceLanguage = input.SourceLanguage ?? content.SourceLanguage;
+        var targetLanguage = input.TargetLanguage ?? content.TargetLanguage;
+
+        var filterGlossary = input.FilterGlossary ?? true;
 
         var batchProcessingService = new BatchProcessingService(UniversalClient, FileManagementClient);
         var batchOptions = new BatchProcessingOptions(
             UniversalClient.GetModel(modelIdentifier.ModelId),
-            content.SourceLanguage,
-            content.TargetLanguage,
+            sourceLanguage,
+            targetLanguage,
             prompt,
             string.Empty,
             false,
             glossary.Glossary,
-            true,
+            filterGlossary,
             3,
-            null,
+            input.MaxTokens,
             reasoningEffortRequest.ReasoningEffort,
             content.Notes);
 
@@ -114,7 +120,16 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         var units = content.GetUnits();
         var segments = units.SelectMany(x => x.Segments);
         result.TotalSegmentsCount = segments.Count();
-        units = units.Where(x => x.State == SegmentState.Translated);
+        
+        if (!string.IsNullOrEmpty(input.ProcessOnlySegmentState) && Enum.TryParse<SegmentState>(input.ProcessOnlySegmentState, out var filterState))
+        {
+            units = units.Where(x => x.State == filterState);
+        }
+        else
+        {
+            units = units.Where(x => x.State == SegmentState.Translated);
+        }
+        
         segments = units.SelectMany(x => x.Segments);
         result.TotalSegmentsReviewed = segments.Count();
 
@@ -141,6 +156,20 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             unit.Provenance.Review.Tool = model;
             double tokens = result.Usage.TotalTokens / processedBatches.Count();
             unit.AddUsage(model, Math.Round(tokens, 0), UsageUnit.Tokens);
+            
+            if (!string.IsNullOrEmpty(input.ModifiedBy))
+            {
+                long unixTimestampMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                var existingModifiedAttr = unit.Other.OfType<XAttribute>()
+                    .FirstOrDefault(x => x.Name.LocalName == "modified-at" || x.Name.LocalName == "modified-by");
+                
+                var ns = existingModifiedAttr?.Name.Namespace ?? XNamespace.None;
+                unit.Other.RemoveAll(x => x is XAttribute attr && 
+                    (attr.Name.LocalName == "modified-at" || attr.Name.LocalName == "modified-by"));
+                
+                unit.Other.Add(new XAttribute(ns + "modified-at", unixTimestampMs.ToString()));
+                unit.Other.Add(new XAttribute(ns + "modified-by", input.ModifiedBy));
+            }
         }
 
         result.TotalSegmentsUpdated = updatedCount;
