@@ -59,8 +59,8 @@ public class EditTests : TestBaseWithContext
         PrintResult(result);
     }
 
-    [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded)]
-    public async Task EditInBackground_OpenAiEmbeddedWithXliffFile_Success(InvocationContext context)
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]
+    public async Task EditInBackground_OpenAiWithXliffFile_Success(InvocationContext context)
     {
         // Arrange
         var actions = new EditActions(context, FileManagementClient);
@@ -72,9 +72,10 @@ public class EditTests : TestBaseWithContext
 
         var editRequest = new StartBackgroundProcessRequest
         {
-            ModelId = "gpt-4.1",
+            ModelId = "gpt-5-mini",
             File = file,
-            TargetLanguage = "fr"
+            TargetLanguage = "fr",
+            //MaximumTokens = 4096
         };
 
         // Act

@@ -1,4 +1,5 @@
-﻿using Apps.OpenAI.DataSourceHandlers;
+﻿using Apps.OpenAI.Constants;
+using Apps.OpenAI.DataSourceHandlers;
 using Apps.OpenAI.DataSourceHandlers.ModelDataSourceHandlers;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Invocation;
@@ -9,7 +10,7 @@ namespace Tests.OpenAI;
 [TestClass]
 public class DataSourceHandlerTests : TestBaseWithContext
 {
-    [TestMethod, ContextDataSource]
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]
     public async Task GetDataAsync_ForTextChatModels_ReturnsNonEmptyCollection(InvocationContext context)
     {
         var handler = new TextChatModelDataSourceHandler(context);

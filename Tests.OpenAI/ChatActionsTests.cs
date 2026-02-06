@@ -17,11 +17,11 @@ public class ChatActionsTests : TestBaseWithContext
     {
         // Arrange
         var actions = new ChatActions(context, FileManagementClient);
-        var model = new TextChatModelIdentifier { ModelId = "gpt-5" };
+        var model = new TextChatModelIdentifier { ModelId = "gpt-4" };
         var chatRequest = new ChatRequest
         {
-            Message = "Who are you? State your model, creator, and your main responsibilities.",
-            File = new FileReference { Name = "2-2025 payoneer.pdf", ContentType = "application/pdf" }
+            Message = "Tell me about Scania S",
+            MaximumTokens = 300
         };
         var glossary = new GlossaryRequest();
 

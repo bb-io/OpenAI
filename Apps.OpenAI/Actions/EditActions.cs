@@ -194,7 +194,8 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
     [Action("Edit in background", 
         Description = "Start background editing process for a translated file. This action will return a batch ID that can be used to download the results later.")]
-    public async Task<BackgroundProcessingResponse> EditInBackground([ActionParameter] StartBackgroundProcessRequest processRequest)
+    public async Task<BackgroundProcessingResponse> EditInBackground(
+        [ActionParameter] StartBackgroundProcessRequest processRequest)
     {
         var stream = await fileManagementClient.DownloadAsync(processRequest.File);
         var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(async () => 
@@ -202,26 +203,29 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         );
 
         var units = content.GetUnits();
-        var segments = units.SelectMany(x => x.Segments);
-        segments = segments.GetSegmentsForEditing().ToList();
+        var segments = units.SelectMany(x => x.Segments).GetSegmentsForEditing().ToList();
 
-        Glossary? blackbirdGlossary = await ProcessGlossaryFromFile(processRequest.Glossary);
-        Dictionary<string, List<GlossaryEntry>>? glossaryLookup = null;
+        Glossary blackbirdGlossary = await ProcessGlossaryFromFile(processRequest.Glossary);
+        Dictionary<string, List<GlossaryEntry>> glossaryLookup = null;
         if (blackbirdGlossary != null)
         {
             glossaryLookup = CreateGlossaryLookup(blackbirdGlossary);
         }
 
-        var systemPromptBase = "You are receiving source texts that were translated into target texts. " +
-                          "Review the target texts and respond with edits of the target texts as necessary. " +
-                          "If no edits required, respond with the original target texts. Return the edits in the specified JSON format.";
+        string systemPromptBase = 
+            "You are receiving source texts that were translated into target texts. " +
+            "Review the target texts and respond with edits of the target texts as necessary. " +
+            "If no edits required, respond with the original target texts. " +
+            "Return the edits in the specified JSON format." +
+            "The JSON must strictly follow this structure: " +
+            "{ \"reports\": [ { \"segment_id\": \"(string matching custom_id)\", \"mqm_report\": \"(the edited text)\" } ] }";
                           
         if (processRequest.AdditionalInstructions != null)
         {
             systemPromptBase += $" Additional instructions: {processRequest.AdditionalInstructions}.";
         }
         
-        if(glossaryLookup != null)
+        if (glossaryLookup != null)
         {
             systemPromptBase += " Use the provided glossary to ensure accurate translations of specific terms.";
         }
@@ -261,34 +265,26 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                 }
             }
 
+            string modelId = UniversalClient.GetModel(processRequest.ModelId);
+            var chatInput = new BaseChatRequest
+            {
+                MaximumTokens = processRequest.MaximumTokens,
+                Temperature = 0.3f
+            };
+
+            var messages = new object[]
+            {
+                new { role = MessageRoles.System, content = systemPromptBase },
+                new { role = MessageRoles.User, content = userPrompt }
+            };
+
+            var bodyDict = GenerateChatBody(messages, modelId, chatInput);
             var batchRequest = new
             {
                 custom_id = bucketIndex.ToString(),
                 method = "POST",
                 url = "/v1/chat/completions",
-                body = new
-                {
-                    model = UniversalClient.GetModel(processRequest.ModelId),
-                    messages = new object[]
-                    {
-                        new
-                        {
-                            role = "system",
-                            content = systemPromptBase
-                        },
-                        new
-                        {
-                            role = "user",
-                            content = userPrompt
-                        }
-                    },
-                    response_format = ResponseFormats.GetXliffResponseFormat(),
-                    temperature = 0.3,
-                    max_tokens = 4000,
-                    top_p = 1.0,
-                    frequency_penalty = 0.0,
-                    presence_penalty = 0.0
-                }
+                body = bodyDict
             };
 
             batchRequests.Add(batchRequest);

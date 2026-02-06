@@ -18,7 +18,10 @@ public class StartBackgroundProcessRequest : TextChatModelIdentifier
     
     [Display("Additional instructions", Description = "Additional instructions to guide the translation process.")]
     public string? AdditionalInstructions { get; set; }
-    
+
+    [Display("Maximum tokens")]
+    public int? MaximumTokens { get; set; }
+
     public FileReference? Glossary { get; set; }
     
     [Display("Bucket size", Description = "Specify the number of source texts to be translated at once. Default value: 25.")]
