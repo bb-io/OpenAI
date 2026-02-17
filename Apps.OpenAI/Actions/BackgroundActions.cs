@@ -41,7 +41,9 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
         var batchResponse = await GetBatchStatusAsync(request.BatchId);
         
         var originalFileStream = await fileManagementClient.DownloadAsync(request.TransformationFile);
-        var content = await Transformation.Parse(originalFileStream, request.TransformationFile.Name);
+        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() =>
+            Transformation.Parse(originalFileStream, request.TransformationFile.Name)
+        );
 
         var units = content.GetUnits();
         var totalSegments = units.SelectMany(x => x.Segments).Count();
@@ -194,7 +196,9 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
         var batchResponse = await GetBatchStatusAsync(request.BatchId);
 
         var stream = await fileManagementClient.DownloadAsync(request.TransformationFile);
-        var content = await Transformation.Parse(stream, request.TransformationFile.Name);
+        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() =>
+            Transformation.Parse(stream, request.TransformationFile.Name)
+        );
         var units = content.GetUnits();
         var segments = units.SelectMany(x => x.Segments).Where(x => !x.IsIgnorbale && x.State == SegmentState.Translated).ToList();
         
