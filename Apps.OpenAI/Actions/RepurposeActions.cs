@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Apps.OpenAI.Actions.Base;
+﻿using Apps.OpenAI.Actions.Base;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Identifiers;
@@ -16,6 +12,10 @@ using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Filters.Transformations;
 using MoreLinq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Apps.OpenAI.Actions;
 
@@ -45,7 +45,9 @@ public class RepurposeActions(InvocationContext invocationContext, IFileManageme
         [ActionParameter] GlossaryRequest glossary)
     {
         var stream = await fileManagementClient.DownloadAsync(file.File);
-        var transformation = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => Transformation.Parse(stream, file.File.Name));
+        var transformation = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => 
+            Transformation.Parse(stream, file.File.Name)
+        );
 
         var text = transformation.Target().GetPlaintext();
         if (string.IsNullOrWhiteSpace(text))
@@ -73,7 +75,9 @@ public class RepurposeActions(InvocationContext invocationContext, IFileManageme
         [ActionParameter] GlossaryRequest glossary)
     {
         var stream = await fileManagementClient.DownloadAsync(file.File);
-        var transformation = await Transformation.Parse(stream, file.File.Name);
+        var transformation = await ErrorHandler.ExecuteWithErrorHandlingAsync(() =>
+            Transformation.Parse(stream, file.File.Name)
+        );
 
         var text = transformation.Target().GetPlaintext();
         if (string.IsNullOrWhiteSpace(text))

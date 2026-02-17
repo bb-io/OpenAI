@@ -48,7 +48,9 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         var batchSize = bucketSize ?? 1500;
         var result = new ContentProcessingResult();
         var stream = await fileManagementClient.DownloadAsync(input.File);
-        var content = await Transformation.Parse(stream, input.File.Name);
+        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() =>
+            Transformation.Parse(stream, input.File.Name)
+        );
         content.SourceLanguage ??= input.SourceLanguage;
         content.TargetLanguage ??= input.TargetLanguage;        
         if (content.TargetLanguage == null) throw new PluginMisconfigurationException("The target language is not defined yet. Please assign the target language in this action.");
@@ -177,7 +179,9 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
     public async Task<BackgroundProcessingResponse> TranslateInBackground([ActionParameter] StartBackgroundProcessRequest startBackgroundProcessRequest)
     {
         var stream = await fileManagementClient.DownloadAsync(startBackgroundProcessRequest.File);
-        var content = await Transformation.Parse(stream, startBackgroundProcessRequest.File.Name);
+        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => 
+            Transformation.Parse(stream, startBackgroundProcessRequest.File.Name)
+        );
         
         content.SourceLanguage ??= startBackgroundProcessRequest.SourceLanguage;
         content.TargetLanguage ??= startBackgroundProcessRequest.TargetLanguage;
