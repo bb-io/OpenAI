@@ -112,9 +112,13 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             catch (Exception ex) when (neverFail)
             {
                 errors.Add($"Error in batch {batchCounter} (size: {batchSize}): {ex.Message}");
-            }            
+            }
 
-            return allResults;
+            return idSegments.Select(idPair =>
+            {
+                var updatedTranslation = allResults.FirstOrDefault(x => x.TranslationId == idPair.Key);
+                return updatedTranslation ?? new TranslationEntity { TranslationId = idPair.Key, TranslatedText = idPair.Value.GetTarget() };
+            });
         }
 
         var units = content.GetUnits();
