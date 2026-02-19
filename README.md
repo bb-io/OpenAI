@@ -107,9 +107,11 @@ Do you have a cool use case that we can turn into an action? Let us know!
 - **Edit in background** similar to the previous action, except that this creates a long running process in the background not blocking your parallel actions. Use in conjunction with a checkpoint to download the result file of this long running background job.
 - **Edit Text** given a source segment and translated target segment, responds with an edited version of the target segment taking into account typical mistakes.
 
+> Note: files are interoperable, under the hood Blackbird may convert to and from bilingual files with metadata but all our Actions are able to accept a lot of different file formats.
+
 ### Reporting
 
-- **Create MQM report** Perform an LQA Analysis of a translated XLIFF file. The result will be a text in the MQM framework form.
+- **Create MQM report** Perform an LQA Analysis of a translated file. The result will be a text in the MQM framework form.
 - **Create MQM report in background** similar to the previous action, except that this creates a long running process in the background not blocking your parallel actions. Use in conjunction with a checkpoint to download the result of this long running background job.
 
 ### Review
@@ -151,13 +153,19 @@ Do you have a cool use case that we can turn into an action? Let us know!
 - **Create embedding** create a vectorized embedding of a text. Useful in combination with vector databases like Pinecone in order to store large sets of data.
 - **Tokenize text** turn a text into tokens. Uses Tiktoken under the hood.
 
-### XLIFF operations
-
-- **Apply prompt to XLIFF file** Runs prompt for each translation unit in the XLIFF file according to the provided instructions and updates the target text for each unit. For now it supports only 1.2 version and 2.1 of XLIFF. Supports batching where multiple units will be put into a single prompt.
-
 ### Bucket size, performance and cost
 
-XLIFF files can contain a lot of segments. Each action takes your segments and sends them to OpenAI for processing. It's possible that the amount of segments is so high that the prompt exceeds to model's context window or that the model takes longer than Blackbird actions are allowed to take. This is why we have introduced the bucket size parameter. You can tweak the bucket size parameter to determine how many segments to send to OpenAI at once. This will allow you to split the workload into different OpenAI calls. The trade-off is that the same context prompt needs to be send along with each request (which increases the tokens used). From experiments we have found that a bucket size of 1500 is sufficient for gpt-4o. That's why 1500 is the default bucket size, however other models may require different bucket sizes.
+Files can contain a lot of segments. Each action takes your segments and sends them to OpenAI for processing. It's possible that the amount of segments is so high that the prompt exceeds to model's context window or that the model takes longer than Blackbird actions are allowed to take. This is why we have introduced the bucket size parameter. You can tweak the bucket size parameter to determine how many segments to send to OpenAI at once. This will allow you to split the workload into different OpenAI calls. The trade-off is that the same context prompt needs to be send along with each request (which increases the tokens used). From experiments we have found that a bucket size of 1500 is sufficient for gpt-4o. That's why 1500 is the default bucket size, however other models may require different bucket sizes.
+
+### Temperatures
+
+OpenAI allows you to set the temperature value for and Action you perform in Blackbird. You can customize this value (between 0.0 and 2.0) but we've also added handy labels that are available in the Blackbird UI:
+
+- 0.2 Governed: Maximum predictability.
+- 0.6 Balanced: A controlled blend of accuracy and flexibility.
+- 1.0 Expressive: Accuracy is preserved, structure is looser (default).
+- 1.2 Exploratory: Encourages alternative phrasings and ideas while remaining context-aware.
+- 1.6 Experimental: Prioritizes creativity over predictability.
 
 ## Eggs
 
@@ -165,7 +173,7 @@ Check downloadable workflow prototypes featuring this app that you can import to
 
 ### Limitations
 
-- The maximum number of translation units in the XLIFF file is `50 000` because a single batch may include up to 50,000 requests
+- The maximum number of translation units in the file is `50 000` because a single batch may include up to 50,000 requests
 
 ### Reasoning effort
 
