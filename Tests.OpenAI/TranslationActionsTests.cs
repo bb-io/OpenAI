@@ -18,22 +18,21 @@ public class TranslationActionsTests : TestBaseWithContext
     public async Task Translate_html(InvocationContext context)
     {
         var actions = new TranslationActions(context, FileManagementClient);
-        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5-mini" };
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4.1-mini" };
         var translateRequest = new TranslateContentRequest
         {
-            File = new FileReference { Name = "Pasted text-en-ko-Tr.mxliff" },
-            TargetLanguage = "zh-Hans-CN",
-            OutputFileHandling = "original",
-            
+            File = new FileReference { Name = "3 random sentences_en_uk_ua.xlf" },
+            TargetLanguage = "uk-UA",            
         };
         var reasoningEffortRequest = new ReasoningEffortRequest { };
         string systemMessage = "";
-         var glossaryRequest = new GlossaryRequest { Glossary = new FileReference { Name = "Glossary.tbx" } };
+        var glossaryRequest = new GlossaryRequest 
+        { 
+            //Glossary = new FileReference { Name = "Glossary.tbx" } 
+        };
 
         var result = await actions.TranslateContent(modelIdentifier, translateRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
         Assert.IsNotNull(result);
-        //Assert.Contains("contentful", result.File.Name);
-
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
 
