@@ -7,6 +7,7 @@ using Apps.OpenAI.Models.Requests.Audio;
 using Apps.OpenAI.Models.Responses.Audio;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
@@ -45,22 +46,42 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
     public async Task<TranscriptionResponse> CreateTranscription([ActionParameter] TranscriptionRequest input)
     {
         ThrowForAzure("audio");
+
+        if (input.Model == "gpt-4o-transcribe-diarize" && input.Prompt is not null)
+        {
+            throw new PluginMisconfigurationException("Prompt parameter is not supported when using the 'gpt-4o-transcribe-diarize' model.");
+        }
+
+        if (input.KnownSpeakerNames?.Count() > 4)
+        {
+            throw new PluginMisconfigurationException("Known speaker names parameter supports a maximum of 4 names.");
+        }
+        
         var request = new OpenAIRequest("/audio/transcriptions", Method.Post);
         var fileStream = await FileManagementClient.DownloadAsync(input.File);
         var fileBytes = await fileStream.GetByteData();
         request.AddFile("file", fileBytes, input.File.Name);
-        request.AddParameter("model", "whisper-1");
+        request.AddParameter("model", input.Model);
         request.AddParameter("response_format", "verbose_json");
         request.AddParameter("temperature", input.Temperature ?? 0);
         request.AddParameter("language", input.Language);
+        request.AddParameter("prompt", input.Prompt);
         
-        if (input.TimestampGranularities != null && input.TimestampGranularities.Any())
+        if (input.TimestampGranularities is not null && input.TimestampGranularities.Any())
         {
             foreach (var granularity in input.TimestampGranularities)
             {
                 request.AddParameter("timestamp_granularities[]", granularity);
             }
         }
+
+        if (input.KnownSpeakerNames is not null && input.KnownSpeakerNames.Any())
+        {
+            foreach (var knownSpeakerName in input.KnownSpeakerNames)
+            {
+                request.AddParameter("known_speaker_names[]", knownSpeakerName);
+            }
+        }      
         
         var response = await UniversalClient.ExecuteWithErrorHandling<TranscriptionDto>(request);
         var words = response.Words?.Select(x => new WordResponse(x)).ToList() ?? new List<WordResponse>();

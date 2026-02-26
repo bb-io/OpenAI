@@ -32,9 +32,19 @@ public class DataSourceHandlerTests : TestBaseWithContext
     }
 
     [TestMethod, ContextDataSource]
-    public async Task GetDataAsync_ForAudioModels_ReturnsNonEmptyCollection(InvocationContext context)
+    public async Task GetDataAsync_ForSpeechCreationModels_ReturnsNonEmptyCollection(InvocationContext context)
     {
         var handler = new SpeechCreationModelDataSourceHandler(context);
+        var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
+
+        PrintDataHandlerResult(data);
+        Assert.AreNotEqual(0, data.Count());
+    }
+
+    [TestMethod, ContextDataSource]
+    public async Task GetDataAsync_ForAudioTranscriptionModels_ReturnsNonEmptyCollection(InvocationContext context)
+    {
+        var handler = new AudioTranscriptionDataSourceHandler(context);
         var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
 
         PrintDataHandlerResult(data);

@@ -20,6 +20,7 @@ public class AudioServiceTests : TestBaseWithContext
         var handler = new AudioActions(context, FileManagementClient);
         var request = new TranscriptionRequest
         {
+            Model = "whisper-1",
             File = new FileReference { Name = "tts delorean.mp3" },
             Language = "en",
         };
@@ -39,6 +40,7 @@ public class AudioServiceTests : TestBaseWithContext
         var handler = new AudioActions(context, FileManagementClient);
         var request = new TranscriptionRequest
         {
+            Model = "whisper-1",
             File = new FileReference { Name = "tts delorean.mp3" },
             Language = "en",
         };
@@ -50,6 +52,48 @@ public class AudioServiceTests : TestBaseWithContext
 
         // Assert
         Assert.Contains("Azure OpenAI does not support audio actions. Please use OpenAI for such tasks", ex.Message);
+    }
+
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded, ConnectionTypes.OpenAi)]
+    public async Task CreateTranscription_OpenAi_Prompt_WithGpt4oTranscribeDiarize_ThrowsMisconfigException(InvocationContext context)
+    {
+        // Arrange
+        var handler = new AudioActions(context, FileManagementClient);
+        var request = new TranscriptionRequest
+        {
+            Model = "gpt-4o-transcribe-diarize",
+            File = new FileReference { Name = "tts delorean.mp3" },
+            Prompt = "Some prompt",
+        };
+
+        // Act
+        var ex = await Assert.ThrowsExactlyAsync<PluginMisconfigurationException>(async () =>
+            await handler.CreateTranscription(request)
+        );
+
+        // Assert
+        Assert.Contains("Prompt parameter is not supported when using the 'gpt-4o-transcribe-diarize' model.", ex.Message);
+    }
+
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded, ConnectionTypes.OpenAi)]
+    public async Task CreateTranscription_OpenAi_SpeakerNames_MoreThanFour_ThrowsMisconfigException(InvocationContext context)
+    {
+        // Arrange
+        var handler = new AudioActions(context, FileManagementClient);
+        var request = new TranscriptionRequest
+        {
+            Model = "whisper-1",
+            File = new FileReference { Name = "tts delorean.mp3" },
+            KnownSpeakerNames = new List<string> { "Speaker 1", "Speaker 2", "Speaker 3", "Speaker 4", "Speaker 5" }
+        };
+
+        // Act
+        var ex = await Assert.ThrowsExactlyAsync<PluginMisconfigurationException>(async () =>
+            await handler.CreateTranscription(request)
+        );
+
+        // Assert
+        Assert.Contains("Known speaker names parameter supports a maximum of 4 names.", ex.Message);
     }
 
     [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]
