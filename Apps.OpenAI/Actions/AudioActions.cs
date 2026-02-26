@@ -62,7 +62,7 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
         var fileBytes = await fileStream.GetByteData();
         request.AddFile("file", fileBytes, input.File.Name);
         request.AddParameter("model", input.Model);
-        request.AddParameter("response_format", "verbose_json");
+        request.AddParameter("response_format", GetResponseFormat(input.Model));
         request.AddParameter("temperature", input.Temperature ?? 0);
         request.AddParameter("language", input.Language);
         request.AddParameter("prompt", input.Prompt);
@@ -92,6 +92,13 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
             Transcription = response.Text,
             Words = JsonConvert.SerializeObject(words),
             Segments = JsonConvert.SerializeObject(segments)
+        };
+
+        static string GetResponseFormat(string model) => model switch
+        {
+            "whisper-1" => "verbose_json",
+            "gpt-4o-transcribe-diarize" => "diarized_json",
+            _ => "json"
         };
     }
 

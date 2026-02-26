@@ -1,11 +1,20 @@
-﻿using Apps.OpenAI.DataSourceHandlers.ModelDataSourceHandlers.Base;
-using Blackbird.Applications.Sdk.Common.Invocation;
-using System;
+﻿using Blackbird.Applications.Sdk.Common.Dictionaries;
+using Blackbird.Applications.Sdk.Common.Dynamic;
+using System.Collections.Generic;
 
 namespace Apps.OpenAI.DataSourceHandlers.ModelDataSourceHandlers;
 
-public class AudioTranscriptionDataSourceHandler(InvocationContext invocationContext) : BaseModelDataSourceHandler(invocationContext)
+public class AudioTranscriptionDataSourceHandler : IStaticDataSourceItemHandler
 {
-    protected override Func<string, bool> ModelIdFilter => id =>
-        (id.StartsWith("whisper") || id.Contains("transcribe")) && !id.Equals("gpt-4o-mini-transcribe-2025-03-20", StringComparison.OrdinalIgnoreCase);
+    public IEnumerable<DataSourceItem> GetData()
+    {
+        return
+        [
+            new DataSourceItem("whisper-1", "whisper-1"),
+            new DataSourceItem("gpt-4o-transcribe", "gpt-4o-transcribe"),
+            new DataSourceItem("gpt-4o-mini-transcribe", "gpt-4o-mini-transcribe"),
+            new DataSourceItem("gpt-4o-mini-transcribe-2025-12-15", "gpt-4o-mini-transcribe-2025-12-15"),
+            new DataSourceItem("gpt-4o-transcribe-diarize", "gpt-4o-transcribe-diarize")
+        ];
+    }
 }
