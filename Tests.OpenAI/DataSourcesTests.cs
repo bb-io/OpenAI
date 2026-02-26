@@ -44,8 +44,8 @@ public class DataSourceHandlerTests : TestBaseWithContext
     [TestMethod, ContextDataSource]
     public async Task GetDataAsync_ForAudioTranscriptionModels_ReturnsNonEmptyCollection(InvocationContext context)
     {
-        var handler = new AudioTranscriptionDataSourceHandler(context);
-        var data = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
+        var handler = new AudioTranscriptionDataSourceHandler();
+        var data = handler.GetData();
 
         PrintDataHandlerResult(data);
         Assert.AreNotEqual(0, data.Count());

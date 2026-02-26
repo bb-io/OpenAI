@@ -26,7 +26,7 @@ public record WordResponse(WordDto dto)
 public record SegmentResponse(SegmentDto dto)
 {
     [Display("Segment ID")]
-    public int Id { get; set; } = dto.Id;
+    public string Id { get; set; } = dto.Id;
 
     public string Text { get; set; } = dto.Text;
 

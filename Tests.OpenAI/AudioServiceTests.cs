@@ -14,7 +14,28 @@ namespace Tests.OpenAI;
 public class AudioServiceTests : TestBaseWithContext
 {
     [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded, ConnectionTypes.OpenAi)]
-    public async Task CreateTranscription_OpenAi_ReturnsTranscription(InvocationContext context)
+    public async Task CreateTranscription_OpenAi_ReturnsTranscription_DiarizedJsonFormat(InvocationContext context)
+    {
+        // Arrange
+        var handler = new AudioActions(context, FileManagementClient);
+        var request = new TranscriptionRequest
+        {
+            Model = "gpt-4o-transcribe-diarize",
+            File = new FileReference { Name = "tts delorean.mp3" },
+            Language = "en",
+        };
+
+        // Act
+        var result = await handler.CreateTranscription(request);
+
+        // Assert
+        Console.WriteLine(result.Transcription);
+        Console.WriteLine(result.Segments);
+        Assert.IsNotNull(result);
+    }
+
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded, ConnectionTypes.OpenAi)]
+    public async Task CreateTranscription_OpenAi_ReturnsTranscription_VerboseJsonFormat(InvocationContext context)
     {
         // Arrange
         var handler = new AudioActions(context, FileManagementClient);
@@ -30,6 +51,28 @@ public class AudioServiceTests : TestBaseWithContext
 
         // Assert
         Console.WriteLine(result.Transcription);
+        Console.WriteLine(result.Segments);
+        Assert.IsNotNull(result);
+    }
+
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded, ConnectionTypes.OpenAi)]
+    public async Task CreateTranscription_OpenAi_ReturnsTranscription_JsonFormat(InvocationContext context)
+    {
+        // Arrange
+        var handler = new AudioActions(context, FileManagementClient);
+        var request = new TranscriptionRequest
+        {
+            Model = "gpt-4o-transcribe",
+            File = new FileReference { Name = "tts delorean.mp3" },
+            Language = "en",
+        };
+
+        // Act
+        var result = await handler.CreateTranscription(request);
+
+        // Assert
+        Console.WriteLine(result.Transcription);
+        Console.WriteLine(result.Segments);
         Assert.IsNotNull(result);
     }
 
