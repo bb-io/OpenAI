@@ -118,6 +118,27 @@ public class AudioServiceTests : TestBaseWithContext
         Assert.Contains("Prompt parameter is not supported when using the 'gpt-4o-transcribe-diarize' model.", ex.Message);
     }
 
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded, ConnectionTypes.OpenAi)]
+    public async Task CreateTranscription_OpenAi_TimestampGranularities_WithoutWhisper1Model_ThrowsMisconfigException(InvocationContext context)
+    {
+        // Arrange
+        var handler = new AudioActions(context, FileManagementClient);
+        var request = new TranscriptionRequest
+        {
+            Model = "gpt-4o-transcribe-diarize",
+            File = new FileReference { Name = "tts delorean.mp3" },
+            TimestampGranularities = ["word"]
+        };
+
+        // Act
+        var ex = await Assert.ThrowsExactlyAsync<PluginMisconfigurationException>(async () =>
+            await handler.CreateTranscription(request)
+        );
+
+        // Assert
+        Assert.Contains("Timestamp granularities are only supported when using the 'whisper-1' model.", ex.Message);
+    }
+
     [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]
     public async Task CreateSpeech_OpenAi_ReturnsSpeech(InvocationContext context)
     {

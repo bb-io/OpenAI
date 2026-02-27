@@ -47,7 +47,8 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
     public async Task<TranscriptionResponse> CreateTranscription([ActionParameter] TranscriptionRequest input)
     {
         ThrowForAzure("audio");
-        ValidateTranscriptionRequest(input);
+        bool isDiarizationModel = string.Equals(input.Model, "gpt-4o-transcribe-diarize", StringComparison.OrdinalIgnoreCase);
+        ValidateTranscriptionRequest(input, isDiarizationModel);
 
         var request = new OpenAIRequest("/audio/transcriptions", Method.Post);
         var fileStream = await FileManagementClient.DownloadAsync(input.File);
@@ -58,7 +59,12 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
         request.AddParameter("temperature", input.Temperature ?? 0);
         request.AddParameter("language", input.Language);
         request.AddParameter("prompt", input.Prompt);
-        
+
+        if (isDiarizationModel)
+        {
+            request.AddParameter("chunking_strategy", "auto");
+        }
+
         if (input.TimestampGranularities is not null && input.TimestampGranularities.Any())
         {
             foreach (var granularity in input.TimestampGranularities)
@@ -85,11 +91,18 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
             _ => "json"
         };
 
-        static void ValidateTranscriptionRequest(TranscriptionRequest input)
+        static void ValidateTranscriptionRequest(TranscriptionRequest input, bool isDiarizationModel)
         {
-            if (string.Equals(input.Model, "gpt-4o-transcribe-diarize", StringComparison.OrdinalIgnoreCase) && input.Prompt is not null)
+            bool isWhisperModel = string.Equals(input.Model, "whisper-1", StringComparison.OrdinalIgnoreCase);
+            
+            if (isDiarizationModel && input.Prompt is not null)
             {
                 throw new PluginMisconfigurationException("Prompt parameter is not supported when using the 'gpt-4o-transcribe-diarize' model.");
+            }
+
+            if (!isWhisperModel && input.TimestampGranularities is not null && input.TimestampGranularities.Any())
+            {
+                throw new PluginMisconfigurationException("Timestamp granularities are only supported when using the 'whisper-1' model.");
             }
         }
     }

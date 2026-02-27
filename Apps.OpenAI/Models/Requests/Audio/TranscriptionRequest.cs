@@ -23,7 +23,8 @@ public class TranscriptionRequest
     [StaticDataSource(typeof(TemperatureDataSourceHandler))]
     public float? Temperature { get; set; }
 
-    [Display("Timestamp granularities", Description = "By default, the API returns timestamps at the segment level.")]
+    [Display("Timestamp granularities", Description = "By default, the API returns timestamps at the segment level. " +
+                                                      "Only supported when using 'whisper-1'.")]
     [StaticDataSource(typeof(TimestampGranularitiesSourceHandler))]
     public IEnumerable<string>? TimestampGranularities { get; set; }
 
