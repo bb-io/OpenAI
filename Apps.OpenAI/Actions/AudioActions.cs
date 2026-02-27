@@ -13,6 +13,7 @@ using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Newtonsoft.Json;
 using RestSharp;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -46,17 +47,8 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
     public async Task<TranscriptionResponse> CreateTranscription([ActionParameter] TranscriptionRequest input)
     {
         ThrowForAzure("audio");
+        ValidateTranscriptionRequest(input);
 
-        if (input.Model == "gpt-4o-transcribe-diarize" && input.Prompt is not null)
-        {
-            throw new PluginMisconfigurationException("Prompt parameter is not supported when using the 'gpt-4o-transcribe-diarize' model.");
-        }
-
-        if (input.KnownSpeakerNames?.Count() > 4)
-        {
-            throw new PluginMisconfigurationException("Known speaker names parameter supports a maximum of 4 names.");
-        }
-        
         var request = new OpenAIRequest("/audio/transcriptions", Method.Post);
         var fileStream = await FileManagementClient.DownloadAsync(input.File);
         var fileBytes = await fileStream.GetByteData();
@@ -100,6 +92,25 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
             "gpt-4o-transcribe-diarize" => "diarized_json",
             _ => "json"
         };
+
+        static void ValidateTranscriptionRequest(TranscriptionRequest input)
+        {
+            bool isDiarizationModel = string.Equals(input.Model, "gpt-4o-transcribe-diarize", StringComparison.OrdinalIgnoreCase);
+            int speakerCount = input.KnownSpeakerNames?.Count() ?? 0;
+
+            if (isDiarizationModel && input.Prompt is not null)
+            {
+                throw new PluginMisconfigurationException("Prompt parameter is not supported when using the 'gpt-4o-transcribe-diarize' model.");
+            }
+
+            switch (speakerCount)
+            {
+                case > 4:
+                    throw new PluginMisconfigurationException("Known speaker names parameter supports a maximum of 4 names.");
+                case > 0 when !isDiarizationModel:
+                    throw new PluginMisconfigurationException("Known speaker names parameter is supported only for 'gpt-4o-transcribe-diarize' model.");
+            }
+        }
     }
 
     [Action("Create speech", Description = "Generates audio from the text input.")]

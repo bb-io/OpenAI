@@ -125,7 +125,7 @@ public class AudioServiceTests : TestBaseWithContext
         var handler = new AudioActions(context, FileManagementClient);
         var request = new TranscriptionRequest
         {
-            Model = "whisper-1",
+            Model = "gpt-4o-transcribe-diarize",
             File = new FileReference { Name = "tts delorean.mp3" },
             KnownSpeakerNames = new List<string> { "Speaker 1", "Speaker 2", "Speaker 3", "Speaker 4", "Speaker 5" }
         };
@@ -137,6 +137,27 @@ public class AudioServiceTests : TestBaseWithContext
 
         // Assert
         Assert.Contains("Known speaker names parameter supports a maximum of 4 names.", ex.Message);
+    }
+
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded, ConnectionTypes.OpenAi)]
+    public async Task CreateTranscription_OpenAi_SpeakerNames_WithoutGpt4oTranscribeDiarize_ThrowsMisconfigException(InvocationContext context)
+    {
+        // Arrange
+        var handler = new AudioActions(context, FileManagementClient);
+        var request = new TranscriptionRequest
+        {
+            Model = "whisper-1",
+            File = new FileReference { Name = "tts delorean.mp3" },
+            KnownSpeakerNames = new List<string> { "Speaker 1", "Speaker 2", "Speaker 3", "Speaker 4" }
+        };
+
+        // Act
+        var ex = await Assert.ThrowsExactlyAsync<PluginMisconfigurationException>(async () =>
+            await handler.CreateTranscription(request)
+        );
+
+        // Assert
+        Assert.Contains("Known speaker names parameter is supported only for 'gpt-4o-transcribe-diarize' model.", ex.Message);
     }
 
     [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]

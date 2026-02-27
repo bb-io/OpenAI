@@ -31,6 +31,7 @@ public class TranscriptionRequest
                                      "Not supported when using 'gpt-4o-transcribe-diarize'.")]
     public string? Prompt { get; set; }
 
-    [Display("Known speaker names", Description = "Optional list of speaker identifiers (short labels; maximum of 4 speakers supported).")]
+    [Display("Known speaker names", Description = "Optional list of speaker identifiers (short labels; maximum of 4 speakers supported). " +
+                                                  "Only supported when using 'gpt-4o-transcribe-diarize'.")]
     public IEnumerable<string>? KnownSpeakerNames { get; set; }
 }
