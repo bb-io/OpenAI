@@ -7,11 +7,13 @@ using Apps.OpenAI.Models.Requests.Audio;
 using Apps.OpenAI.Models.Responses.Audio;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Newtonsoft.Json;
 using RestSharp;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -45,16 +47,25 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
     public async Task<TranscriptionResponse> CreateTranscription([ActionParameter] TranscriptionRequest input)
     {
         ThrowForAzure("audio");
+        bool isDiarizationModel = string.Equals(input.Model, "gpt-4o-transcribe-diarize", StringComparison.OrdinalIgnoreCase);
+        ValidateTranscriptionRequest(input, isDiarizationModel);
+
         var request = new OpenAIRequest("/audio/transcriptions", Method.Post);
         var fileStream = await FileManagementClient.DownloadAsync(input.File);
         var fileBytes = await fileStream.GetByteData();
         request.AddFile("file", fileBytes, input.File.Name);
-        request.AddParameter("model", "whisper-1");
-        request.AddParameter("response_format", "verbose_json");
+        request.AddParameter("model", input.Model);
+        request.AddParameter("response_format", GetResponseFormat(input.Model));
         request.AddParameter("temperature", input.Temperature ?? 0);
         request.AddParameter("language", input.Language);
-        
-        if (input.TimestampGranularities != null && input.TimestampGranularities.Any())
+        request.AddParameter("prompt", input.Prompt);
+
+        if (isDiarizationModel)
+        {
+            request.AddParameter("chunking_strategy", "auto");
+        }
+
+        if (input.TimestampGranularities is not null && input.TimestampGranularities.Any())
         {
             foreach (var granularity in input.TimestampGranularities)
             {
@@ -72,6 +83,28 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
             Words = JsonConvert.SerializeObject(words),
             Segments = JsonConvert.SerializeObject(segments)
         };
+
+        static string GetResponseFormat(string model) => model switch
+        {
+            "whisper-1" => "verbose_json",
+            "gpt-4o-transcribe-diarize" => "diarized_json",
+            _ => "json"
+        };
+
+        static void ValidateTranscriptionRequest(TranscriptionRequest input, bool isDiarizationModel)
+        {
+            bool isWhisperModel = string.Equals(input.Model, "whisper-1", StringComparison.OrdinalIgnoreCase);
+            
+            if (isDiarizationModel && input.Prompt is not null)
+            {
+                throw new PluginMisconfigurationException("Prompt parameter is not supported when using the 'gpt-4o-transcribe-diarize' model.");
+            }
+
+            if (!isWhisperModel && input.TimestampGranularities is not null && input.TimestampGranularities.Any())
+            {
+                throw new PluginMisconfigurationException("Timestamp granularities are only supported when using the 'whisper-1' model.");
+            }
+        }
     }
 
     [Action("Create speech", Description = "Generates audio from the text input.")]
