@@ -30,8 +30,4 @@ public class TranscriptionRequest
     [Display("Prompt", Description = "Text to guide the model's style or continue a previous audio segment, should match the audio language. " +
                                      "Not supported when using 'gpt-4o-transcribe-diarize'.")]
     public string? Prompt { get; set; }
-
-    [Display("Known speaker names", Description = "Optional list of speaker identifiers (short labels; maximum of 4 speakers supported). " +
-                                                  "Only supported when using 'gpt-4o-transcribe-diarize'.")]
-    public IEnumerable<string>? KnownSpeakerNames { get; set; }
 }

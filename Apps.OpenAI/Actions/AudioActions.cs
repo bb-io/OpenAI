@@ -66,14 +66,6 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
                 request.AddParameter("timestamp_granularities[]", granularity);
             }
         }
-
-        if (input.KnownSpeakerNames is not null && input.KnownSpeakerNames.Any())
-        {
-            foreach (var knownSpeakerName in input.KnownSpeakerNames)
-            {
-                request.AddParameter("known_speaker_names[]", knownSpeakerName);
-            }
-        }      
         
         var response = await UniversalClient.ExecuteWithErrorHandling<TranscriptionDto>(request);
         var words = response.Words?.Select(x => new WordResponse(x)).ToList() ?? new List<WordResponse>();
@@ -95,20 +87,9 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
 
         static void ValidateTranscriptionRequest(TranscriptionRequest input)
         {
-            bool isDiarizationModel = string.Equals(input.Model, "gpt-4o-transcribe-diarize", StringComparison.OrdinalIgnoreCase);
-            int speakerCount = input.KnownSpeakerNames?.Count() ?? 0;
-
-            if (isDiarizationModel && input.Prompt is not null)
+            if (string.Equals(input.Model, "gpt-4o-transcribe-diarize", StringComparison.OrdinalIgnoreCase) && input.Prompt is not null)
             {
                 throw new PluginMisconfigurationException("Prompt parameter is not supported when using the 'gpt-4o-transcribe-diarize' model.");
-            }
-
-            switch (speakerCount)
-            {
-                case > 4:
-                    throw new PluginMisconfigurationException("Known speaker names parameter supports a maximum of 4 names.");
-                case > 0 when !isDiarizationModel:
-                    throw new PluginMisconfigurationException("Known speaker names parameter is supported only for 'gpt-4o-transcribe-diarize' model.");
             }
         }
     }
