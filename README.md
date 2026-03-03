@@ -113,6 +113,8 @@ Do you have a cool use case that we can turn into an action? Let us know!
 
 - **Create MQM report** Perform an LQA Analysis of a translated file. The result will be a text in the MQM framework form.
 - **Create MQM report in background** similar to the previous action, except that this creates a long running process in the background not blocking your parallel actions. Use in conjunction with a checkpoint to download the result of this long running background job.
+- **Review text** review the quality of translated text
+- **Review** review translation. This action assumes you have previously translated content any translation action
 
 ### Review
 
