@@ -8,7 +8,10 @@ public static class PromptBuilder
     
     private const string ProcessXliffSummary = "Please provide a translation for each individual text, even if similar texts have been provided more than once. " +
                                                "{custom_instruction_prompt}. Original texts (in serialized array format): {json}";
-    
+
+    private const string ReviewJsonOutputExample = @"{ ""translations"": [ { ""translation_id"": ""123"", ""quality_score"": 0.85 } ] }";
+
+
     public static string BuildUserPrompt(string prompt, string sourceLanguage, string targetLanguage, string json)
     {
         var instruction = string.IsNullOrEmpty(prompt)
@@ -39,5 +42,68 @@ public static class PromptBuilder
     public static string BuildQualityScorePrompt(string sourceLanguage, string targetLanguage, string criteria, string json)
     {
         return QualityScorePrompt.Replace("{source_language}", sourceLanguage).Replace("{target_language}", targetLanguage).Replace("{criteria}", criteria).Replace("{json}", json);
+    }
+
+    public static string BuildReviewSystemPrompt()
+    {
+        return @"You are a professional translation quality assessor with expertise in linguistic analysis and cultural adaptation across multiple languages.
+
+Your core responsibilities:
+- Evaluate translation quality objectively and consistently
+- Consider accuracy, fluency, cultural appropriateness, and technical correctness
+- Provide precise decimal scores between 0.0 and 1.0
+- Maintain consistency across similar translation patterns
+- Focus on practical usability of translations
+
+Scoring guidelines:
+- 0.9-1.0: Excellent - Natural, accurate, culturally appropriate
+- 0.7-0.8: Good - Minor issues that don't affect meaning
+- 0.5-0.6: Acceptable - Some issues but generally understandable
+- 0.3-0.4: Poor - Significant issues affecting meaning or readability
+- 0.0-0.2: Unacceptable - Major errors or incomprehensible
+
+Always respond with valid JSON format only, without any additional commentary or explanation.";
+    }
+
+    public static string BuildReviewUserPrompt(
+        string? additionalInstructions,
+        string? sourceLanguage,
+        string targetLanguage,
+        string json)
+    {
+        string criteria = "fluency, grammar, terminology, style, and punctuation";
+
+        if (!string.IsNullOrWhiteSpace(additionalInstructions))
+            criteria = additionalInstructions;
+
+        var srcLangText = string.IsNullOrWhiteSpace(sourceLanguage) ? "the source language" : sourceLanguage;
+
+        return $@"You are a professional translation quality assessor specializing in XLIFF review.
+
+# **Instructions:**
+Review the translation quality from {srcLangText} to {targetLanguage}.
+
+# **Quality Assessment Criteria:**
+Evaluate each translation based on: {criteria}
+
+# **Critical Requirements:**
+- Assess each translation unit individually
+- Provide quality scores as decimal values between 0.0 and 1.0 (where 1.0 is perfect)
+- Consider accuracy, fluency, cultural appropriateness, and technical correctness
+- Be consistent in your scoring methodology
+
+**Output Format:**
+Return a valid JSON object containing:
+- ""translations"": an array of review objects, each with:
+- ""translation_id"": the original ID (unchanged)
+- ""quality_score"": decimal score from 0.0 to 1.0
+
+**Example Output:**
+{ReviewJsonOutputExample}
+
+**Input Data (ID, Source Text, Target Text):**
+{json}
+
+Respond only with the JSON object, no additional text or formatting.";
     }
 }
