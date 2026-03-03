@@ -1,6 +1,7 @@
 ﻿using Apps.OpenAI.DataSourceHandlers;
 using Apps.OpenAI.DataSourceHandlers.ModelDataSourceHandlers;
 using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.SDK.Blueprints.Interfaces.Review;
@@ -17,11 +18,11 @@ public class ReviewTextRequest : IReviewTextInput
     public string TargetText { get; set; } = string.Empty;
 
     [Display("Source language")]
-    [DataSource(typeof(LocaleDataSourceHandler))]
+    [StaticDataSource(typeof(LocaleDataSourceHandler))]
     public string? SourceLanguage { get; set; }
 
     [Display("Target language")]
-    [DataSource(typeof(LocaleDataSourceHandler))]
+    [StaticDataSource(typeof(LocaleDataSourceHandler))]
     public string TargetLanguage { get; set; } = string.Empty;
 
     [Display("Model", Description = "This parameter controls which version of OpenAI answers your request")]
@@ -37,12 +38,12 @@ public class ReviewTextRequest : IReviewTextInput
     public int? MaxTokensToSample { get; set; }
 
     [Display("Temperature", Description = "Amount of randomness injected into the response.")]
-    [DataSource(typeof(TemperatureDataSourceHandler))]
+    [StaticDataSource(typeof(TemperatureDataSourceHandler))]
     [JsonProperty("temperature")]
     public string? Temperature { get; set; }
 
     [Display("top_p", Description = "Use nucleus sampling.")]
-    [DataSource(typeof(TopPDataSourceHandler))]
+    [StaticDataSource(typeof(TopPDataSourceHandler))]
     [JsonProperty("top_p")]
     public string? TopP { get; set; }
 

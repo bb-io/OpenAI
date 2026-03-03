@@ -15,11 +15,11 @@ namespace Apps.OpenAI.Models.Requests.Review
         public FileReference File { get; set; } = new();
 
         [Display("Source language")]
-        [DataSource(typeof(LocaleDataSourceHandler))]
+        [StaticDataSource(typeof(LocaleDataSourceHandler))]
         public string? SourceLanguage { get; set; }
 
         [Display("Target language")]
-        [DataSource(typeof(LocaleDataSourceHandler))]
+        [StaticDataSource(typeof(LocaleDataSourceHandler))]
         public string TargetLanguage { get; set; } = string.Empty;
 
         [Display("Output file handling", Description = "Determine the format of the output file. The default Blackbird behavior is to convert to XLIFF for future steps."), StaticDataSource(typeof(ProcessFileFormatHandler))]
@@ -42,11 +42,11 @@ namespace Apps.OpenAI.Models.Requests.Review
         public List<string>? StopSequences { get; set; }
 
         [Display("Temperature", Description = "Amount of randomness injected into the response.")]
-        [DataSource(typeof(TemperatureDataSourceHandler))]
+        [StaticDataSource(typeof(TemperatureDataSourceHandler))]
         public string? Temperature { get; set; }
 
         [Display("top_p", Description = "Use nucleus sampling.")]
-        [DataSource(typeof(TopPDataSourceHandler))]
+        [StaticDataSource(typeof(TopPDataSourceHandler))]
         public string? TopP { get; set; }
 
         [Display("top_k", Description = "Only sample from the top K options for each subsequent token.")]
