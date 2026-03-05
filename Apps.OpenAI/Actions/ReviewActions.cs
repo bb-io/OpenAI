@@ -33,7 +33,7 @@ namespace Apps.OpenAI.Actions;
 public class ReviewActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : BaseActions(invocationContext, fileManagementClient)
 {
-    [Action("Get translation issues", Description = "Review text translation and generate a comment with the issue description")]
+    [Action("Get translation issues", Description = "Reviews translated text and outputs issue descriptions.")]
     public async Task<ChatResponse> GetTranslationIssues([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] GetTranslationIssuesRequest input, [ActionParameter] GlossaryRequest glossary)
     {
@@ -82,8 +82,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
 
     [Action("Get MQM dimension values",
         Description =
-            "Perform an LQA Analysis of the translation. The result will be in the MQM framework form. This action " +
-            "only returns the scores (between 1 and 10) of each dimension.")]
+            "Performs MQM analysis for translated text and outputs per-dimension scores with a proposed translation.")]
     public async Task<MqmAnalysis> GetLqaDimensionValues([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] GetTranslationIssuesRequest input, [ActionParameter] GlossaryRequest glossary)
     {
@@ -135,7 +134,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
     }
 
     [BlueprintActionDefinition(BlueprintAction.ReviewText)]
-    [Action("Review text", Description = "Review the quality of translated text.")]
+    [Action("Review text", Description = "Reviews translated text quality and outputs a quality score.")]
     public async Task<ReviewTextResponse> ReviewText([ActionParameter] ReviewTextRequest input)
     {
         var reviewData = new[]
@@ -201,7 +200,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
     }
 
     [BlueprintActionDefinition(BlueprintAction.ReviewFile)]
-    [Action("Review", Description = "Review translation. This action assumes you have previously translated content in Blackbird through any translation action.")]
+    [Action("Review", Description = "Reviews translated file content and outputs segment quality scores.")]
     public async Task<ReviewContentResponse> ReviewContent([ActionParameter] ReviewContentRequest input)
     {
         var result = new ReviewContentResponse();

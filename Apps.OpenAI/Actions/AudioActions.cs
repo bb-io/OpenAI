@@ -25,8 +25,7 @@ namespace Apps.OpenAI.Actions;
 public class AudioActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : BaseActions(invocationContext, fileManagementClient)
 {
-    [Action("Create English translation", Description = "Generates a translation into English given an audio or " +
-                                                        "video file (mp3, mp4, mpeg, mpga, m4a, wav, or webm).")]
+    [Action("Create English translation", Description = "Translates speech from an audio or video file into English text.")]
     public async Task<TranslationResponse> CreateTranslation([ActionParameter] TranslationRequest input)
     {
         ThrowForAzure("audio");
@@ -42,8 +41,7 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
         return new() { TranslatedText = response.Text };
     }
 
-    [Action("Create transcription", Description = "Generates a transcription given an audio or video file (mp3, " +
-                                                  "mp4, mpeg, mpga, m4a, wav, or webm).")]
+    [Action("Create transcription", Description = "Transcribes speech from an audio or video file and outputs text.")]
     public async Task<TranscriptionResponse> CreateTranscription([ActionParameter] TranscriptionRequest input)
     {
         ThrowForAzure("audio");
@@ -107,7 +105,7 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
         }
     }
 
-    [Action("Create speech", Description = "Generates audio from the text input.")]
+    [Action("Create speech", Description = "Generates speech audio from input text.")]
     public async Task<CreateSpeechResponse> CreateSpeech(
         [ActionParameter] SpeechCreationModelIdentifier modelIdentifier,
         [ActionParameter] CreateSpeechRequest input)

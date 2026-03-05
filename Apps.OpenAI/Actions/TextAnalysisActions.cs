@@ -19,9 +19,7 @@ namespace Apps.OpenAI.Actions;
 public class TextAnalysisActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
     : BaseActions(invocationContext, fileManagementClient)
 {
-    [Action("Create embedding", Description = "Generate an embedding for a text provided. An embedding is a list of " +
-                                              "floating point numbers that captures semantic information about the " +
-                                              "text that it represents.")]
+    [Action("Create embedding", Description = "Generates an embedding vector for input text.")]
     public async Task<CreateEmbeddingResponse> CreateEmbedding(
         [ActionParameter] EmbeddingModelIdentifier modelIdentifier,
         [ActionParameter] EmbeddingRequest input)
@@ -39,9 +37,7 @@ public class TextAnalysisActions(InvocationContext invocationContext, IFileManag
         return new() { Embedding = response.Data.First().Embedding };
     }
 
-    [Action("Tokenize text", Description = "Tokenize the text provided. Optionally specify encoding: cl100k_base " +
-                                           "(used by gpt-4, gpt-3.5-turbo, text-embedding-ada-002) or p50k_base " +
-                                           "(used by codex models, text-davinci-002, text-davinci-003).")]
+    [Action("Tokenize text", Description = "Tokenizes input text and outputs token IDs.")]
     public async Task<TokenizeTextResponse> TokenizeText([ActionParameter] TokenizeTextRequest input)
     {
         var encoding = input.Encoding ?? "cl100k_base";

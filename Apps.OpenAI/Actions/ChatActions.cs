@@ -29,7 +29,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 {
     private const int MaxCompletionRetries = 3;
 
-    [Action("Chat", Description = "Gives a response given a chat message")]
+    [Action("Chat", Description = "Outputs a response to a chat message.")]
     public async Task<ChatResponse> ChatMessageRequest(
         [ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] ChatRequest input,
@@ -71,7 +71,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     }
 
     // This action may seem redundant but we feel that the optional system prompt in the action above may be too hidden.
-    [Action("Chat with system prompt", Description = "Gives a response given a chat message")]
+    [Action("Chat with system prompt", Description = "Outputs a response to a chat message with a required system prompt.")]
     public async Task<ChatResponse> ChatWithSystemMessageRequest(
         [ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] ChatRequestWithSystem input,
