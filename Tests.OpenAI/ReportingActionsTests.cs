@@ -1,5 +1,6 @@
 ﻿using Apps.OpenAI.Actions;
 using Apps.OpenAI.Models.Requests.Background;
+using Apps.OpenAI.Models.Requests.Reporting;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
@@ -49,5 +50,24 @@ public class ReportingActionsTests : TestBaseWithContext
 
         // Assert
         Assert.Contains("which is not supported for batch jobs", ex.Message);
+    }
+
+    [TestMethod, ContextDataSource]
+    public async Task CreateMqmReportFromXliff_OpenAiEmbeddedXliffFile_Success(InvocationContext context)
+    {
+        // Arrange
+        var actions = new ReportingActions(context, FileManagementClient);
+        var request = new CreateMqmReportFromFileRequest()
+        {
+            ModelId = "gpt-4.1",
+            File = new FileReference { Name = "taus_Test.xliff" },
+        };
+
+        // Act
+        var result = await actions.CreateMqmReportFromXliff(request);
+
+        // Assert           
+        Assert.IsNotNull(result);
+        PrintResult(result);
     }
 }
