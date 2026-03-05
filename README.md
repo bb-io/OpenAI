@@ -85,6 +85,7 @@ Actions are grouped below. Optional inputs are listed as Advanced settings.
 
 - **Create MQM report** Performs MQM analysis for translated text and outputs a report.
 - **Create MQM report in background** Starts background MQM analysis for translated file content and outputs a batch ID to download results later.
+- **Create MQM report from file** Performs MQM analysis for translated file content and outputs a report.
 
 ### Review
 
