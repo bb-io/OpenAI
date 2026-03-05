@@ -14,7 +14,7 @@ namespace Apps.OpenAI.Polling;
 [PollingEventList]
 public class BatchPollingList(InvocationContext invocationContext) : BaseActions(invocationContext, null!)
 {
-    [PollingEvent("On background job finished", "Triggered when an OpenAI batch job reaches a terminal state (completed/failed/cancelled).")]
+    [PollingEvent("On background job finished", "Triggered when a batch job reaches a terminal state (completed, failed, or cancelled).")]
     public async Task<PollingEventResponse<BatchMemory, BatchResponse>> OnBatchFinished(
         PollingEventRequest<BatchMemory> request,
         [PollingEventParameter] BatchIdentifier identifier)

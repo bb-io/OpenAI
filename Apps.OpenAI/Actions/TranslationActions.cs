@@ -36,7 +36,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
     : BaseActions(invocationContext, fileManagementClient)
 {
     [BlueprintActionDefinition(BlueprintAction.TranslateFile)]
-    [Action("Translate", Description = "Translate file content retrieved from a CMS or file storage. The output can be used in compatible actions.")]
+    [Action("Translate", Description = "Translates file content from a CMS or file storage and outputs localized content for compatible actions.")]
     public async Task<ContentProcessingResult> TranslateContent([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] TranslateContentRequest input,
         [ActionParameter, Display("Additional instructions", Description = "Specify additional instructions to be applied to the translation. For example, 'Cater to an older audience.'")] string? prompt,
@@ -175,7 +175,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         return result;
     }    
 
-    [Action("Translate in background", Description = "Start background translation process for a file. This action will return a batch ID that can be used to download the results later.")]
+    [Action("Translate in background", Description = "Starts background translation for a file and outputs a batch ID to download results later.")]
     public async Task<BackgroundProcessingResponse> TranslateInBackground([ActionParameter] StartBackgroundProcessRequest startBackgroundProcessRequest)
     {
         var stream = await fileManagementClient.DownloadAsync(startBackgroundProcessRequest.File);
@@ -301,7 +301,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
     }
 
     [BlueprintActionDefinition(BlueprintAction.TranslateText)]
-    [Action("Translate text", Description = "Localize the text provided.")]
+    [Action("Translate text", Description = "Outputs localized text for the provided input text.")]
     public async Task<TranslateTextResponse> LocalizeText([ActionParameter] TextChatModelIdentifier modelIdentifier, 
         [ActionParameter] LocalizeTextRequest input, 
         [ActionParameter] GlossaryRequest glossary)

@@ -36,7 +36,7 @@ namespace Apps.OpenAI.Actions;
 public class EditActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : BaseActions(invocationContext, fileManagementClient)
 {
     [BlueprintActionDefinition(BlueprintAction.EditFile)]
-    [Action("Edit", Description = "Edit a translation. This action assumes you have previously translated content in Blackbird through any translation action.")]
+    [Action("Edit", Description = "Edits translated file content and outputs reviewed content.")]
     public async Task<ContentProcessingEditResult> EditContent([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] EditContentRequest input,
         [ActionParameter, Display("Additional instructions", Description = "Specify additional instructions to be applied to the translation. For example, 'Cater to an older audience.'")] string? prompt,
@@ -197,7 +197,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     }
 
     [Action("Edit in background", 
-        Description = "Start background editing process for a translated file. This action will return a batch ID that can be used to download the results later.")]
+        Description = "Starts background editing for translated content and outputs a batch ID to download results later.")]
     public async Task<BackgroundProcessingResponse> EditInBackground(
         [ActionParameter] StartBackgroundProcessRequest processRequest)
     {
@@ -307,7 +307,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     }
     
     [BlueprintActionDefinition(BlueprintAction.EditText)]
-    [Action("Edit text", Description = "Review translated text and generate an edited version")]
+    [Action("Edit text", Description = "Reviews translated text and outputs an edited version.")]
     public async Task<EditResponse> PostEditRequest([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] PostEditRequest input, 
         [ActionParameter] GlossaryRequest glossary)
@@ -356,7 +356,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     }
 
     [Action("Apply prompt to bilingual content (experimental)",
-        Description = "Runs prompt for each translation unit in the XLIFF file according to the provided instructions and updates the target text for each unit. Supports batching where multiple units will be put into a single prompt.")]
+        Description = "Applies a prompt to each translation unit and outputs updated target text, with optional batching.")]
     public async Task<ContentProcessingEditResult> Prompt(
         [ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] EditContentRequest input,

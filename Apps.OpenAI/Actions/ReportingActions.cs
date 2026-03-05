@@ -28,7 +28,7 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
     : BaseActions(invocationContext, fileManagementClient)
 {
     [Action("Create MQM report",
-        Description = "Perform an LQA Analysis of the translation. The result will be in the MQM framework form.")]
+        Description = "Performs MQM analysis for translated text and outputs a report.")]
     public async Task<ChatResponse> GetLqaAnalysis([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] GetTranslationIssuesRequest input, [ActionParameter] GlossaryRequest glossary)
     {
@@ -76,7 +76,7 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
     }
     
     [Action("Create MQM report in background",
-        Description = "Perform an LQA Analysis on a translated file in the MQM framework form.")]
+        Description = "Starts background MQM analysis for translated file content and outputs a batch ID to download results later.")]
     public async Task<BackgroundProcessingResponse> CreateMqmReportInBackground([ActionParameter] CreateMqmReportInBackgroundRequest request)
     {
         var stream = await fileManagementClient.DownloadAsync(request.File);

@@ -24,7 +24,7 @@ public class RepurposeActions(InvocationContext invocationContext, IFileManageme
     : BaseActions(invocationContext, fileManagementClient)
 {
     [Action("Summarize text",
-        Description = "Summarizes text for different target audiences, languages, tone of voices and platforms. Summary extracts a shorter variant of the original text.")]
+        Description = "Summarizes text for different target audiences, languages, tones of voice and platforms. Summaries are shorter than the original text.")]
     public async Task<RepurposeResponse> CreateSummary(
         [ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] [Display("Text")] string content,
@@ -37,7 +37,7 @@ public class RepurposeActions(InvocationContext invocationContext, IFileManageme
         );
     }        
 
-    [Action("Summarize", Description = "Summarizes content for different target audiences, languages, tone of voices and platforms. Summary extracts a shorter variant of the original text.")]
+    [Action("Summarize", Description = "Summarizes content for different target audiences, languages, tones of voice and platforms. Summaries are shorter than the original text.")]
     public async Task<RepurposeResponse> CreateContentSummary(
         [ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] ContentRequest file, 
@@ -59,7 +59,7 @@ public class RepurposeActions(InvocationContext invocationContext, IFileManageme
     }
 
     [Action("Repurpose text",
-        Description = "Repurpose text for different target audiences, languages, tone of voices and platforms. Repurpose does not significantly change the length of the content.")]
+        Description = "Repurposes text for different target audiences, languages, tones of voice and platforms. Repurposing does not significantly change the length of the content.")]
     public async Task<RepurposeResponse> RepurposeContent(
         [ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] [Display("Original content")] string content, 
@@ -67,7 +67,7 @@ public class RepurposeActions(InvocationContext invocationContext, IFileManageme
         [ActionParameter] GlossaryRequest glossary) =>
         await HandleRepurposeRequest("Repurpose the content of the message of the user", modelIdentifier, content, input, glossary);
 
-    [Action("Repurpose", Description = "Repurpose content for different target audiences, languages, tone of voices and platforms. Repurpose does not significantly change the length of the content.")]
+    [Action("Repurpose", Description = "Repurposes content for different target audiences, languages, tones of voice and platforms. Repurposing does not significantly change the length of the content.")]
     public async Task<RepurposeResponse> RepurposeContentFromFile(
         [ActionParameter] TextChatModelIdentifier modelIdentifier, 
         [ActionParameter] ContentRequest file, 
