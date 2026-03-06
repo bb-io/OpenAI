@@ -42,17 +42,18 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         [ActionParameter, Display("Additional instructions", Description = "Specify additional instructions to be applied to the translation. For example, 'Cater to an older audience.'")] string? prompt,
         [ActionParameter] GlossaryRequest glossary,
         [ActionParameter] ReasoningEffortRequest reasoningEffortRequest,
-        [ActionParameter, Display("Bucket size", Description = "Specify the number of source texts to be edited at once. Default value: 1500. (See our documentation for an explanation)")] int? bucketSize = null)
+        [ActionParameter, Display("Bucket size", Description = "Specify the number of source texts to be edited at once. Default value: 1500. (See our documentation for an explanation)")] int? bucketSize = null,
+        [ActionParameter, Display("Process locked segments")] bool? ProcessLockedSegments = null)
     {
         var neverFail = false;
         var batchSize = bucketSize ?? 1500;
         var result = new ContentProcessingEditResult();
         var stream = await fileManagementClient.DownloadAsync(input.File);
 
-        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => 
+        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() =>
             Transformation.Parse(stream, input.File.Name)
         );
-        
+
         var sourceLanguage = input.SourceLanguage ?? content.SourceLanguage;
         var targetLanguage = input.TargetLanguage ?? content.TargetLanguage;
 
@@ -84,7 +85,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             var batchList = batch.ToList();
             var idSegments = batchList.Select((x, i) => new { Id = i + 1, Value = x }).ToDictionary(x => x.Id.ToString(), x => x.Value.Segment);
             batchCounter++;
-            
+
             var translationLookup = new Dictionary<string, TranslationEntity>();
             try
             {
@@ -146,7 +147,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         var units = content.GetUnits();
         var segments = units.SelectMany(x => x.Segments);
         result.TotalSegmentsCount = segments.Count();
-        
+
         if (!string.IsNullOrEmpty(input.ProcessOnlySegmentState) && Enum.TryParse<SegmentState>(input.ProcessOnlySegmentState, out var filterState))
         {
             units = units.Where(x => x.State == filterState);
@@ -154,6 +155,14 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         else
         {
             units = units.Where(x => x.State == SegmentState.Translated);
+        }
+
+        if (ProcessLockedSegments.HasValue && !ProcessLockedSegments.Value && input.OutputFileHandling == "xliff1") 
+        {
+            units = units.Where(u =>
+         !u.Other
+        .OfType<XAttribute>()
+        .Any(a => a.Name.LocalName == "locked" && a.Value == "true"));
         }
         
         segments = units.SelectMany(x => x.Segments);
