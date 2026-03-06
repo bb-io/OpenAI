@@ -172,10 +172,22 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             {
                 if (segment.GetTarget() != translation.TranslatedText)
                 {
-                    updatedCount++;
-                    segment.SetTarget(translation.TranslatedText);
+                    try
+                    {
+                        segment.SetTarget(translation.TranslatedText);
+                        segment.State = SegmentState.Reviewed;
+                        updatedCount++;
+                    }
+                    catch(Exception ex)
+                    {
+                        errors.Add($"Error updating segment with ID {segment.Id}: {ex.Message}");
+                        result.TotalSegmentsWithErrors += 1;
+                    }
                 }
-                segment.State = SegmentState.Reviewed;
+                else 
+                {
+                    segment.State = SegmentState.Reviewed;
+                }
             }
 
             var model = UniversalClient.GetModel(modelIdentifier.ModelId);
@@ -215,6 +227,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             result.File = await fileManagementClient.UploadAsync(content.Serialize().ToStream(), MediaTypes.Xliff, content.XliffFileName);
         }        
 
+        result.ErrorDetails = errors;
         return result;
     }
 
