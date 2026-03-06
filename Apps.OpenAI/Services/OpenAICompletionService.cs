@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Apps.OpenAI.Api;
 using Apps.OpenAI.Api.Requests;
 using Apps.OpenAI.Dtos;
@@ -10,6 +7,9 @@ using Apps.OpenAI.Services.Abstract;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RestSharp;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using TiktokenSharp;
 
 namespace Apps.OpenAI.Services;
@@ -31,10 +31,13 @@ public class OpenAICompletionService(OpenAiUniversalClient openAIClient) : IOpen
             { "top_p", request?.TopP ?? 1 },
             { "presence_penalty", request?.PresencePenalty ?? 0 },
             { "frequency_penalty", request?.FrequencyPenalty ?? 0 },
-            { "response_format", responseFormat }
         };
-        
-        if(request?.Temperature != null && !modelId.Contains("gpt-5"))
+
+        bool usesLegacyParams = modelId.Contains("gpt-3") || modelId.Contains("gpt-4");
+        if (!usesLegacyParams)
+            jsonDictionary.Add("response_format", responseFormat);
+
+        if (request?.Temperature != null && !modelId.Contains("gpt-5"))
         {
             jsonDictionary.Add("temperature", request.Temperature);
         }
@@ -76,14 +79,7 @@ public class OpenAICompletionService(OpenAiUniversalClient openAIClient) : IOpen
         }
     }
 
-    private TimeSpan CalculateBackoffDelay(int attempt)
-    {
-        var baseDelayMs = 1000 * Math.Pow(2, attempt);
-        var jitter = new Random().NextDouble() * 0.3 + 0.85;
-        return TimeSpan.FromMilliseconds(baseDelayMs * jitter);
-    }
-
-    private string GetEncodingForModel(string modelId)
+    private static string GetEncodingForModel(string modelId)
     {
         if (string.IsNullOrEmpty(modelId))
         {

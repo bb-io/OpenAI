@@ -34,14 +34,16 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
     : BaseActions(invocationContext, fileManagementClient)
 {
     [Action("Download background file", 
-        Description = "Download content that was processed in the background. This action should be called after the background process is completed.")]
+        Description = "Downloads content processed in the background after the job is complete.")]
     public async Task<BackgroundContentResponse> DownloadContentFromBackground([ActionParameter] BackgroundDownloadRequest request)
     {
         var batchRequests = await GetBatchRequestsAsync(request.BatchId);
         var batchResponse = await GetBatchStatusAsync(request.BatchId);
         
         var originalFileStream = await fileManagementClient.DownloadAsync(request.TransformationFile);
-        var content = await Transformation.Parse(originalFileStream, request.TransformationFile.Name);
+        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() =>
+            Transformation.Parse(originalFileStream, request.TransformationFile.Name)
+        );
 
         var units = content.GetUnits();
         var totalSegments = units.SelectMany(x => x.Segments).Count();
@@ -186,7 +188,7 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
         };
     }
     
-    [Action("Get background result", Description = "Get the MQM report results from a background batch process")]
+    [Action("Get background result", Description = "Gets MQM report results from a background batch process.")]
     public async Task<MqmBackgroundResponse> GetMqmReportFromBackground(
         [ActionParameter] BackgroundDownloadRequest request)
     {
@@ -194,7 +196,9 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
         var batchResponse = await GetBatchStatusAsync(request.BatchId);
 
         var stream = await fileManagementClient.DownloadAsync(request.TransformationFile);
-        var content = await Transformation.Parse(stream, request.TransformationFile.Name);
+        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() =>
+            Transformation.Parse(stream, request.TransformationFile.Name)
+        );
         var units = content.GetUnits();
         var segments = units.SelectMany(x => x.Segments).Where(x => !x.IsIgnorbale && x.State == SegmentState.Translated).ToList();
         

@@ -24,7 +24,7 @@ namespace Apps.OpenAI.Actions;
 [ActionList("Images")]
 public class ImageActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : BaseActions(invocationContext, fileManagementClient)
 {
-    [Action("Generate image", Description = "Generates an image based on a prompt")]
+    [Action("Generate image", Description = "Generates an image from a prompt.")]
     public async Task<ImageResponse> GenerateImage([ActionParameter] ImageGenerationModelIdentifier modelIdentifier,
         [ActionParameter] ImageRequest input)
     {
@@ -74,7 +74,7 @@ public class ImageActions(InvocationContext invocationContext, IFileManagementCl
         return new() { Image = file };
     }
 
-    [Action("Get localizable content from image", Description = "Retrieve localizable content from image.")]
+    [Action("Get localizable content from image", Description = "Extracts localizable text content from an image.")]
     public async Task<ChatResponse> GetLocalizableContentFromImage(
         [ActionParameter] ImageChatModelIdentifier modelIdentifier,
         [ActionParameter] GetLocalizableContentFromImageRequest input)

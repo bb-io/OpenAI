@@ -1,4 +1,7 @@
-﻿namespace Apps.OpenAI.Dtos;
+﻿using Apps.OpenAI.Utils;
+using Newtonsoft.Json;
+
+namespace Apps.OpenAI.Dtos;
 
 public record TranscriptionDto(string Text) : TextDto(Text)
 {
@@ -17,4 +20,4 @@ public record TranscriptionDto(string Text) : TextDto(Text)
 
 public record WordDto(string Word, double Start, double End);
 
-public record SegmentDto(int Id, int Seek, double Start, double End, string Text, int[] Tokens, double Temperature, double AvgLogprob, double CompressionRatio, double NoSpeechProb);
+public record SegmentDto([property: JsonConverter(typeof(FlexibleIdConverter))] string Id, int Seek, double Start, double End, string Text, int[] Tokens, double Temperature, double AvgLogprob, double CompressionRatio, double NoSpeechProb);

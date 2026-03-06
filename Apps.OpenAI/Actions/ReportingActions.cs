@@ -4,6 +4,7 @@ using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Background;
 using Apps.OpenAI.Models.Requests.Chat;
+using Apps.OpenAI.Models.Requests.Reporting;
 using Apps.OpenAI.Models.Responses.Background;
 using Apps.OpenAI.Models.Responses.Chat;
 using Apps.OpenAI.Utils;
@@ -18,8 +19,8 @@ using Blackbird.Filters.Extensions;
 using Blackbird.Filters.Transformations;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
 
 namespace Apps.OpenAI.Actions;
 
@@ -27,8 +28,61 @@ namespace Apps.OpenAI.Actions;
 public class ReportingActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : BaseActions(invocationContext, fileManagementClient)
 {
+
+    [Action("Create MQM report from file",
+        Description = "Perform an LQA analysis on a translated XLIFF file. The result will be in the MQM framework form.")]
+    public async Task<ChatResponse> CreateMqmReportFromXliff([ActionParameter] CreateMqmReportFromFileRequest request)
+    {
+        var stream = await FileManagementClient.DownloadAsync(request.File);
+        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => Transformation.Parse(stream, request.File.Name));
+
+        content.SourceLanguage ??= request.SourceLanguage;
+        content.TargetLanguage ??= request.TargetLanguage;
+
+        if (content.TargetLanguage == null)
+            throw new PluginMisconfigurationException("The target language is not defined yet. Please assign the target language in this action.");
+
+        if (content.SourceLanguage == null)
+        {
+            var plaintext = content.Source().GetPlaintext();
+            content.SourceLanguage = await IdentifySourceLanguage(request, plaintext);
+        }
+
+        var segments = content.GetUnits()
+            .SelectMany(u => u.Segments)
+            .Where(s => !s.IsIgnorbale)
+            .Where(s => s.State == SegmentState.Translated || (request.IncludeFinalizedSegments == true && s.State == SegmentState.Final))
+            .ToList();
+
+        if (!segments.Any())
+            throw new PluginApplicationException("The file does not contain any segments to process. Segments must be translated and have a non-ignorable state.");
+
+        var (systemPrompt, userPrompt) = await BuildMqmPromptsFromXliff(request, content, segments);
+
+        var messages = new List<ChatMessageDto>
+        {
+            new(MessageRoles.System, systemPrompt),
+            new(MessageRoles.User, userPrompt)
+        };
+
+        var chatRequest = new Apps.OpenAI.Models.Requests.Chat.BaseChatRequest
+        {
+            MaximumTokens = request.MaximumTokens
+        };
+
+        var response = await ExecuteChatCompletion(messages, UniversalClient.GetModel(request.ModelId), chatRequest);
+
+        return new ChatResponse
+        {
+            SystemPrompt = systemPrompt,
+            UserPrompt = userPrompt,
+            Message = response.Choices.First().Message.Content,
+            Usage = response.Usage,
+        };
+    }
+
     [Action("Create MQM report",
-        Description = "Perform an LQA Analysis of the translation. The result will be in the MQM framework form.")]
+        Description = "Performs MQM analysis for translated text and outputs a report.")]
     public async Task<ChatResponse> GetLqaAnalysis([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] GetTranslationIssuesRequest input, [ActionParameter] GlossaryRequest glossary)
     {
@@ -74,18 +128,18 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
             Usage = response.Usage,
         };
     }
-    
+
     [Action("Create MQM report in background",
-        Description = "Perform an LQA Analysis on a translated file in the MQM framework form.")]
+        Description = "Starts background MQM analysis for translated file content and outputs a batch ID to download results later.")]
     public async Task<BackgroundProcessingResponse> CreateMqmReportInBackground([ActionParameter] CreateMqmReportInBackgroundRequest request)
     {
         var stream = await fileManagementClient.DownloadAsync(request.File);
         var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => Transformation.Parse(stream, request.File.Name));
-        
+
         content.SourceLanguage ??= request.SourceLanguage;
         content.TargetLanguage ??= request.TargetLanguage;
-        
-        if (content.TargetLanguage == null) 
+
+        if (content.TargetLanguage == null)
             throw new PluginMisconfigurationException("The target language is not defined yet. Please assign the target language in this action.");
 
         if (content.SourceLanguage == null)
@@ -100,14 +154,14 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
         var batchRequests = new List<object>();
         var bucketSize = request.GetBucketingSize();
         var segmentList = segments.ToList();
-        
+
         var segmentBuckets = new List<List<Segment>>();
         for (int i = 0; i < segmentList.Count; i += bucketSize)
         {
             var bucket = segmentList.Skip(i).Take(bucketSize).ToList();
             segmentBuckets.Add(bucket);
         }
-        
+
         foreach (var (bucket, bucketIndex) in segmentBuckets.Select((bucket, index) => (bucket, index)))
         {
             var systemPrompt = "Perform an LQA analysis and use the MQM error typology format using all 7 dimensions for each provided segment: " +
@@ -126,13 +180,13 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
                 systemPrompt = $"{systemPrompt} {request.AdditionalInstructions}";
 
             var userPrompt = "Analyze the following segments:\n\n";
-            
+
             foreach (var (segment, segmentIndex) in bucket.Select((seg, idx) => (seg, idx)))
             {
                 var globalIndex = bucketIndex * bucketSize + segmentIndex;
                 var sourceText = segment.GetSource();
                 var targetText = segment.GetTarget();
-                
+
                 userPrompt += $"ID: {globalIndex}\n" +
                              $"Source ({content.SourceLanguage}): {sourceText}\n" +
                              $"Translation ({content.TargetLanguage}): {targetText}\n" +
@@ -148,7 +202,7 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
                     userPrompt += $"\nGlossary terms:\n{glossaryPromptPart}";
                 }
             }
-            
+
             var batchRequest = new
             {
                 custom_id = bucketIndex.ToString(),
@@ -183,8 +237,8 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
         }
 
         var batchResponse = await CreateBatchAsync(batchRequests);
-        content.MetaData.Add(new Metadata("background-type", "mqm-report") { Category = [Meta.Categories.Blackbird]});
-        
+        content.MetaData.Add(new Metadata("background-type", "mqm-report") { Category = [Meta.Categories.Blackbird] });
+
         return new BackgroundProcessingResponse
         {
             BatchId = batchResponse.Id,
@@ -193,5 +247,60 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
             ExpectedCompletionTime = batchResponse.ExpectedCompletionTime,
             TransformationFile = await fileManagementClient.UploadAsync(content.Serialize().ToStream(), MediaTypes.Xliff, content.XliffFileName)
         };
+    }
+
+    private async Task<(string systemPrompt, string userPrompt)> BuildMqmPromptsFromXliff(
+        CreateMqmReportFromFileRequest request,
+        Transformation content,
+        List<Segment> segments)
+    {
+        var sourceLanguage = content.SourceLanguage!;
+        var targetLanguage = content.TargetLanguage!;
+
+        var defaultSystemPrompt =
+            "Perform an LQA analysis and use the MQM error typology format using all 7 dimensions. " +
+            "Here is a brief description of the seven high-level error type dimensions: " +
+            "1. Terminology – errors arising when a term does not conform to normative domain or organizational terminology standards or when a term in the target text is not the correct, normative equivalent of the corresponding term in the source text. " +
+            "2. Accuracy – errors occurring when the target text does not accurately correspond to the propositional content of the source text, introduced by distorting, omitting, or adding to the message. " +
+            "3. Linguistic conventions – errors related to the linguistic well-formedness of the text, including problems with grammaticality, spelling, punctuation, and mechanical correctness. " +
+            "4. Style – errors occurring in a text that are grammatically acceptable but are inappropriate because they deviate from organizational style guides or exhibit inappropriate language style. " +
+            "5. Locale conventions – errors occurring when the translation product violates locale-specific content or formatting requirements for data elements. " +
+            "6. Audience appropriateness – errors arising from the use of content in the translation product that is invalid or inappropriate for the target locale or target audience. " +
+            "7. Design and markup – errors related to the physical design or presentation of a translation product, including character, paragraph, and UI element formatting and markup, integration of text with graphical elements, and overall page or window layout. " +
+            "Provide a quality rating for each dimension from 0 (completely bad) to 10 (perfect). " +
+            "You are an expert linguist and your task is to perform a Language Quality Assessment on input segments. " +
+            "Do not propose a fixed translation, only report on the errors. " +
+            "Formatting: use line spacing between each category. The category name should be bold.";
+
+        var systemPrompt = string.IsNullOrWhiteSpace(request.CustomSystemPrompt)
+            ? defaultSystemPrompt
+            : request.CustomSystemPrompt;
+
+        if (!string.IsNullOrWhiteSpace(request.AdditionalPrompt))
+            systemPrompt = $"{systemPrompt} {request.AdditionalPrompt}";
+
+        var items = segments.Select(s => new
+        {
+            Id = s.Id,
+            Source = s.GetSource(),
+            Target = s.GetTarget()
+        });
+
+        var tuJson = JsonSerializer.Serialize(items, new JsonSerializerOptions { WriteIndented = true });
+
+        var userPrompt =
+            $"Here are the translation units from {sourceLanguage} into {targetLanguage}:\n" +
+            tuJson +
+            $"{(request.TargetAudience != null ? $"\nTarget audience: {request.TargetAudience}" : "")}";
+
+        if (request.Glossary != null)
+        {
+            var combinedSource = string.Join(" ", segments.Select(s => s.GetSource()));
+            var glossaryPromptPart = await GetGlossaryPromptPart(request.Glossary, combinedSource, filter: true);
+            if (!string.IsNullOrWhiteSpace(glossaryPromptPart))
+                userPrompt += glossaryPromptPart;
+        }
+
+        return (systemPrompt, userPrompt);
     }
 }

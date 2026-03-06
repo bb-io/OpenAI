@@ -1,18 +1,31 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Apps.OpenAI.Actions.Base;
+﻿using Apps.OpenAI.Actions.Base;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Chat;
+using Apps.OpenAI.Models.Requests.Review;
 using Apps.OpenAI.Models.Responses.Chat;
+using Apps.OpenAI.Models.Responses.Review;
+using Apps.OpenAI.Utils;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
+using Blackbird.Applications.Sdk.Common.Exceptions;
+using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using Blackbird.Applications.SDK.Blueprints;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
+using Blackbird.Filters.Constants;
+using Blackbird.Filters.Enums;
+using Blackbird.Filters.Extensions;
+using Blackbird.Filters.Transformations;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Apps.OpenAI.Actions;
 
@@ -20,7 +33,7 @@ namespace Apps.OpenAI.Actions;
 public class ReviewActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : BaseActions(invocationContext, fileManagementClient)
 {
-    [Action("Get translation issues", Description = "Review text translation and generate a comment with the issue description")]
+    [Action("Get translation issues", Description = "Reviews translated text and outputs issue descriptions.")]
     public async Task<ChatResponse> GetTranslationIssues([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] GetTranslationIssuesRequest input, [ActionParameter] GlossaryRequest glossary)
     {
@@ -66,11 +79,10 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
             Usage = response.Usage,
         };
     }
-    
+
     [Action("Get MQM dimension values",
         Description =
-            "Perform an LQA Analysis of the translation. The result will be in the MQM framework form. This action " +
-            "only returns the scores (between 1 and 10) of each dimension.")]
+            "Performs MQM analysis for translated text and outputs per-dimension scores with a proposed translation.")]
     public async Task<MqmAnalysis> GetLqaDimensionValues([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] GetTranslationIssuesRequest input, [ActionParameter] GlossaryRequest glossary)
     {
@@ -119,5 +131,246 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
             throw new Exception(
                 "Something went wrong parsing the output from OpenAI, most likely due to a hallucination!");
         }
+    }
+
+    [BlueprintActionDefinition(BlueprintAction.ReviewText)]
+    [Action("Review text", Description = "Reviews translated text quality and outputs a quality score.")]
+    public async Task<ReviewTextResponse> ReviewText([ActionParameter] ReviewTextRequest input)
+    {
+        var reviewData = new[]
+        {
+            new
+            {
+                translation_id = "1",
+                source_text = input.SourceText,
+                target_text = input.TargetText
+            }
+        };
+
+        var json = JsonConvert.SerializeObject(reviewData);
+
+        var systemPrompt = PromptBuilder.BuildReviewSystemPrompt();
+        var userPrompt = PromptBuilder.BuildReviewUserPrompt(
+            input.AdditionalInstructions,
+            input.SourceLanguage,
+            input.TargetLanguage,
+            json);
+
+        if (input.Glossary != null)
+        {
+            var glossaryPart = await GetGlossaryPromptPart(input.Glossary, input.SourceText, true);
+            if (!string.IsNullOrWhiteSpace(glossaryPart))
+                userPrompt += glossaryPart;
+        }
+
+        var messages = new List<ChatMessageDto>
+        {
+            new(MessageRoles.System, systemPrompt),
+            new(MessageRoles.User, userPrompt)
+        };
+
+        var response = await ExecuteChatCompletion(
+            messages,
+            model: input.Model,
+            input: null,
+            responseFormat: new { type = "json_object" });
+
+        var raw = response.Choices.First().Message.Content;
+
+        float score = 0f;
+        try
+        {
+            var parsed = JsonConvert.DeserializeObject<ReviewJsonResponse>(raw);
+            score = parsed?.Translations?.FirstOrDefault()?.QualityScore ?? 0f;
+        }
+        catch
+        {
+            score = 0f;
+        }
+
+        score = score < 0 ? 0 : (score > 1 ? 1 : score);
+
+        return new ReviewTextResponse
+        {
+            Score = score,
+            SystemPrompt = systemPrompt,
+            UserPrompt = userPrompt,
+            Usage = MapUsage(response.Usage)
+        };
+    }
+
+    [BlueprintActionDefinition(BlueprintAction.ReviewFile)]
+    [Action("Review", Description = "Reviews translated file content and outputs segment quality scores.")]
+    public async Task<ReviewContentResponse> ReviewContent([ActionParameter] ReviewContentRequest input)
+    {
+        var result = new ReviewContentResponse();
+
+        var threshold = input.Threshold ?? 0.8;
+        if (threshold < 0 || threshold > 1)
+            throw new PluginMisconfigurationException("Threshold must be in range 0..1.");
+
+        var stream = await fileManagementClient.DownloadAsync(input.File);
+        var content =
+            await ErrorHandler.ExecuteWithErrorHandlingAsync(() => Transformation.Parse(stream, input.File.Name));
+
+        content.SourceLanguage ??= input.SourceLanguage;
+        content.TargetLanguage ??= input.TargetLanguage;
+
+        if (string.IsNullOrWhiteSpace(content.SourceLanguage))
+            throw new PluginMisconfigurationException(
+                "The source language is not defined. Please assign the source language in this action.");
+
+        if (string.IsNullOrWhiteSpace(content.TargetLanguage))
+            throw new PluginMisconfigurationException(
+                "The target language is not defined. Please assign the target language in this action.");
+
+        var processedSegmentsCount = 0;
+        var finalizedSegmentsCount = 0;
+        var riskySegmentsCount = 0;
+        float totalScore = 0f;
+
+        async Task<IEnumerable<float?>> BatchProcess(IEnumerable<(Unit Unit, Segment Segment)> batch)
+        {
+            var scores = new List<float?>();
+
+            foreach (var (_, segment) in batch)
+            {
+                if (string.IsNullOrWhiteSpace(segment.GetTarget()))
+                {
+                    scores.Add(null);
+                    continue;
+                }
+
+                var reviewData = new[]
+                {
+                new
+                {
+                    translation_id = segment.Id,
+                    source_text = segment.GetSource(),
+                    target_text = segment.GetTarget()
+                }
+            };
+
+                var json = JsonConvert.SerializeObject(reviewData);
+
+                var systemPrompt = PromptBuilder.BuildReviewSystemPrompt();
+                var userPrompt = PromptBuilder.BuildReviewUserPrompt(
+                    input.AdditionalInstructions,
+                    content.SourceLanguage,
+                    content.TargetLanguage!,
+                    json);
+
+                if (input.Glossary != null)
+                {
+                    var glossaryPart = await GetGlossaryPromptPart(input.Glossary, segment.GetSource(), true);
+                    if (!string.IsNullOrWhiteSpace(glossaryPart))
+                        userPrompt += glossaryPart;
+                }
+
+                var messages = new List<ChatMessageDto>
+            {
+                new(MessageRoles.System, systemPrompt),
+                new(MessageRoles.User, userPrompt)
+            };
+
+                var response = await ExecuteChatCompletion(
+                    messages,
+                    model: input.Model,
+                    input: null,
+                    responseFormat: new { type = "json_object" });
+
+                result.Usage += MapUsage(response.Usage);
+
+                var raw = response.Choices.First().Message.Content;
+
+                float score;
+                try
+                {
+                    var parsed = JsonConvert.DeserializeObject<ReviewJsonResponse>(raw);
+                    score = parsed?.Translations?.FirstOrDefault()?.QualityScore ?? 0f;
+                }
+                catch
+                {
+                    score = 0f;
+                }
+
+                if (score < 0f) score = 0f;
+                if (score > 1f) score = 1f;
+
+                scores.Add(score);
+            }
+
+            return scores;
+        }
+
+        var units = await content.GetUnits()
+            .Batch(10, x => !x.IsIgnorbale && !x.IsInitial && x.State != SegmentState.Final)
+            .Process(BatchProcess);
+
+        foreach (var (unit, results) in units)
+        {
+            float unitScore = 0f;
+            var unitCount = 0;
+
+            foreach (var (segment, score) in results)
+            {
+                if (score == null) continue;
+
+                processedSegmentsCount++;
+                totalScore += score.Value;
+                unitScore += score.Value;
+                unitCount++;
+
+                segment.TargetAttributes.RemoveAll(attr => attr.Name == "extradata");
+                segment.TargetAttributes.Add(new XAttribute(
+                    "extradata",
+                    score.Value.ToString(CultureInfo.InvariantCulture)));
+
+                if (score.Value >= threshold)
+                {
+                    segment.State = SegmentState.Final;
+                    finalizedSegmentsCount++;
+                }
+                else
+                {
+                    riskySegmentsCount++;
+                }
+            }
+
+            unit.Quality.ProfileReference = "OpenAI review";
+            unit.Quality.ScoreThreshold = threshold;
+            unit.Quality.Score = unitCount > 0 ? (unitScore / unitCount) : 0f;
+        }
+
+        Stream streamResult;
+        if (input.OutputFileHandling == "original")
+        {
+            var targetContent = content.Target();
+            streamResult = targetContent.Serialize().ToStream();
+        }
+        else
+        {
+            streamResult = content.Serialize().ToStream();
+        }
+
+        var finalFile = await fileManagementClient.UploadAsync(streamResult, MediaTypes.Xliff, content.XliffFileName);
+
+        result.File = finalFile;
+        result.TotalSegmentsProcessed = processedSegmentsCount;
+        result.TotalSegmentsFinalized = finalizedSegmentsCount;
+        result.TotalSegmentsUnderThreshhold = riskySegmentsCount;
+        result.AverageMetric = processedSegmentsCount > 0 ? (totalScore / processedSegmentsCount) : 0f;
+        result.PercentageSegmentsUnderThreshhold =
+            processedSegmentsCount > 0 ? ((float)riskySegmentsCount / processedSegmentsCount) : 0f;
+
+        return result;
+    }
+
+    private record ReviewBatchItem(Unit Unit, Segment Segment, float? Score, float RawScore);
+    static UsageDto MapUsage(object usageObj)
+    {
+        if (usageObj is UsageDto u) return u;
+        var json = JsonConvert.SerializeObject(usageObj);
+        return JsonConvert.DeserializeObject<UsageDto>(json) ?? new UsageDto();
     }
 }

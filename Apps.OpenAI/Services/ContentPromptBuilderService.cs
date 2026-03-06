@@ -34,7 +34,21 @@ public class ContentPromptBuilderService
         }
 
         prompt.AppendLine("3. Preserve all XML tags exactly as they appear in the source text");
-        prompt.AppendLine("4. Maintain consistent terminology throughout the translations");
+        prompt.AppendLine("4. Maintain consistent terminology throughout the translations"); 
+        
+        prompt.AppendLine("### OUTPUT FORMAT (STRICT)");
+        prompt.AppendLine("You must respond ONLY with a valid JSON object. Do NOT include any conversational text, headers (like '### TRANSLATION UNITS') or explanations.");
+        prompt.AppendLine("Do NOT wrap the JSON in Markdown formatting (e.g., no ```json blocks). Return the raw, parsable JSON string.");
+        prompt.AppendLine("Your JSON must exactly match the following schema:");
+        prompt.AppendLine("{");
+        prompt.AppendLine("  \"translations\": [");
+        prompt.AppendLine("    {");
+        prompt.AppendLine("      \"translation_id\": \"<The exact ID provided in the input>\",");
+        prompt.AppendLine("      \"translated_text\": \"<Your translated or edited text>\"");
+        prompt.AppendLine("    }");
+        prompt.AppendLine("  ]");
+        prompt.AppendLine("}");
+        prompt.AppendLine();
 
         if (!string.IsNullOrEmpty(glossaryPrompt))
         {

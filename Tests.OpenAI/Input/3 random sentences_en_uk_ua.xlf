@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns:bwx="https://bwx.io/ns/xlf" xmlns:its="http://www.w3.org/2005/11/its" xmlns:itsxlf="http://www.w3.org/ns/its-xliff/" its:version="2.0">
+<file bwx:wu-id="1a6bd42a-932d-42eb-96c4-aa84fb0ed310" original="3 random sentences.txt" source-language="en" target-language="uk-UA" datatype="x-undefined">
+<body>
+<trans-unit id="3490d884-0075-4adb-8618-887954f16094-0-1" bwx:ts-id="3490d884-0075-4adb-8618-887954f16094" xml:space="preserve">
+<source xml:lang="en">They ran around the corner to find that they had traveled back in time.</source>
+<target xml:lang="uk-UA"></target>
+</trans-unit>
+<trans-unit id="3b1afe30-9fd2-40da-99e8-b874f22d22f8-1-2" bwx:ts-id="3b1afe30-9fd2-40da-99e8-b874f22d22f8" xml:space="preserve">
+<source xml:lang="en">Seek success, but always be prepared for random cats.</source>
+<target xml:lang="uk-UA"></target>
+</trans-unit>
+<trans-unit id="61c046a3-fb39-41bb-b2a9-aae755bea184-2-3" bwx:ts-id="61c046a3-fb39-41bb-b2a9-aae755bea184" xml:space="preserve">
+<source xml:lang="en">It isn't true that my mattress is made of cotton candy.</source>
+<target xml:lang="uk-UA"></target>
+</trans-unit>
+<trans-unit id="7bf592f7-d14c-426a-90f2-ddcaf1e2cc7c-3-4" bwx:ts-id="7bf592f7-d14c-426a-90f2-ddcaf1e2cc7c" xml:space="preserve">
+<source xml:lang="en">Tomatoes make great weapons when water balloons aren’t available.</source>
+<target xml:lang="uk-UA"></target>
+</trans-unit>
+<trans-unit id="b8258751-1eb1-43cd-99e3-6b9ae252e82e-4-5" bwx:ts-id="b8258751-1eb1-43cd-99e3-6b9ae252e82e" xml:space="preserve">
+<source xml:lang="en">It caught him off guard that space smelled of seared steak.</source>
+<target xml:lang="uk-UA"></target>
+</trans-unit>
+</body>
+</file>
+</xliff>

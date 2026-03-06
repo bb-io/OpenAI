@@ -24,7 +24,7 @@ namespace Apps.OpenAI.Actions;
 public class GlossaryActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : BaseActions(invocationContext, fileManagementClient)
 {
-    [Action("Extract glossary", Description = "Extract glossary terms from a given text. Use in combination with other glossary actions.")]
+    [Action("Extract glossary", Description = "Extracts glossary terms from text and outputs a glossary file.")]
     public async Task<GlossaryResponse> ExtractGlossary([ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] ExtractGlossaryRequest input)
     {

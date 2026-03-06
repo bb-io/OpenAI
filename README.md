@@ -6,7 +6,7 @@ Blackbird is the new automation backbone for the language technology industry. B
 
 <!-- begin docs -->
 
-This OpenAI app in Blackbird gives you access to all OpenAI API endpoints and models, including completions, chat, edits, DALL-E image generation, and Whisper. You can use it with both OpenAI's official API and Azure OpenAI endpoints, supporting all available models, including the latest such as gpt-5, gpt-5-nano, gpt-4.1, and o3.
+This OpenAI app in Blackbird gives you access to OpenAI APIs for chat, audio, images, and localization workflows. You can use it with both OpenAI's official API and Azure OpenAI endpoints, using the models available in your account.
 
 ## Before setting up
 
@@ -61,15 +61,86 @@ If you choose `OpenAI (embedded model)` connection type, please specify the mode
 
 ## Actions
 
-All textual actions have the following optional input values in order to modify the generated response:
+Actions are grouped below. Optional inputs are listed as Advanced settings.
 
-- Model (defaults to the latest)
-- Maximum tokens
-- Temperature
-- top_p
-- Presence penalty
-- Frequency penalty
-- Reasoning effort
+### Chat
+
+- **Chat** Outputs a response to a chat message. Advanced settings: **Model**: Select the model to use for OpenAI connections (ignored for Azure OpenAI). **System prompt**: Optional system instruction to guide the response. **Texts**: Texts that will be added to the user prompt along with the message. **File**: Optional file to include (text, image, or audio). **Maximum tokens**: Maximum number of tokens to generate. **Temperature**: Controls randomness in the output. **top_p**: Use nucleus sampling. **Presence penalty**: Penalize new tokens based on whether they appear in the text so far. **Frequency penalty**: Penalize new tokens based on frequency in the text so far. **Reasoning effort**: Controls how much reasoning effort the model applies. **Glossary**: Glossary file to enforce term usage.
+- **Chat with system prompt** Outputs a response to a chat message with a required system prompt. Advanced settings: **Image**: Optional image to include with the message.
+
+### Translation
+
+- **Translate** Translates file content from a CMS or file storage and outputs localized content for compatible actions. Advanced settings: **Source language**: Override the source language if it is not already set in the file. **Output file handling**: Determine the format of the output file. The default Blackbird behavior is to convert to XLIFF for future steps. **Additional instructions**: Additional instructions to guide the translation. **Bucket size**: Number of source texts to translate at once (default 1500).
+- **Translate in background** Starts background translation for a file and outputs a batch ID to download results later.
+- **Translate text** Outputs localized text for the provided input text.
+
+### Editing
+
+- **Edit** Edits translated file content and outputs reviewed content. Advanced settings: **Target language**: Override the target language if it is not already set in the file. **Filter glossary terms**: Filter glossary terms to those present in the content. **Modified by**: Add modified-by metadata to updated units. **Process only segments with this state**: Only segments with this state will be processed. **Max tokens**: The maximum number of tokens to generate in the completion (default 1000).
+- **Edit in background** Starts background editing for translated content and outputs a batch ID to download results later.
+- **Edit text** Reviews translated text and outputs an edited version. Advanced settings: **Target audience**: Specify the target audience. **Additional prompt**: Additional prompt to guide editing.
+- **Apply prompt to bilingual content (experimental)** Applies a prompt to each translation unit and outputs updated target text, with optional batching.
+
+### Reporting
+
+- **Create MQM report** Performs MQM analysis for translated text and outputs a report.
+- **Create MQM report in background** Starts background MQM analysis for translated file content and outputs a batch ID to download results later.
+- **Create MQM report from file** Performs MQM analysis for translated file content and outputs a report.
+
+### Review
+
+- **Get translation issues** Reviews translated text and outputs issue descriptions.
+- **Get MQM dimension values** Performs MQM analysis for translated text and outputs per-dimension scores with a proposed translation.
+- **Review text** Reviews translated text quality and outputs a quality score. Advanced settings: **top_k**: Only sample from the top K options for each subsequent token.
+- **Review** Reviews translated file content and outputs segment quality scores. Advanced settings: **Score threshold**: All segments above this score will automatically be finalized (0..1). **Stop sequences**: Sequences that will cause the model to stop generating completion text.
+
+### Background
+
+- **Download background file** Downloads content processed in the background after the job is complete.
+- **Get background result** Gets MQM report results from a background batch process.
+
+### Repurposing
+
+- **Summarize text** Summarizes text for different target audiences, languages, tones of voice and platforms. Summaries are shorter than the original text. Advanced settings: **Tone of voice**: Select the tone of voice for the output. **Locale**: Locale for the output language.
+- **Summarize** Summarizes content for different target audiences, languages, tones of voice and platforms. Summaries are shorter than the original text.
+- **Repurpose text** Repurposes text for different target audiences, languages, tones of voice and platforms. Repurposing does not significantly change the length of the content.
+- **Repurpose** Repurposes content for different target audiences, languages, tones of voice and platforms. Repurposing does not significantly change the length of the content.
+
+### Glossaries
+
+- **Extract glossary** Extracts glossary terms from text and outputs a glossary file. Advanced settings: **Name**: Name of the output glossary file.
+
+### Audio
+
+- **Create English translation** Translates speech from an audio or video file into English text.
+- **Create transcription** Transcribes speech from an audio or video file and outputs text. Advanced settings: **Language (ISO 639-1)**: Language of the audio. **Timestamp granularities**: Return timestamps at the specified granularity (only supported with whisper-1). **Prompt**: Text to guide the model's style or continue a previous audio segment.
+- **Create speech** Generates speech audio from input text. Advanced settings: **Output audio name**: The name of the output audio file without the extension. **Response format**: Output audio format. **Speed**: Speech speed multiplier.
+
+### Images
+
+- **Generate image** Generates an image from a prompt. Advanced settings: **Output image name**: The name of the output image without the extension. **Size**: Image size. **Quality (only for dall-e-3)**: Image quality. **Style (only for dall-e-3)**: Image style.
+- **Get localizable content from image** Extracts localizable text content from an image.
+
+### Text analysis
+
+- **Create embedding** Generates an embedding vector for input text. Advanced settings: **Model ID**: Select the embedding model to use.
+- **Tokenize text** Tokenizes input text and outputs token IDs. Advanced settings: **Encoding**: Tokenizer encoding to use.
+
+### Bucket size, performance and cost
+
+Files can contain a lot of segments. Each action takes your segments and sends them to OpenAI for processing. It's possible that the amount of segments is so high that the prompt exceeds to model's context window or that the model takes longer than Blackbird actions are allowed to take. This is why we have introduced the bucket size parameter. You can tweak the bucket size parameter to determine how many segments to send to OpenAI at once. This will allow you to split the workload into different OpenAI calls. The trade-off is that the same context prompt needs to be send along with each request (which increases the tokens used). From experiments we have found that a bucket size of 1500 is sufficient for gpt-4o. That's why 1500 is the default bucket size, however other models may require different bucket sizes.
+
+### Temperatures
+
+OpenAI allows you to set the temperature value for and Action you perform in Blackbird. You can customize this value (between 0.0 and 2.0) but we've also added handy labels that are available in the Blackbird UI:
+
+- 0.2 Governed: Maximum predictability.
+- 0.6 Balanced: A controlled blend of accuracy and flexibility.
+- 1.0 Expressive: Accuracy is preserved, structure is looser (default).
+- 1.2 Exploratory: Encourages alternative phrasings and ideas while remaining context-aware.
+- 1.6 Experimental: Prioritizes creativity over predictability.
+
+### Models
 
 For more in-depth information about most actions consult the [OpenAI API reference](https://platform.openai.com/docs/api-reference) or [Azure OpenAI API reference](https://learn.microsoft.com/en-us/azure/ai-foundry/openai/latest).
 
@@ -88,84 +159,13 @@ Some actions that are offered are pre-engineered on top of OpenAI. This means th
 
 Do you have a cool use case that we can turn into an action? Let us know!
 
-### Chat
-
-- **Chat** given a chat message, returns a response. You can optionally add a system prompt and/or an image. Also you can add collection of texts and it will be added to the prompt along with the message. Also you can optionally add Glossary as well. Useful if you want to add collection of messages to the prompt. 
-- **Chat with system prompt** the same as above except that the system prompt is mandatory.
-
-**Note**: Azure OpenAI does not support audio files for chat actions.
-
-### Translation
-
-- **Translate** translate file content retrieved from a CMS or file storage. The output can be used in compatible Blackbird interoperable actions.
-- **Translate in background** similar to the previous action, except that this creates a long running process in the background not blocking your parallel actions. Use in conjunction with a checkpoint to download the result file of this long running background job.
-- **Translate text** given a text and a locale, tries to create a localized version of the text.
-
-### Editing
-
-- **Edit** Edit a translation. This action assumes you have previously translated content in Blackbird through any translation action. Only looks at translated segments and will change the segment state to reviewed.
-- **Edit in background** similar to the previous action, except that this creates a long running process in the background not blocking your parallel actions. Use in conjunction with a checkpoint to download the result file of this long running background job.
-- **Edit Text** given a source segment and translated target segment, responds with an edited version of the target segment taking into account typical mistakes.
-
-### Reporting
-
-- **Create MQM report** Perform an LQA Analysis of a translated XLIFF file. The result will be a text in the MQM framework form.
-- **Create MQM report in background** similar to the previous action, except that this creates a long running process in the background not blocking your parallel actions. Use in conjunction with a checkpoint to download the result of this long running background job.
-
-### Review
-
-- **Get translation issues** given a source segment and NMT translated target segment, highlights potential translation issues. Can be used to prepopulate TMS segment comments.
-- **Get MQM dimension values** uses the same input and prompt as 'Get MQM report'. However, in this action the scores are returned as individual numbers so that they can be used in decisions. Also returns the proposed translation.
-
-### Background
-
-- **Download background file** use this action to get the output file when doing a translation or edit in the background.
-- **Get background result** use this action to get the output text when generating an MQM report in the backgorund.
-
-### Repurposing
-
-- **Summarize** summarizes files and content (Blackbird interoperable) for different target audiences, languages, tone of voices and platforms.
-- **Summarize text** summarizes text for different target audiences, languages, tone of voices and platforms.
-- **Repurpose** repurpose files and content (Blackbird interoperable) for different target audiences, languages, tone of voices and platforms.
-- **Repurpose text** repurpose text for different target audiences, languages, tone of voices and platforms.
-
-> Summarize actions extracts a shorter variant of the original text while repurpose actions do not significantly change the length of the content.
-
-### Glossaries
-
-- **Extract glossary** extracts a glossary (.tbx) from any (multilingual) content. You can use this in well in conjunction with other apps that take glossaries.
-
-### Audio
-
-- **Create transcription** transcribes the supported audiovisual file formats into a textual response.
-- **Create English translation** same as above but automatically translated into English.
-- **Create speech** generates audio from the text input.
-
-### Images
-
-- **Generate image** use DALL-E to generate an image based on a prompt.
-- **Get localizable content from image** retrieves localizable content from given image.
-
-### Text analysis
-
-- **Create embedding** create a vectorized embedding of a text. Useful in combination with vector databases like Pinecone in order to store large sets of data.
-- **Tokenize text** turn a text into tokens. Uses Tiktoken under the hood.
-
-### XLIFF operations
-
-- **Apply prompt to XLIFF file** Runs prompt for each translation unit in the XLIFF file according to the provided instructions and updates the target text for each unit. For now it supports only 1.2 version and 2.1 of XLIFF. Supports batching where multiple units will be put into a single prompt.
-
-### Bucket size, performance and cost
-
-XLIFF files can contain a lot of segments. Each action takes your segments and sends them to OpenAI for processing. It's possible that the amount of segments is so high that the prompt exceeds to model's context window or that the model takes longer than Blackbird actions are allowed to take. This is why we have introduced the bucket size parameter. You can tweak the bucket size parameter to determine how many segments to send to OpenAI at once. This will allow you to split the workload into different OpenAI calls. The trade-off is that the same context prompt needs to be send along with each request (which increases the tokens used). From experiments we have found that a bucket size of 1500 is sufficient for gpt-4o. That's why 1500 is the default bucket size, however other models may require different bucket sizes.
-
 ## Eggs
 
 Check downloadable workflow prototypes featuring this app that you can import to your Nests [here](https://docs.blackbird.io/eggs/tms-to-llm/). 
 
 ### Limitations
 
-- The maximum number of translation units in the XLIFF file is `50 000` because a single batch may include up to 50,000 requests
+- The maximum number of translation units in the file is `50 000` because a single batch may include up to 50,000 requests
 
 ### Reasoning effort
 
@@ -187,7 +187,7 @@ We recommend using the `On background job finished` event trigger as it is more 
 
 ### Background
 
-- **On background job finished** triggered when an OpenAI batch job reaches a terminal state (completed/failed/cancelled).
+- **On background job finished** Triggered when a batch job reaches a terminal state (completed, failed, or cancelled).
 
 ## Example
 
