@@ -1,4 +1,5 @@
-﻿using Apps.OpenAI.Dtos;
+﻿using System.Collections.Generic;
+using Apps.OpenAI.Dtos;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Files;
 
@@ -18,9 +19,15 @@ public class ContentProcessingEditResult
     [Display("Total segments updated")]
     public int TotalSegmentsUpdated { get; set; }
     
+    [Display("Total segments with errors")]
+    public int TotalSegmentsWithErrors { get; set; }
+    
     [Display("Processed batches")]
     public int ProcessedBatchesCount { get; set; }
 
     [Display("System prompt")]
     public string SystemPrompt { get; set; }
+    
+    [Display("Error details")]
+    public List<string>? ErrorDetails { get; set; }
 }
