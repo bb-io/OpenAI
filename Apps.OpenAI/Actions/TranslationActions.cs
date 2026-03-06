@@ -83,16 +83,14 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
 
         async Task<IEnumerable<TranslationEntity>> BatchTranslate(IEnumerable<(Unit Unit, Segment Segment)> batch)
         {
-            var idSegments = batch.Select((x, i) => new { Id = i + 1, Value = x }).ToDictionary(x => x.Id.ToString(), x => x.Value.Segment);
-            var allResults = new List<TranslationEntity>();
+            var batchList = batch.ToList();
+            var idSegments = batchList.Select((x, i) => new { Id = i + 1, Value = x }).ToDictionary(x => x.Id.ToString(), x => x.Value.Segment);
             batchCounter++;
+            
+            var translationLookup = new Dictionary<string, TranslationEntity>();
             try
             {
                 var batchResult = await batchProcessingService.ProcessBatchAsync(idSegments, batchOptions, false);
-                if (batchResult.IsSuccess)
-                {
-                    allResults.AddRange(batchResult.UpdatedTranslations);
-                }
 
                 systemprompt = batchResult.SystemPrompt;
 
@@ -105,6 +103,14 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
                 errors.AddRange(batchResult.ErrorMessages);
                 usages.Add(batchResult.Usage);
 
+                if (batchResult.IsSuccess)
+                {
+                    foreach (var translation in batchResult.UpdatedTranslations)
+                    {
+                        translationLookup.TryAdd(translation.TranslationId, translation);
+                    }
+                }
+
                 if (!batchResult.IsSuccess && !neverFail)
                 {
                     throw new PluginApplicationException(
@@ -116,6 +122,26 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
                 errors.Add($"Error in batch {batchCounter} (size: {batchSize}): {ex.Message}");
             }
             
+            // Ensure exactly one result per (Unit, Segment) in the batch
+            var allResults = new List<TranslationEntity>();
+            for (int i = 0; i < batchList.Count; i++)
+            {
+                var id = (i + 1).ToString();
+                if (translationLookup.TryGetValue(id, out var translation))
+                {
+                    allResults.Add(translation);
+                }
+                else
+                {
+                    // Fallback: return original target text so the segment is unchanged
+                    allResults.Add(new TranslationEntity
+                    {
+                        TranslationId = id,
+                        TranslatedText = batchList[i].Segment.GetTarget()
+                    });
+                }
+            }
+
             return allResults;
         }
 
