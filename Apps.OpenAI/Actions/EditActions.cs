@@ -28,6 +28,7 @@ using Apps.OpenAI.Models.Requests.Background;
 using Apps.OpenAI.Models.Responses.Background;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
 using Blackbird.Filters.Xliff.Xliff1;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace Apps.OpenAI.Actions;
@@ -157,12 +158,9 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             units = units.Where(x => x.State == SegmentState.Translated);
         }
 
-        if (ProcessLockedSegments.HasValue && !ProcessLockedSegments.Value && input.OutputFileHandling == "xliff1") 
+        if (ProcessLockedSegments == null || ProcessLockedSegments == false) 
         {
-            units = units.Where(u =>
-         !u.Other
-        .OfType<XAttribute>()
-        .Any(a => a.Name.LocalName == "locked" && a.Value == "true"));
+            units = units.Where(x => x.Translate == null || x.Translate == true);
         }
         
         segments = units.SelectMany(x => x.Segments);
@@ -177,15 +175,18 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
         foreach (var (unit, results) in processedBatches)
         {
+            var modifiedSegment = false;
             foreach (var (segment, translation) in results)
             {
-                if (segment.GetTarget() != translation.TranslatedText)
+                var sanitizedText = EscapeInlineTagBrackets(translation.TranslatedText);
+                if (segment.GetTarget() != sanitizedText)
                 {
                     try
                     {
-                        segment.SetTarget(translation.TranslatedText);
+                        segment.SetTarget(sanitizedText);
                         segment.State = SegmentState.Reviewed;
                         updatedCount++;
+                        modifiedSegment = true;
                     }
                     catch(Exception ex)
                     {
@@ -204,7 +205,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             double tokens = result.Usage.TotalTokens / processedBatches.Count();
             unit.AddUsage(model, Math.Round(tokens, 0), UsageUnit.Tokens);
             
-            if (!string.IsNullOrEmpty(input.ModifiedBy))
+            if (!string.IsNullOrEmpty(input.ModifiedBy) && modifiedSegment)
             {
                 long unixTimestampMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 var existingModifiedAttr = unit.Other.OfType<XAttribute>()
@@ -562,5 +563,12 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         }
 
         return result;
+    }
+
+    private static string EscapeInlineTagBrackets(string text)
+    {
+        text = Regex.Replace(text, @"\{(\d+)>", "{$1gt;");
+        text = Regex.Replace(text, @"<(\d+)\}", "lt;$1}");
+        return text;
     }
 }
