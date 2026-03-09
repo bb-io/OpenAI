@@ -158,15 +158,11 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             units = units.Where(x => x.State == SegmentState.Translated);
         }
 
-        if (ProcessLockedSegments.HasValue && !ProcessLockedSegments.Value && input.OutputFileHandling == "xliff1") 
+        if (ProcessLockedSegments == null || ProcessLockedSegments == false) 
         {
-            units = units.Where(u =>
-         !u.Other
-        .OfType<XAttribute>()
-        .Any(a => a.Name.LocalName == "locked" && a.Value == "true"));
+            units = units.Where(x => x.Translate == null || x.Translate == true);
         }
         
-        units = units.Where(x => x.Translate == null || x.Translate == true);
         segments = units.SelectMany(x => x.Segments);
         result.TotalSegmentsReviewed = segments.Count();
 
