@@ -67,7 +67,7 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
             var bucketIndex = int.TryParse(batchRequest.CustomId, out var idx) ? idx : 
                 throw new PluginApplicationException($"Invalid CustomId '{batchRequest.CustomId}' in batch request. Expected an integer value. You probably provided the batch that was not created by Blackbird.");
 
-            var responseContent = batchRequest.Response.Body.Choices[0].Message.Content;
+            var responseContent = batchRequest.Response.Body.GetResponseContent();
 
             try
             {
@@ -141,15 +141,7 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
             }
 
 
-            if (batchRequest.Response.Body.Usage != null)
-            {
-                usageList.Add(new UsageDto
-                {
-                    PromptTokens = batchRequest.Response.Body.Usage.PromptTokens,
-                    CompletionTokens = batchRequest.Response.Body.Usage.CompletionTokens,
-                    TotalTokens = batchRequest.Response.Body.Usage.TotalTokens
-                });
-            }
+            usageList.Add(batchRequest.Response.Body.GetUsage());
         }
         
         FileReference resultFile;
@@ -213,7 +205,7 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
                 : throw new PluginApplicationException(
                     $"Invalid CustomId '{batchRequest.CustomId}' in batch request. Expected an integer value.");
 
-            var responseContent = batchRequest.Response.Body.Choices[0].Message.Content;
+            var responseContent = batchRequest.Response.Body.GetResponseContent();
             if (string.IsNullOrWhiteSpace(responseContent))
                 throw new PluginApplicationException($"Empty response content in batch request {bucketIndex}.");
 
@@ -284,15 +276,7 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
                     $"Failed to parse MQM report in batch {bucketIndex}: {ex.Message}. Response content: {responseContent}");
             }
 
-            if (batchRequest.Response.Body.Usage != null)
-            {
-                usage += new UsageDto
-                {
-                    PromptTokens = batchRequest.Response.Body.Usage.PromptTokens,
-                    CompletionTokens = batchRequest.Response.Body.Usage.CompletionTokens,
-                    TotalTokens = batchRequest.Response.Body.Usage.TotalTokens
-                };
-            }
+            usage += batchRequest.Response.Body.GetUsage();
         }
 
         return new MqmBackgroundResponse

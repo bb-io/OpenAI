@@ -69,7 +69,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         }
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId);
+        var response = await ExecuteApiRequest(messages, modelIdentifier.ModelId);
 
         return new()
         {
@@ -118,7 +118,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         }
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input, new { type = "json_object" });
+        var response = await ExecuteApiRequest(messages, modelIdentifier.ModelId, input, new { type = "json_object" });
 
         try
         {
@@ -169,7 +169,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
             new(MessageRoles.User, userPrompt)
         };
 
-        var response = await ExecuteChatCompletion(
+        var response = await ExecuteApiRequest(
             messages,
             model: input.Model,
             input: null,
@@ -273,7 +273,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
                 new(MessageRoles.User, userPrompt)
             };
 
-                var response = await ExecuteChatCompletion(
+                var response = await ExecuteApiRequest(
                     messages,
                     model: input.Model,
                     input: null,

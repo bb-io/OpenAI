@@ -26,6 +26,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml;
+using Newtonsoft.Json.Linq;
 
 namespace Apps.OpenAI.Actions.Base;
 
@@ -243,39 +244,221 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         return xliffDocument;
     }
 
-    protected async Task<ChatCompletionDto> ExecuteChatCompletion(IEnumerable<object> messages, string model, BaseChatRequest input = null, object responseFormat = null)
+    protected async Task<ChatCompletionDto> ExecuteApiRequest(IEnumerable<object> messages, string model, BaseChatRequest input = null, object responseFormat = null)
     {
-        var body = GenerateChatBody(messages, model, input);
-        return await UniversalClient.ExecuteChatCompletion(body);
+        var body = GenerateResponseBody(messages, model, input, responseFormat);
+        return await UniversalClient.ExecuteApiRequest(body);
     }
 
-    protected static Dictionary<string, object> GenerateChatBody(
+    protected static Dictionary<string, object> GenerateResponseBody(
         IEnumerable<object> messages,
         string model,
-        BaseChatRequest input = null)
+        BaseChatRequest input = null,
+        object responseFormat = null)
     {
         var body = new Dictionary<string, object>
         {
             { "model", model },
-            { "messages", messages },
-            { "top_p", input?.TopP ?? 1 },
-            { "presence_penalty", input?.PresencePenalty ?? 0 },
-            { "frequency_penalty", input?.FrequencyPenalty ?? 0 }
+            { "store", false },
+            { "input", MapMessagesToResponsesInput(messages) },
+            { "top_p", input?.TopP ?? 1 }
         };
 
-        bool usesLegacyParams = model.Contains("gpt-3") || model.Contains("gpt-4");
-        if (usesLegacyParams)
+        if (input?.Temperature != null)
         {
-            body.AppendIfNotNull("temperature", input?.Temperature);
-            body.AppendIfNotNull("max_tokens", input?.MaximumTokens);
+            body.AppendIfNotNull("temperature", input.Temperature);
         }
-        else
+
+        body.AppendIfNotNull("max_output_tokens", input?.MaximumTokens);
+
+        if (SupportsReasoningEffort(model) && !string.IsNullOrWhiteSpace(input?.ReasoningEffort))
         {
-            body.AppendIfNotNull("max_completion_tokens", input?.MaximumTokens);
-            body.AppendIfNotNull("reasoning_effort", input?.ReasoningEffort);
+            body["reasoning"] = new Dictionary<string, object>
+            {
+                ["effort"] = input.ReasoningEffort!
+            };
+        }
+
+        if (responseFormat != null)
+        {
+            body["text"] = new Dictionary<string, object>
+            {
+                ["format"] = responseFormat
+            };
+        }
+
+        if (input is IWebSearchRequest webSearchRequest && webSearchRequest.EnableWebSearch == true)
+        {
+            ValidateWebSearchConfiguration(model, input, webSearchRequest);
+
+            var webSearchTool = BuildWebSearchTool(webSearchRequest);
+            body["tools"] = new[] { webSearchTool };
+            body["tool_choice"] = "auto";
+            body["include"] = new[] { "web_search_call.action.sources" };
         }
 
         return body;
+    }
+
+    private static IEnumerable<object> MapMessagesToResponsesInput(IEnumerable<object> messages)
+    {
+        return messages.Select(message =>
+        {
+            if (message is ChatMessageDto textMessage)
+            {
+                return new Dictionary<string, object>
+                {
+                    ["role"] = textMessage.Role,
+                    ["content"] = textMessage.Content
+                };
+            }
+
+            if (message is ChatImageMessageDto imageMessage)
+            {
+                var content = imageMessage.Content.Select(item => item switch
+                {
+                    ChatImageMessageTextContentDto text => new Dictionary<string, object>
+                    {
+                        ["type"] = "input_text",
+                        ["text"] = text.Text
+                    },
+                    ChatImageMessageImageContentDto image => new Dictionary<string, object>
+                    {
+                        ["type"] = "input_image",
+                        ["image_url"] = image.Image_url.Url
+                    },
+                    _ => throw new PluginMisconfigurationException("Unsupported image message content type for Responses API")
+                }).Cast<object>().ToList();
+
+                return new Dictionary<string, object>
+                {
+                    ["role"] = imageMessage.Role,
+                    ["content"] = content
+                };
+            }
+
+            if (message is ChatAudioMessageDto audioMessage)
+            {
+                var content = audioMessage.Content.Select(item => item switch
+                {
+                    ChatAudioMessageTextContentDto text => new Dictionary<string, object>
+                    {
+                        ["type"] = "input_text",
+                        ["text"] = text.Text
+                    },
+                    ChatAudioMessageAudioContentDto audio => new Dictionary<string, object>
+                    {
+                        ["type"] = "input_audio",
+                        ["input_audio"] = new Dictionary<string, object>
+                        {
+                            ["format"] = audio.input_audio.Format,
+                            ["data"] = audio.input_audio.Data
+                        }
+                    },
+                    _ => throw new PluginMisconfigurationException("Unsupported audio message content type for Responses API")
+                }).Cast<object>().ToList();
+
+                return new Dictionary<string, object>
+                {
+                    ["role"] = audioMessage.Role,
+                    ["content"] = content
+                };
+            }
+
+            var anonymousMessage = JObject.FromObject(message);
+            return anonymousMessage.ToObject<Dictionary<string, object>>() ?? new Dictionary<string, object>();
+        }).ToList();
+    }
+
+    private static Dictionary<string, object> BuildWebSearchTool(IWebSearchRequest request)
+    {
+        var tool = new Dictionary<string, object>
+        {
+            ["type"] = "web_search"
+        };
+
+        if (!string.IsNullOrWhiteSpace(request.WebSearchContextSize))
+        {
+            tool["search_context_size"] = request.WebSearchContextSize!;
+        }
+
+        if (request.ExternalWebAccess.HasValue)
+        {
+            tool["external_web_access"] = request.ExternalWebAccess.Value;
+        }
+
+        var allowedDomains = request.AllowedDomains?
+            .Select(x => x?.Trim())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x!.Replace("https://", string.Empty).Replace("http://", string.Empty).Trim('/'))
+            .Distinct()
+            .ToList();
+
+        if (allowedDomains != null && allowedDomains.Count != 0)
+        {
+            tool["filters"] = new Dictionary<string, object>
+            {
+                ["allowed_domains"] = allowedDomains
+            };
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.UserLocationCity) ||
+            !string.IsNullOrWhiteSpace(request.UserLocationCountry) ||
+            !string.IsNullOrWhiteSpace(request.UserLocationRegion) ||
+            !string.IsNullOrWhiteSpace(request.UserLocationTimezone))
+        {
+            var userLocation = new Dictionary<string, object>
+            {
+                ["type"] = "approximate"
+            };
+
+            if (!string.IsNullOrWhiteSpace(request.UserLocationCity))
+                userLocation["city"] = request.UserLocationCity!;
+            if (!string.IsNullOrWhiteSpace(request.UserLocationCountry))
+                userLocation["country"] = request.UserLocationCountry!;
+            if (!string.IsNullOrWhiteSpace(request.UserLocationRegion))
+                userLocation["region"] = request.UserLocationRegion!;
+            if (!string.IsNullOrWhiteSpace(request.UserLocationTimezone))
+                userLocation["timezone"] = request.UserLocationTimezone!;
+
+            tool["user_location"] = userLocation;
+        }
+
+        return tool;
+    }
+
+    private static void ValidateWebSearchConfiguration(string model, BaseChatRequest input, IWebSearchRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(model))
+            throw new PluginMisconfigurationException("Model is required when web search is enabled");
+
+        if (model.Contains("gpt-4.1-nano", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new PluginMisconfigurationException("Web search is not supported for gpt-4.1-nano");
+        }
+
+        if (model.Contains("gpt-5", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(input?.ReasoningEffort, "minimal", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new PluginMisconfigurationException("Web search is not supported for GPT-5 with minimal reasoning effort. Use low, medium, or high reasoning effort.");
+        }
+
+        var allowedDomainsCount = request.AllowedDomains?.Count(x => !string.IsNullOrWhiteSpace(x)) ?? 0;
+        if (allowedDomainsCount > 100)
+        {
+            throw new PluginMisconfigurationException("Web search domain filtering supports up to 100 allowed domains.");
+        }
+    }
+
+    private static bool SupportsReasoningEffort(string model)
+    {
+        if (string.IsNullOrWhiteSpace(model))
+        {
+            return false;
+        }
+
+        var normalizedModel = model.Trim().ToLowerInvariant();
+        return normalizedModel.StartsWith("gpt-5") || normalizedModel.StartsWith("o");
     }
 
     protected async Task<string> IdentifySourceLanguage(TextChatModelIdentifier modelIdentifier, string content)
@@ -286,7 +469,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         var userPrompt = snippet + ". The BCP 47 language code: ";
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, UniversalClient.GetModel(modelIdentifier.ModelId));
+        var response = await ExecuteApiRequest(messages, UniversalClient.GetModel(modelIdentifier.ModelId));
 
         return response.Choices.First().Message.Content;
     }
@@ -315,7 +498,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
             .WithJsonBody(new
             {
                 input_file_id = file.Id,
-                endpoint = "/v1/chat/completions",
+                endpoint = "/v1/responses",
                 completion_window = "24h",
             });
         

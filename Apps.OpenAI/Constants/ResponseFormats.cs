@@ -7,47 +7,45 @@ public static class ResponseFormats
         return new
         {
             type = "json_schema",
-            json_schema = new
+            name = "TranslatedTexts",
+            strict = true,
+            schema = new
             {
-                name = "TranslatedTexts",
-                strict = true,
-                schema = new
+                type = "object",
+                properties = new
                 {
-                    type = "object",
-                    properties = new
+                    translations = new
                     {
-                        translations = new
+                        type = "array",
+                        items = new
                         {
-                            type = "array",
-                            items = new
+                            type = "object",
+                            properties = new
                             {
-                                type = "object",
-                                properties = new
+                                translation_id = new
                                 {
-                                    translation_id = new
-                                    {
-                                        type = "string"
-                                    },
-                                    translated_text = new
-                                    {
-                                        type = "string"
-                                    }
+                                    type = "string"
                                 },
-                                required = new[]
+                                translated_text = new
                                 {
-                                    "translation_id",
-                                    "translated_text"
-                                },
-                                additionalProperties = false
+                                    type = "string"
+                                }
                             }
+                            ,
+                            required = new[]
+                            {
+                                "translation_id",
+                                "translated_text"
+                            },
+                            additionalProperties = false
                         }
-                    },
-                    required = new[]
-                    {
-                        "translations"
-                    },
-                    additionalProperties = false
-                }
+                    }
+                },
+                required = new[]
+                {
+                    "translations"
+                },
+                additionalProperties = false
             }
         };
     }
@@ -57,47 +55,45 @@ public static class ResponseFormats
         return new
         {
             type = "json_schema",
-            json_schema = new
+            name = "TranslatedTexts",
+            strict = true,
+            schema = new
             {
-                name = "TranslatedTexts",
-                strict = true,
-                schema = new
+                type = "object",
+                properties = new
                 {
-                    type = "object",
-                    properties = new
+                    translations = new
                     {
-                        translations = new
+                        type = "array",
+                        items = new
                         {
-                            type = "array",
-                            items = new
+                            type = "object",
+                            properties = new
                             {
-                                type = "object",
-                                properties = new
+                                translation_id = new
                                 {
-                                    translation_id = new
-                                    {
-                                        type = "string"
-                                    },
-                                    quality_score = new
-                                    {
-                                        type = "number"
-                                    }
+                                    type = "string"
                                 },
-                                required = new[]
+                                quality_score = new
                                 {
-                                    "translation_id",
-                                    "quality_score"
-                                },
-                                additionalProperties = false
+                                    type = "number"
+                                }
                             }
+                            ,
+                            required = new[]
+                            {
+                                "translation_id",
+                                "quality_score"
+                            },
+                            additionalProperties = false
                         }
-                    },
-                    required = new[]
-                    {
-                        "translations"
-                    },
-                    additionalProperties = false
-                }
+                    }
+                },
+                required = new[]
+                {
+                    "translations"
+                },
+                additionalProperties = false
             }
         };
     }
@@ -107,47 +103,45 @@ public static class ResponseFormats
         return new
         {
             type = "json_schema",
-            json_schema = new
+            name = "MqmReports",
+            strict = true,
+            schema = new
             {
-                name = "MqmReports",
-                strict = true,
-                schema = new
+                type = "object",
+                properties = new
                 {
-                    type = "object",
-                    properties = new
+                    reports = new
                     {
-                        reports = new
+                        type = "array",
+                        items = new
                         {
-                            type = "array",
-                            items = new
+                            type = "object",
+                            properties = new
                             {
-                                type = "object",
-                                properties = new
+                                segment_id = new
                                 {
-                                    segment_id = new
-                                    {
-                                        type = "string"
-                                    },
-                                    mqm_report = new
-                                    {
-                                        type = "string"
-                                    }
+                                    type = "string"
                                 },
-                                required = new[]
+                                mqm_report = new
                                 {
-                                    "segment_id",
-                                    "mqm_report"
-                                },
-                                additionalProperties = false
+                                    type = "string"
+                                }
                             }
+                            ,
+                            required = new[]
+                            {
+                                "segment_id",
+                                "mqm_report"
+                            },
+                            additionalProperties = false
                         }
-                    },
-                    required = new[]
-                    {
-                        "reports"
-                    },
-                    additionalProperties = false
-                }
+                    }
+                },
+                required = new[]
+                {
+                    "reports"
+                },
+                additionalProperties = false
             }
         };
     }

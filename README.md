@@ -8,6 +8,8 @@ Blackbird is the new automation backbone for the language technology industry. B
 
 This OpenAI app in Blackbird gives you access to OpenAI APIs for chat, audio, images, and localization workflows. You can use it with both OpenAI's official API and Azure OpenAI endpoints, using the models available in your account.
 
+The app now uses OpenAI Responses API for text-generation workflows (including chat, translation, editing, review, reporting, and repurposing flows), which enables support for newer model families and built-in tools like web search.
+
 ## Before setting up
 
 Before you can connect you need to make sure that:
@@ -172,6 +174,31 @@ Check downloadable workflow prototypes featuring this app that you can import to
 GPT 5.1 introduced the configurable input of "Reasoning effort". All models prior to 5.1 ignore this input and use "medium" reasoning effort. In Blackbird, if you don't provide any input to reasoning effort then by default it passes "medium" to OpenAI.
 
 With GPT-5, you can now directly control how much the model says using the verbosity parameter. Set it to low for concise answers, medium for balanced detail, or high for in-depth explanations.
+
+### Web search (Chat actions)
+
+Web search is available as an optional feature in both chat actions:
+
+- **Chat**
+- **Chat with system prompt**
+
+When enabled, the action can return:
+
+- **Citations** (URLs cited in the generated answer)
+- **Sources** (all URLs consulted during web search)
+
+Optional web search inputs:
+
+- **Web search context size**: low, medium, high
+- **Allow live web access**: if disabled, uses cached/indexed web content only
+- **Allowed domains**: optional domain allow-list (up to 100)
+- **User location**: city, country (ISO-2), region, timezone (IANA)
+
+Web search limitations:
+
+- Web search is not supported for `gpt-4.1-nano`.
+- Web search is not supported for `gpt-5` when reasoning effort is `minimal`.
+- For Azure OpenAI connections, web search in chat actions is not supported by this app.
 
 ### How to know if the batch process is completed? 
 

@@ -1,4 +1,6 @@
 ﻿using Newtonsoft.Json;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Apps.OpenAI.Dtos;
 
@@ -44,13 +46,44 @@ public class BodyDto
     public string Model { get; set; }
 
     [JsonProperty("choices")]
-    public ChoiceDto[] Choices { get; set; }
+    public ChoiceDto[] Choices { get; set; } = [];
+
+    [JsonProperty("output")]
+    public List<ResponseOutputItemDto> Output { get; set; } = [];
 
     [JsonProperty("usage")]
-    public UsageDto Usage { get; set; }
+    public UsageDto Usage { get; set; } = UsageDto.Zero;
+
+    [JsonProperty("status")]
+    public string Status { get; set; } = string.Empty;
+
+    [JsonProperty("incomplete_details")]
+    public ResponseIncompleteDetailsDto IncompleteDetails { get; set; } = new();
 
     [JsonProperty("system_fingerprint")]
     public string SystemFingerprint { get; set; }
+
+    public string GetResponseContent()
+    {
+        var chatCompletionContent = Choices?.FirstOrDefault()?.Message?.Content;
+        if (!string.IsNullOrWhiteSpace(chatCompletionContent))
+        {
+            return chatCompletionContent;
+        }
+
+        var responsesContent = string.Join("", Output?
+            .Where(x => x.Type == "message")
+            .SelectMany(x => x.Content ?? [])
+            .Where(x => x.Type == "output_text")
+            .Select(x => x.Text ?? string.Empty) ?? []);
+
+        return responsesContent;
+    }
+
+    public UsageDto GetUsage()
+    {
+        return Usage ?? UsageDto.Zero;
+    }
 }
 
 public class ChoiceDto

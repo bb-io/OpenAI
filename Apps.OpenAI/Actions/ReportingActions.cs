@@ -70,7 +70,7 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
             MaximumTokens = request.MaximumTokens
         };
 
-        var response = await ExecuteChatCompletion(messages, UniversalClient.GetModel(request.ModelId), chatRequest);
+        var response = await ExecuteApiRequest(messages, UniversalClient.GetModel(request.ModelId), chatRequest);
 
         return new ChatResponse
         {
@@ -118,7 +118,7 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
         }
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, UniversalClient.GetModel(modelIdentifier.ModelId));
+        var response = await ExecuteApiRequest(messages, UniversalClient.GetModel(modelIdentifier.ModelId));
 
         return new()
         {
@@ -207,11 +207,12 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
             {
                 custom_id = bucketIndex.ToString(),
                 method = "POST",
-                url = "/v1/chat/completions",
+                url = "/v1/responses",
                 body = new
                 {
                     model = UniversalClient.GetModel(request.ModelId),
-                    messages = new object[]
+                    store = false,
+                    input = new object[]
                     {
                         new
                         {
@@ -224,7 +225,10 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
                             content = userPrompt
                         }
                     },
-                    response_format = ResponseFormats.GetMqmReportResponseFormat()
+                    text = new
+                    {
+                        format = ResponseFormats.GetMqmReportResponseFormat()
+                    }
                 }
             };
 

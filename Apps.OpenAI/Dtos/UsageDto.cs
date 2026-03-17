@@ -19,6 +19,18 @@ namespace Apps.OpenAI.Dtos
         [JsonProperty("total_tokens")]
         public int TotalTokens { get; set; }
 
+        [JsonProperty("input_tokens")]
+        private int InputTokens
+        {
+            set => PromptTokens = value;
+        }
+
+        [JsonProperty("output_tokens")]
+        private int OutputTokens
+        {
+            set => CompletionTokens = value;
+        }
+
         public static UsageDto operator +(UsageDto u1, UsageDto u2)
         {
             return new UsageDto

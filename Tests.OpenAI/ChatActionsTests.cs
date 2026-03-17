@@ -12,7 +12,7 @@ namespace Tests.OpenAI;
 [TestClass]
 public class ChatActionsTests : TestBaseWithContext
 {
-    [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded)]
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]
     public async Task ChatMessageRequest_OpenAiEmbeddedWithSimpleTextMessage_ReturnsValidResponse(InvocationContext context)
     {
         // Arrange
@@ -188,5 +188,68 @@ public class ChatActionsTests : TestBaseWithContext
 
         // Assert
         Assert.Contains("Azure OpenAI does not support chat actions with audio files", ex.Message);
+    }
+
+    [TestMethod, ContextDataSource(ConnectionTypes.AzureOpenAi)]
+    public async Task ChatMessageRequest_AzureOpenAiWithWebSearch_ThrowsMisconfigException(InvocationContext context)
+    {
+        // Arrange
+        var actions = new ChatActions(context, FileManagementClient);
+        var model = new TextChatModelIdentifier { ModelId = "gpt-5" };
+        var chatRequest = new ChatRequest
+        {
+            Message = "Find the latest updates about terminology management.",
+            EnableWebSearch = true
+        };
+
+        // Act
+        var ex = await Assert.ThrowsExactlyAsync<PluginMisconfigurationException>(async () =>
+            await actions.ChatMessageRequest(model, chatRequest, new GlossaryRequest())
+        );
+
+        // Assert
+        Assert.Contains("Web search is not supported for Azure OpenAI connections", ex.Message);
+    }
+
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]
+    public async Task ChatMessageRequest_Gpt5WithMinimalReasoningAndWebSearch_ThrowsMisconfigException(InvocationContext context)
+    {
+        // Arrange
+        var actions = new ChatActions(context, FileManagementClient);
+        var model = new TextChatModelIdentifier { ModelId = "gpt-5" };
+        var chatRequest = new ChatRequest
+        {
+            Message = "Find the latest updates about translation quality standards.",
+            EnableWebSearch = true,
+            ReasoningEffort = "minimal"
+        };
+
+        // Act
+        var ex = await Assert.ThrowsExactlyAsync<PluginMisconfigurationException>(async () =>
+            await actions.ChatMessageRequest(model, chatRequest, new GlossaryRequest())
+        );
+
+        // Assert
+        Assert.Contains("Web search is not supported for GPT-5 with minimal reasoning effort", ex.Message);
+    }
+
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]
+    public async Task ChatMessageRequest_Gpt5WithHighReasoningAndWebSearch_ReturnsValidResponse(InvocationContext context)
+    {
+        // Arrange
+        var actions = new ChatActions(context, FileManagementClient);
+        var model = new TextChatModelIdentifier { ModelId = "gpt-5" };
+        var chatRequest = new ChatRequest
+        {
+            Message = "Find the latest updates about translation quality standards.",
+            EnableWebSearch = true
+        };
+
+        // Act
+        var result = await actions.ChatMessageRequest(model, chatRequest, new GlossaryRequest());
+
+        // Assert
+        PrintResult(result);
+        Assert.IsNotNull(result.Message);
     }
 }

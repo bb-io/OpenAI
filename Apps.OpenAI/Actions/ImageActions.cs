@@ -96,7 +96,7 @@ public class ImageActions(InvocationContext invocationContext, IFileManagementCl
                         $"data:{input.Image.ContentType};base64,{Convert.ToBase64String(fileBytes)}"))
                 })
             };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input);
+        var response = await ExecuteApiRequest(messages, modelIdentifier.ModelId, input);
 
         return new()
         {
