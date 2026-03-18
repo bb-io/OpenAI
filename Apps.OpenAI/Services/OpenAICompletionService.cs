@@ -6,6 +6,7 @@ using Apps.OpenAI.Services.Abstract;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Apps.OpenAI.Utils;
 using TiktokenSharp;
 
 namespace Apps.OpenAI.Services;
@@ -36,15 +37,8 @@ public class OpenAICompletionService(OpenAiUniversalClient openAIClient) : IOpen
             });
         }
 
-        if (request?.Temperature != null)
-        {
-            jsonDictionary.Add("temperature", request.Temperature);
-        }
-
-        if (request?.MaximumTokens != null)
-        {
-            jsonDictionary.Add("max_output_tokens", request.MaximumTokens);
-        }
+        jsonDictionary.AppendIfNotNull("temperature", request.Temperature);
+        jsonDictionary.AppendIfNotNull("max_output_tokens", request.MaximumTokens);
 
         if (SupportsReasoningEffort(modelId) && !string.IsNullOrWhiteSpace(request?.ReasoningEffort))
         {
