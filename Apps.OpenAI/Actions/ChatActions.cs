@@ -40,12 +40,20 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         var messages = await GenerateChatMessages(input, glossary);
         var completeMessage = string.Empty;
         var usage = new UsageDto();
+        var citations = new List<UrlCitationDto>();
+        var sources = new HashSet<string>();
         var counter = 0;
         
         while (counter < MaxCompletionRetries)
         {
-            var response = await ExecuteChatCompletion(messages, UniversalClient.GetModel(modelIdentifier.ModelId), input);
+            var response = await ExecuteApiRequestAsync(messages, UniversalClient.GetModel(modelIdentifier.ModelId), input);
             completeMessage += response.Choices.First().Message.Content;
+
+            citations.AddRange(response.Citations);
+            foreach (var source in response.Sources)
+            {
+                sources.Add(source);
+            }
 
             usage += response.Usage;
 
@@ -67,6 +75,12 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             UserPrompt = messages.Where(x => x.GetType() == typeof(ChatMessageDto) && x.Role == MessageRoles.User)
                 .Select(x => ((ChatMessageDto)x).Content).FirstOrDefault() ?? string.Empty,
             Usage = usage,
+            Citations = citations
+                .Where(x => !string.IsNullOrWhiteSpace(x.Url))
+                .GroupBy(x => x.Url)
+                .Select(x => x.First())
+                .ToList(),
+            Sources = sources.ToList()
         };
     }
 
@@ -87,7 +101,16 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             Parameters = input.Parameters,
             PresencePenalty = input.PresencePenalty,
             Temperature = input.Temperature,
-            TopP = input.TopP
+            TopP = input.TopP,
+            ReasoningEffort = input.ReasoningEffort,
+            EnableWebSearch = input.EnableWebSearch,
+            WebSearchContextSize = input.WebSearchContextSize,
+            ExternalWebAccess = input.ExternalWebAccess,
+            AllowedDomains = input.AllowedDomains,
+            UserLocationCity = input.UserLocationCity,
+            UserLocationCountry = input.UserLocationCountry,
+            UserLocationRegion = input.UserLocationRegion,
+            UserLocationTimezone = input.UserLocationTimezone
         }, glossary);
     }
 
@@ -178,6 +201,11 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
     private void HandleInput(TextChatModelIdentifier modelIdentifier, ChatRequest input)
     {
+        if (input.EnableWebSearch == true && UniversalClient.ConnectionType == ConnectionTypes.AzureOpenAi)
+        {
+            throw new PluginMisconfigurationException("Web search is not supported for Azure OpenAI connections in this action. Please use an OpenAI connection.");
+        }
+
         if (UniversalClient.ConnectionType == ConnectionTypes.OpenAi)
         {
             if (string.IsNullOrEmpty(modelIdentifier.ModelId))

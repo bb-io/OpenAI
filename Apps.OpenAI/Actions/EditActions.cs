@@ -327,12 +327,12 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                 new { role = MessageRoles.User, content = userPrompt }
             };
 
-            var bodyDict = GenerateChatBody(messages, modelId, chatInput);
+            var bodyDict = GenerateResponseBody(messages, modelId, chatInput);
             var batchRequest = new
             {
                 custom_id = bucketIndex.ToString(),
                 method = "POST",
-                url = "/v1/chat/completions",
+                url = "/v1/responses",
                 body = bodyDict
             };
 
@@ -390,7 +390,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         }
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, UniversalClient.GetModel(modelIdentifier.ModelId), new() { ReasoningEffort = input.ReasoningEffort});
+        var response = await ExecuteApiRequestAsync(messages, UniversalClient.GetModel(modelIdentifier.ModelId), new() { ReasoningEffort = input.ReasoningEffort});
         return new EditResponse
         {
             UserPrompt = userPrompt,

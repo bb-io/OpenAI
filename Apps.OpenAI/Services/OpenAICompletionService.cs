@@ -1,15 +1,12 @@
 using Apps.OpenAI.Api;
-using Apps.OpenAI.Api.Requests;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.PostEdit;
 using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Services.Abstract;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
-using RestSharp;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Apps.OpenAI.Utils;
 using TiktokenSharp;
 
 namespace Apps.OpenAI.Services;
@@ -18,50 +15,40 @@ public class OpenAICompletionService(OpenAiUniversalClient openAIClient) : IOpen
 {
     private const string DefaultEncoding = "cl100k_base";
 
-    public async Task<ChatCompletitionResult> ExecuteChatCompletionAsync(
+    public async Task<ChatCompletitionResult> ExecuteApiRequestAsync(
         IEnumerable<ChatMessageDto> messages,
         string modelId,
         BaseChatRequest request,
-        object? responseFormat = null)
+        object responseFormat = null)
     {
         var jsonDictionary = new Dictionary<string, object>
         {
             { "model", modelId },
-            { "messages", messages },
+            { "store", false },
+            { "input", messages },
             { "top_p", request?.TopP ?? 1 },
-            { "presence_penalty", request?.PresencePenalty ?? 0 },
-            { "frequency_penalty", request?.FrequencyPenalty ?? 0 },
         };
 
-        bool usesLegacyParams = modelId.Contains("gpt-3") || modelId.Contains("gpt-4");
-        if (!usesLegacyParams)
-            jsonDictionary.Add("response_format", responseFormat);
-
-        if (request?.Temperature != null && !modelId.Contains("gpt-5"))
+        if (responseFormat != null)
         {
-            jsonDictionary.Add("temperature", request.Temperature);
-        }
-        
-        if (request?.MaximumTokens != null)
-        {
-            jsonDictionary.Add("max_completion_tokens", request.MaximumTokens);
-        }
-        
-        if (request?.ReasoningEffort != null && modelId.Contains("gpt-5"))
-        {
-            jsonDictionary.Add("reasoning_effort", request.ReasoningEffort);
+            jsonDictionary.Add("text", new
+            {
+                format = responseFormat
+            });
         }
 
-        var jsonBodySerialized = JsonConvert.SerializeObject(jsonDictionary, new JsonSerializerSettings
+        jsonDictionary.AppendIfNotNull("temperature", request.Temperature);
+        jsonDictionary.AppendIfNotNull("max_output_tokens", request.MaximumTokens);
+
+        if (SupportsReasoningEffort(modelId) && !string.IsNullOrWhiteSpace(request?.ReasoningEffort))
         {
-            ContractResolver = new CamelCasePropertyNamesContractResolver(),
-            NullValueHandling = NullValueHandling.Ignore,
-        });
+            jsonDictionary.Add("reasoning", new
+            {
+                effort = request.ReasoningEffort
+            });
+        }
 
-        var apiRequest = new OpenAIRequest("/chat/completions", Method.Post)
-            .AddJsonBody(jsonBodySerialized);
-
-        var response = await openAIClient.ExecuteWithErrorHandling<ChatCompletionDto>(apiRequest);
+        var response = await openAIClient.ExecuteApiRequestAsync(jsonDictionary);
         return new(response, true, null);
     }
 
@@ -99,5 +86,16 @@ public class OpenAICompletionService(OpenAiUniversalClient openAIClient) : IOpen
         }
 
         return DefaultEncoding;
+    }
+
+    private static bool SupportsReasoningEffort(string modelId)
+    {
+        if (string.IsNullOrWhiteSpace(modelId))
+        {
+            return false;
+        }
+
+        var normalizedModel = modelId.Trim().ToLowerInvariant();
+        return normalizedModel.StartsWith("gpt-5") || normalizedModel.StartsWith("o");
     }
 }

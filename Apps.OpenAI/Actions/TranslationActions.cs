@@ -290,11 +290,12 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
             {
                 custom_id = bucketIndex.ToString(),
                 method = "POST",
-                url = "/v1/chat/completions",
+                url = "/v1/responses",
                 body = new
                 {
                     model = UniversalClient.GetModel(startBackgroundProcessRequest.ModelId),
-                    messages = new object[]
+                    store = false,
+                    input = new object[]
                     {
                         new
                         {
@@ -307,7 +308,10 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
                             content = userPrompt
                         }
                     },
-                    response_format = ResponseFormats.GetXliffResponseFormat()
+                    text = new
+                    {
+                        format = ResponseFormats.GetXliffResponseFormat()
+                    }
                 }
             };
 
@@ -358,7 +362,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         userPrompt += "Localized text: ";
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteChatCompletion(messages, UniversalClient.GetModel(modelIdentifier.ModelId), input);
+        var response = await ExecuteApiRequestAsync(messages, UniversalClient.GetModel(modelIdentifier.ModelId), input);
 
         return new()
         {

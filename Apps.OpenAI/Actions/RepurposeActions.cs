@@ -116,7 +116,7 @@ public class RepurposeActions(InvocationContext invocationContext, IFileManageme
             if (glossaryPromptPart != null) prompt += (glossaryAddition + glossaryPromptPart);
         }
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, prompt), new(MessageRoles.User, content) };
-        var response = await ExecuteChatCompletion(messages, UniversalClient.GetModel(modelIdentifier.ModelId), input);
+        var response = await ExecuteApiRequestAsync(messages, UniversalClient.GetModel(modelIdentifier.ModelId), input);
 
         return new()
         {

@@ -1,5 +1,6 @@
 ﻿using Apps.OpenAI.Dtos;
 using Blackbird.Applications.Sdk.Common;
+using System.Collections.Generic;
 
 namespace Apps.OpenAI.Models.Responses.Chat;
 
@@ -16,4 +17,10 @@ public class ChatResponse
 
     [Display("Usage")]
     public UsageDto Usage { get; set; }
+
+    [Display("Citations")]
+    public IEnumerable<UrlCitationDto> Citations { get; set; } = [];
+
+    [Display("Sources")]
+    public IEnumerable<string> Sources { get; set; } = [];
 }

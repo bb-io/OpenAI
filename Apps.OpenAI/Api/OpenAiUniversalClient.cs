@@ -28,7 +28,8 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
         var body = new Dictionary<string, object>
         {
             ["model"] = model,
-            ["messages"] = new[]
+            ["store"] = false,
+            ["input"] = new[]
             {
                 new
                 {
@@ -40,7 +41,7 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
 
         try
         {
-            await ExecuteChatCompletion(body);
+            await ExecuteApiRequestAsync(body);
             return new() { IsValid = true };
         }
         catch (Exception ex)
@@ -53,10 +54,11 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
         }
     }
 
-    public async Task<ChatCompletionDto> ExecuteChatCompletion(Dictionary<string, object> input)
+    public async Task<ChatCompletionDto> ExecuteApiRequestAsync(Dictionary<string, object> input)
     {
-        var request = new OpenAIRequest("/chat/completions", Method.Post, input);
-        return await ExecuteWithErrorHandling<ChatCompletionDto>(request);
+        var request = new OpenAIRequest("/responses", Method.Post, input);
+        var response = await ExecuteWithErrorHandling<OpenAiResponseDto>(request);
+        return MapToChatCompletionDto(response);
     }
 
     public override async Task<T> ExecuteWithErrorHandling<T>(RestRequest request)
@@ -95,6 +97,60 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
                 ?? throw new PluginMisconfigurationException("Model must be provided in the connection"),
 
             _ => throw new PluginApplicationException($"Unsupported connection type: {ConnectionType}")
+        };
+    }
+
+    private static ChatCompletionDto MapToChatCompletionDto(OpenAiResponseDto response)
+    {
+        var outputTextItems = response.Output
+            .Where(x => x.Type == "message")
+            .SelectMany(x => x.Content ?? [])
+            .Where(x => x.Type == "output_text")
+            .ToList();
+
+        var content = string.Join("", outputTextItems.Select(x => x.Text ?? string.Empty));
+
+        var citations = outputTextItems
+            .SelectMany(x => x.Annotations ?? [])
+            .Where(x => x.Type == "url_citation" && !string.IsNullOrEmpty(x.Url))
+            .Select(x => new UrlCitationDto
+            {
+                Title = x.Title ?? string.Empty,
+                Url = x.Url ?? string.Empty
+            })
+            .ToList();
+
+        var sources = response.Output
+            .Where(x => x.Type == "web_search_call")
+            .SelectMany(x => x.Action?.Sources ?? [])
+            .Where(x => !string.IsNullOrWhiteSpace(x.Url))
+            .Select(x => x.Url)
+            .Distinct()
+            .ToList();
+
+        var usage = new UsageDto
+        {
+            PromptTokens = response.Usage?.InputTokens ?? 0,
+            CompletionTokens = response.Usage?.OutputTokens ?? 0,
+            TotalTokens = response.Usage?.TotalTokens ?? 0
+        };
+
+        var finishReason = response.IncompleteDetails?.Reason == "max_output_tokens"
+            ? "length"
+            : "stop";
+
+        return new ChatCompletionDto
+        {
+            Choices = [
+                new ChatCompletionChoiceDto
+                {
+                    Message = new ChatMessageDto("assistant", content),
+                    FinishReason = finishReason
+                }
+            ],
+            Usage = usage,
+            Citations = citations,
+            Sources = sources
         };
     }
 

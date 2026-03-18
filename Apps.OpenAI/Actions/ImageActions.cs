@@ -45,7 +45,7 @@ public class ImageActions(InvocationContext invocationContext, IFileManagementCl
                 style = input.Style ?? "vivid"
             });
         }
-        else if (model == "gpt-image-1")
+        else if (model == "gpt-image-1" || model == "chatgpt-image-latest")
         {
             request.AddJsonBody(new
             {
@@ -60,7 +60,6 @@ public class ImageActions(InvocationContext invocationContext, IFileManagementCl
             {
                 model,
                 prompt = input.Prompt,
-                response_format = "b64_json",
                 size = input.Size ?? "1024x1024"
             });
         }
@@ -96,8 +95,8 @@ public class ImageActions(InvocationContext invocationContext, IFileManagementCl
                         $"data:{input.Image.ContentType};base64,{Convert.ToBase64String(fileBytes)}"))
                 })
             };
-        var response = await ExecuteChatCompletion(messages, modelIdentifier.ModelId, input);
-
+        
+        var response = await ExecuteApiRequestAsync(messages, modelIdentifier.ModelId, input);
         return new()
         {
             SystemPrompt = prompt,
