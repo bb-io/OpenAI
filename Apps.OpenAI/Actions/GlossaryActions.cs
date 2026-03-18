@@ -34,7 +34,7 @@ public class GlossaryActions(InvocationContext invocationContext, IFileManagemen
                            $"Return a JSON of the following structure: {{\"result\": [{{{string.Join(", ", input.Languages.Select(x => $"\"{x}\": \"\""))}}}].";
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, input.Content) };
-        var response = await ExecuteApiRequest(
+        var response = await ExecuteApiRequestAsync(
             messages, 
             UniversalClient.GetModel(modelIdentifier.ModelId), 
             input, 

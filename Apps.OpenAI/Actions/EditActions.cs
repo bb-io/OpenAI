@@ -390,7 +390,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         }
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteApiRequest(messages, UniversalClient.GetModel(modelIdentifier.ModelId), new() { ReasoningEffort = input.ReasoningEffort});
+        var response = await ExecuteApiRequestAsync(messages, UniversalClient.GetModel(modelIdentifier.ModelId), new() { ReasoningEffort = input.ReasoningEffort});
         return new EditResponse
         {
             UserPrompt = userPrompt,

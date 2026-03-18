@@ -362,7 +362,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         userPrompt += "Localized text: ";
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteApiRequest(messages, UniversalClient.GetModel(modelIdentifier.ModelId), input);
+        var response = await ExecuteApiRequestAsync(messages, UniversalClient.GetModel(modelIdentifier.ModelId), input);
 
         return new()
         {

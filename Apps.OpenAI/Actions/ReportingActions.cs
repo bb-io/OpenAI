@@ -70,7 +70,7 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
             MaximumTokens = request.MaximumTokens
         };
 
-        var response = await ExecuteApiRequest(messages, UniversalClient.GetModel(request.ModelId), chatRequest);
+        var response = await ExecuteApiRequestAsync(messages, UniversalClient.GetModel(request.ModelId), chatRequest);
 
         return new ChatResponse
         {
@@ -118,7 +118,7 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
         }
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteApiRequest(messages, UniversalClient.GetModel(modelIdentifier.ModelId));
+        var response = await ExecuteApiRequestAsync(messages, UniversalClient.GetModel(modelIdentifier.ModelId));
 
         return new()
         {

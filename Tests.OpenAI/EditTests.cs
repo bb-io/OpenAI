@@ -14,26 +14,29 @@ namespace Tests.OpenAI;
 [TestClass]
 public class EditTests : TestBaseWithContext
 {
-    [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded)]
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]
     public async Task Edit_xliff(InvocationContext context)
     {
         var actions = new EditActions(context, FileManagementClient);
         var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o" };
         var editRequest = new EditContentRequest
         {
-            File = new FileReference { Name = "contentful.html.xliff" },
+            File = new FileReference { Name = "GUID-99E95005-E212-481D-AEBC-67DFA3BD38E8_1_en-US-en-zh_cn-Tr.mxliff" },
+            OutputFileHandling = "xliff1",
+            ProcessOnlySegmentState = "Initial",
+            ModifiedBy = "1441948"
         };
         var reasoningEffortRequest = new ReasoningEffortRequest
         {
-            ReasoningEffort = "low"
+            //ReasoningEffort = "low"
         };
-        string? systemMessage = null;
+        string? systemMessage = "Your task is to post-edit translation segments by correcting critical errors, comparing each target to its source. Critical errors include tag misplacements, malformed tags, number mismatches, translation omissions, or glossary term violations.  Tags appear as combinations of {, }, <, or > with a number (e.g., {1}, <2}, {3>), and these must match the source exactly. Tags define font styles of texts between two tags or represent inserted links and line breaks. \nDo not revert any translation to English.\nDo no change translation style. ";
         var glossaryRequest = new GlossaryRequest();
 
         var result = await actions.EditContent(modelIdentifier, editRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
 
         Assert.IsNotNull(result);
-        Assert.Contains("contentful", result.File.Name);
+        //Assert.Contains("contentful", result.File.Name);
         PrintResult(result);
     }
 

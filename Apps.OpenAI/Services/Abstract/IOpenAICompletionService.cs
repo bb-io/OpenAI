@@ -8,7 +8,7 @@ namespace Apps.OpenAI.Services.Abstract;
 
 public interface IOpenAICompletionService
 {
-    Task<ChatCompletitionResult> ExecuteResponseAsync(
+    Task<ChatCompletitionResult> ExecuteApiRequestAsync(
         IEnumerable<ChatMessageDto> messages, 
         string modelId, 
         BaseChatRequest request, 

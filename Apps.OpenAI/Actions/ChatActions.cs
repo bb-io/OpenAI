@@ -46,7 +46,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         
         while (counter < MaxCompletionRetries)
         {
-            var response = await ExecuteApiRequest(messages, UniversalClient.GetModel(modelIdentifier.ModelId), input);
+            var response = await ExecuteApiRequestAsync(messages, UniversalClient.GetModel(modelIdentifier.ModelId), input);
             completeMessage += response.Choices.First().Message.Content;
 
             citations.AddRange(response.Citations);

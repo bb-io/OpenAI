@@ -41,7 +41,7 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
 
         try
         {
-            await ExecuteApiRequest(body);
+            await ExecuteApiRequestAsync(body);
             return new() { IsValid = true };
         }
         catch (Exception ex)
@@ -54,7 +54,7 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
         }
     }
 
-    public async Task<ChatCompletionDto> ExecuteApiRequest(Dictionary<string, object> input)
+    public async Task<ChatCompletionDto> ExecuteApiRequestAsync(Dictionary<string, object> input)
     {
         var request = new OpenAIRequest("/responses", Method.Post, input);
         var response = await ExecuteWithErrorHandling<OpenAiResponseDto>(request);

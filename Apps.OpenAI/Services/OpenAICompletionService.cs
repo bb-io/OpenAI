@@ -14,7 +14,7 @@ public class OpenAICompletionService(OpenAiUniversalClient openAIClient) : IOpen
 {
     private const string DefaultEncoding = "cl100k_base";
 
-    public async Task<ChatCompletitionResult> ExecuteResponseAsync(
+    public async Task<ChatCompletitionResult> ExecuteApiRequestAsync(
         IEnumerable<ChatMessageDto> messages,
         string modelId,
         BaseChatRequest request,
@@ -54,7 +54,7 @@ public class OpenAICompletionService(OpenAiUniversalClient openAIClient) : IOpen
             });
         }
 
-        var response = await openAIClient.ExecuteApiRequest(jsonDictionary);
+        var response = await openAIClient.ExecuteApiRequestAsync(jsonDictionary);
         return new(response, true, null);
     }
 

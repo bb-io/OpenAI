@@ -84,7 +84,7 @@ public class BatchProcessingService(OpenAiUniversalClient openAIClient, IFileMan
         {
             currentAttempt++;
 
-            var chatCompletionResult = await openaiService.ExecuteResponseAsync(
+            var chatCompletionResult = await openaiService.ExecuteApiRequestAsync(
                 messages,
                 options.ModelId,
                 new BaseChatRequest { MaximumTokens = options.MaxTokens, ReasoningEffort = options.ReasoningEffort},

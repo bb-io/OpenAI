@@ -244,10 +244,10 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         return xliffDocument;
     }
 
-    protected async Task<ChatCompletionDto> ExecuteApiRequest(IEnumerable<object> messages, string model, BaseChatRequest input = null, object responseFormat = null)
+    protected async Task<ChatCompletionDto> ExecuteApiRequestAsync(IEnumerable<object> messages, string model, BaseChatRequest input = null, object responseFormat = null)
     {
         var body = GenerateResponseBody(messages, model, input, responseFormat);
-        return await UniversalClient.ExecuteApiRequest(body);
+        return await UniversalClient.ExecuteApiRequestAsync(body);
     }
 
     protected static Dictionary<string, object> GenerateResponseBody(
@@ -469,7 +469,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         var userPrompt = snippet + ". The BCP 47 language code: ";
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteApiRequest(messages, UniversalClient.GetModel(modelIdentifier.ModelId));
+        var response = await ExecuteApiRequestAsync(messages, UniversalClient.GetModel(modelIdentifier.ModelId));
 
         return response.Choices.First().Message.Content;
     }
