@@ -67,7 +67,12 @@ public static class ErrorHandler
             return "This file type is not supported";
 
         if (message == KnownErrorMessages.CannotConvertToContent)
-            return "Cannot generate the original document format. The uploaded XLIFF is missing the original file's structural data";
+        {
+            return 
+                @"Cannot generate the original document format. 
+                The uploaded XLIFF is missing the original file's structural data.
+                Please specify a different output file handling format";
+        }
 
         else return message;
     }
