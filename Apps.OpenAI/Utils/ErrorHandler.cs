@@ -1,4 +1,5 @@
-﻿using Blackbird.Applications.Sdk.Common.Exceptions;
+﻿using Apps.OpenAI.Constants;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 using System;
 using System.Threading.Tasks;
 
@@ -56,13 +57,18 @@ public static class ErrorHandler
         return ex.Message.Contains("srcLang attribute is required", StringComparison.OrdinalIgnoreCase)
             || ex.Message.Contains("xliff", StringComparison.OrdinalIgnoreCase)
             || ex.Message.Contains("Namespace Manager or XsltContext needed", StringComparison.OrdinalIgnoreCase)
-            || ex.Message.Contains("Could not detect any valid content type this library can process", StringComparison.OrdinalIgnoreCase);
+            || ex.Message.Contains(KnownErrorMessages.CouldNotDetectContentType)
+            || ex.Message.Contains(KnownErrorMessages.CannotConvertToContent);
     }
 
     private static string MapErrorMessage(string message)
     {
-        if (message == "Could not detect any valid content type this library can process")
+        if (message == KnownErrorMessages.CouldNotDetectContentType)
             return "This file type is not supported";
+
+        if (message == KnownErrorMessages.CannotConvertToContent)
+            return "Cannot generate the original document format. The uploaded XLIFF is missing the original file's structural data";
+
         else return message;
     }
 }

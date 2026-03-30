@@ -147,7 +147,7 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
         FileReference resultFile;
         if (request.OutputFileHandling == "original")
         {
-            var targetContent = content.Target();
+            var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target());
             resultFile = await fileManagementClient.UploadAsync(
                 targetContent.Serialize().ToStream(), 
                 targetContent.OriginalMediaType, 

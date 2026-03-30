@@ -224,7 +224,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
         if (input.OutputFileHandling == "original")
         {
-            var targetContent = content.Target();
+            var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target());
             result.File = await fileManagementClient.UploadAsync(targetContent.Serialize().ToStream(), targetContent.OriginalMediaType, targetContent.OriginalName);
         } 
         else if (input.OutputFileHandling == "xliff1")
@@ -541,7 +541,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
         if (input.OutputFileHandling == "original")
         {
-            var targetContent = content.Target();
+            var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target());
             result.File = await fileManagementClient.UploadAsync(
                 targetContent.Serialize().ToStream(),
                 targetContent.OriginalMediaType,

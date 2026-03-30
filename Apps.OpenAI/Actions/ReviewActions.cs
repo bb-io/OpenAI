@@ -345,7 +345,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         Stream streamResult;
         if (input.OutputFileHandling == "original")
         {
-            var targetContent = content.Target();
+            var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target()); 
             streamResult = targetContent.Serialize().ToStream();
         }
         else

@@ -185,7 +185,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
 
         if (input.OutputFileHandling == "original")
         {
-            var targetContent = content.Target();
+            var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target());
             result.File = await fileManagementClient.UploadAsync(targetContent.Serialize().ToStream(), targetContent.OriginalMediaType, targetContent.OriginalName);
         } 
         else if (input.OutputFileHandling == "xliff1")
