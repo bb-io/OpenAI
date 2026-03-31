@@ -18,15 +18,15 @@ public class AudioServiceTests : TestBaseWithContext
     {
         // Arrange
         var handler = new AudioActions(context, FileManagementClient);
+        var model = new AudioModelIdentifier { ModelId = "gpt-4o-transcribe-diarize" };
         var request = new TranscriptionRequest
         {
-            Model = "gpt-4o-transcribe-diarize",
             File = new FileReference { Name = "tts delorean.mp3" },
             Language = "en",
         };
 
         // Act
-        var result = await handler.CreateTranscription(request);
+        var result = await handler.CreateTranscription(model, request);
 
         // Assert
         Console.WriteLine(result.Transcription);
@@ -39,15 +39,15 @@ public class AudioServiceTests : TestBaseWithContext
     {
         // Arrange
         var handler = new AudioActions(context, FileManagementClient);
+        var model = new AudioModelIdentifier { ModelId = "gpt-4o-transcribe-diarize" };
         var request = new TranscriptionRequest
         {
-            Model = "whisper-1",
             File = new FileReference { Name = "tts delorean.mp3" },
             Language = "en",
         };
 
         // Act
-        var result = await handler.CreateTranscription(request);
+        var result = await handler.CreateTranscription(model, request);
 
         // Assert
         Console.WriteLine(result.Transcription);
@@ -60,15 +60,15 @@ public class AudioServiceTests : TestBaseWithContext
     {
         // Arrange
         var handler = new AudioActions(context, FileManagementClient);
+        var model = new AudioModelIdentifier { ModelId = "gpt-4o-transcribe-diarize" };
         var request = new TranscriptionRequest
         {
-            Model = "gpt-4o-transcribe",
             File = new FileReference { Name = "tts delorean.mp3" },
             Language = "en",
         };
 
         // Act
-        var result = await handler.CreateTranscription(request);
+        var result = await handler.CreateTranscription(model, request);
 
         // Assert
         Console.WriteLine(result.Transcription);
@@ -81,16 +81,16 @@ public class AudioServiceTests : TestBaseWithContext
     {
         // Arrange
         var handler = new AudioActions(context, FileManagementClient);
+        var model = new AudioModelIdentifier { ModelId = "gpt-4o-transcribe-diarize" };
         var request = new TranscriptionRequest
         {
-            Model = "whisper-1",
             File = new FileReference { Name = "tts delorean.mp3" },
             Language = "en",
         };
 
         // Act
         var ex = await Assert.ThrowsExactlyAsync<PluginMisconfigurationException>(async () => 
-            await handler.CreateTranscription(request)
+            await handler.CreateTranscription(model, request)
         );
 
         // Assert
@@ -102,16 +102,16 @@ public class AudioServiceTests : TestBaseWithContext
     {
         // Arrange
         var handler = new AudioActions(context, FileManagementClient);
+        var model = new AudioModelIdentifier { ModelId = "gpt-4o-transcribe-diarize" };
         var request = new TranscriptionRequest
         {
-            Model = "gpt-4o-transcribe-diarize",
             File = new FileReference { Name = "tts delorean.mp3" },
             Prompt = "Some prompt",
         };
 
         // Act
         var ex = await Assert.ThrowsExactlyAsync<PluginMisconfigurationException>(async () =>
-            await handler.CreateTranscription(request)
+            await handler.CreateTranscription(model, request)
         );
 
         // Assert
@@ -123,16 +123,16 @@ public class AudioServiceTests : TestBaseWithContext
     {
         // Arrange
         var handler = new AudioActions(context, FileManagementClient);
+        var model = new AudioModelIdentifier { ModelId = "gpt-4o-transcribe-diarize" };
         var request = new TranscriptionRequest
         {
-            Model = "gpt-4o-transcribe-diarize",
             File = new FileReference { Name = "tts delorean.mp3" },
             TimestampGranularities = ["word"]
         };
 
         // Act
         var ex = await Assert.ThrowsExactlyAsync<PluginMisconfigurationException>(async () =>
-            await handler.CreateTranscription(request)
+            await handler.CreateTranscription(model, request)
         );
 
         // Assert

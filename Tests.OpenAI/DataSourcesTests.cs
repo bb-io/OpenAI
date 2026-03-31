@@ -31,7 +31,7 @@ public class DataSourceHandlerTests : TestBaseWithContext
         Assert.AreNotEqual(0, data.Count());
     }
 
-    [TestMethod, ContextDataSource]
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]
     public async Task GetDataAsync_ForSpeechCreationModels_ReturnsNonEmptyCollection(InvocationContext context)
     {
         var handler = new SpeechCreationModelDataSourceHandler(context);
