@@ -36,7 +36,7 @@ public class GlossaryActions(InvocationContext invocationContext, IFileManagemen
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, input.Content) };
         var response = await ExecuteApiRequestAsync(
             messages, 
-            UniversalClient.GetModel(modelIdentifier.ModelId), 
+            modelIdentifier.ModelId, 
             input, 
             new { type = "json_object" }
         );
