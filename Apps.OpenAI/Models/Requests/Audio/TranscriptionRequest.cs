@@ -1,5 +1,4 @@
 ﻿using Apps.OpenAI.DataSourceHandlers;
-using Apps.OpenAI.DataSourceHandlers.ModelDataSourceHandlers;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Files;
@@ -10,10 +9,6 @@ namespace Apps.OpenAI.Models.Requests.Audio;
 public class TranscriptionRequest
 {
     public FileReference File { get; set; }
-
-    [Display("Model")]
-    [StaticDataSource(typeof(AudioTranscriptionDataSourceHandler))]
-    public required string Model { get; set; }
 
     [Display("Language (ISO 639-1)")]
     [StaticDataSource(typeof(IsoLanguageDataSourceHandler))]

@@ -10,7 +10,6 @@ using Apps.OpenAI.Utils;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
-using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Blueprints;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
@@ -34,8 +33,10 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
     : BaseActions(invocationContext, fileManagementClient)
 {
     [Action("Get translation issues", Description = "Reviews translated text and outputs issue descriptions.")]
-    public async Task<ChatResponse> GetTranslationIssues([ActionParameter] TextChatModelIdentifier modelIdentifier,
-        [ActionParameter] GetTranslationIssuesRequest input, [ActionParameter] GlossaryRequest glossary)
+    public async Task<ChatResponse> GetTranslationIssues(
+        [ActionParameter] TextChatModelIdentifier modelIdentifier,
+        [ActionParameter] GetTranslationIssuesRequest input, 
+        [ActionParameter] GlossaryRequest glossary)
     {
         var systemPrompt =
             $"You are receiving a source text{(input.SourceLanguage != null ? $" written in {input.SourceLanguage} " : "")}" +
@@ -81,10 +82,11 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
     }
 
     [Action("Get MQM dimension values",
-        Description =
-            "Performs MQM analysis for translated text and outputs per-dimension scores with a proposed translation.")]
-    public async Task<MqmAnalysis> GetLqaDimensionValues([ActionParameter] TextChatModelIdentifier modelIdentifier,
-        [ActionParameter] GetTranslationIssuesRequest input, [ActionParameter] GlossaryRequest glossary)
+        Description = "Performs MQM analysis for translated text and outputs per-dimension scores with a proposed translation.")]
+    public async Task<MqmAnalysis> GetLqaDimensionValues(
+        [ActionParameter] TextChatModelIdentifier modelIdentifier,
+        [ActionParameter] GetTranslationIssuesRequest input, 
+        [ActionParameter] GlossaryRequest glossary)
     {
         var systemPrompt = "Perform an LQA analysis and use the MQM error typology format using all 7 dimensions. " +
                            "Here is a brief description of the seven high-level error type dimensions: " +
@@ -135,7 +137,9 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
 
     [BlueprintActionDefinition(BlueprintAction.ReviewText)]
     [Action("Review text", Description = "Reviews translated text quality and outputs a quality score.")]
-    public async Task<ReviewTextResponse> ReviewText([ActionParameter] ReviewTextRequest input)
+    public async Task<ReviewTextResponse> ReviewText(
+        [ActionParameter] TextChatModelIdentifier modelIdentifier,
+        [ActionParameter] ReviewTextRequest input)
     {
         var reviewData = new[]
         {
@@ -171,7 +175,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
 
         var response = await ExecuteApiRequestAsync(
             messages,
-            model: input.Model,
+            model: modelIdentifier.ModelId,
             input: null,
             responseFormat: new { type = "json_object" });
 
@@ -201,7 +205,9 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
 
     [BlueprintActionDefinition(BlueprintAction.ReviewFile)]
     [Action("Review", Description = "Reviews translated file content and outputs segment quality scores.")]
-    public async Task<ReviewContentResponse> ReviewContent([ActionParameter] ReviewContentRequest input)
+    public async Task<ReviewContentResponse> ReviewContent(
+        [ActionParameter] TextChatModelIdentifier modelIdentifier,
+        [ActionParameter] ReviewContentRequest input)
     {
         var result = new ReviewContentResponse();
 
@@ -209,7 +215,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         if (threshold < 0 || threshold > 1)
             throw new PluginMisconfigurationException("Threshold must be in range 0..1.");
 
-        var stream = await fileManagementClient.DownloadAsync(input.File);
+        var stream = await FileManagementClient.DownloadAsync(input.File);
         var content =
             await ErrorHandler.ExecuteWithErrorHandlingAsync(() => Transformation.Parse(stream, input.File.Name));
 
@@ -275,7 +281,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
 
                 var response = await ExecuteApiRequestAsync(
                     messages,
-                    model: input.Model,
+                    model: modelIdentifier.ModelId,
                     input: null,
                     responseFormat: new { type = "json_object" });
 
@@ -345,7 +351,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         Stream streamResult;
         if (input.OutputFileHandling == "original")
         {
-            var targetContent = content.Target();
+            var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target()); 
             streamResult = targetContent.Serialize().ToStream();
         }
         else
@@ -353,7 +359,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
             streamResult = content.Serialize().ToStream();
         }
 
-        var finalFile = await fileManagementClient.UploadAsync(streamResult, MediaTypes.Xliff, content.XliffFileName);
+        var finalFile = await FileManagementClient.UploadAsync(streamResult, MediaTypes.Xliff, content.XliffFileName);
 
         result.File = finalFile;
         result.TotalSegmentsProcessed = processedSegmentsCount;
@@ -366,7 +372,6 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         return result;
     }
 
-    private record ReviewBatchItem(Unit Unit, Segment Segment, float? Score, float RawScore);
     static UsageDto MapUsage(object usageObj)
     {
         if (usageObj is UsageDto u) return u;

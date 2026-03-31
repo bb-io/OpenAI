@@ -1,8 +1,6 @@
 ﻿using Apps.OpenAI.DataSourceHandlers;
-using Apps.OpenAI.DataSourceHandlers.ModelDataSourceHandlers;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
-using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.SDK.Blueprints.Handlers;
 using Blackbird.Applications.SDK.Blueprints.Interfaces.Review;
@@ -27,10 +25,6 @@ namespace Apps.OpenAI.Models.Requests.Review
 
         [Display("Score threshold", Description = "All segments above this score will automatically be finalized (0..1)")]
         public double? Threshold { get; set; }
-
-        [Display("Model", Description = "This parameter controls which version of Claude answers your request")]
-        [DataSource(typeof(TextChatModelDataSourceHandler))]
-        public string Model { get; set; } = string.Empty;
 
         [Display("Additional instructions", Description = "Specify quality assessment criteria. For example: 'Focus on technical terminology accuracy' or 'Prioritize cultural adaptation'")]
         public string? AdditionalInstructions { get; set; }

@@ -42,18 +42,23 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
     }
 
     [Action("Create transcription", Description = "Transcribes speech from an audio or video file and outputs text.")]
-    public async Task<TranscriptionResponse> CreateTranscription([ActionParameter] TranscriptionRequest input)
+    public async Task<TranscriptionResponse> CreateTranscription(
+        [ActionParameter] AudioModelIdentifier audioModelIdentifier,
+        [ActionParameter] TranscriptionRequest input)
     {
         ThrowForAzure("audio");
-        bool isDiarizationModel = string.Equals(input.Model, "gpt-4o-transcribe-diarize", StringComparison.OrdinalIgnoreCase);
-        ValidateTranscriptionRequest(input, isDiarizationModel);
+        bool isDiarizationModel = string.Equals(
+            audioModelIdentifier.ModelId, 
+            "gpt-4o-transcribe-diarize", 
+            StringComparison.OrdinalIgnoreCase);
+        ValidateTranscriptionRequest(audioModelIdentifier, input, isDiarizationModel);
 
         var request = new OpenAIRequest("/audio/transcriptions", Method.Post);
         var fileStream = await FileManagementClient.DownloadAsync(input.File);
         var fileBytes = await fileStream.GetByteData();
         request.AddFile("file", fileBytes, input.File.Name);
-        request.AddParameter("model", input.Model);
-        request.AddParameter("response_format", GetResponseFormat(input.Model));
+        request.AddParameter("model", audioModelIdentifier.ModelId);
+        request.AddParameter("response_format", GetResponseFormat(audioModelIdentifier.ModelId));
         request.AddParameter("temperature", input.Temperature ?? 0);
         request.AddParameter("language", input.Language);
         request.AddParameter("prompt", input.Prompt);
@@ -89,9 +94,12 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
             _ => "json"
         };
 
-        static void ValidateTranscriptionRequest(TranscriptionRequest input, bool isDiarizationModel)
+        static void ValidateTranscriptionRequest(
+            AudioModelIdentifier audioModelIdentifier, 
+            TranscriptionRequest input, 
+            bool isDiarizationModel)
         {
-            bool isWhisperModel = string.Equals(input.Model, "whisper-1", StringComparison.OrdinalIgnoreCase);
+            bool isWhisperModel = string.Equals(audioModelIdentifier.ModelId, "whisper-1", StringComparison.OrdinalIgnoreCase);
             
             if (isDiarizationModel && input.Prompt is not null)
             {

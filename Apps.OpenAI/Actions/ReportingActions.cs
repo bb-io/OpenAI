@@ -65,12 +65,12 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
             new(MessageRoles.User, userPrompt)
         };
 
-        var chatRequest = new Apps.OpenAI.Models.Requests.Chat.BaseChatRequest
+        var chatRequest = new BaseChatRequest
         {
             MaximumTokens = request.MaximumTokens
         };
 
-        var response = await ExecuteApiRequestAsync(messages, UniversalClient.GetModel(request.ModelId), chatRequest);
+        var response = await ExecuteApiRequestAsync(messages, request.ModelId, chatRequest);
 
         return new ChatResponse
         {
@@ -118,7 +118,7 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
         }
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteApiRequestAsync(messages, UniversalClient.GetModel(modelIdentifier.ModelId));
+        var response = await ExecuteApiRequestAsync(messages, modelIdentifier.ModelId);
 
         return new()
         {
@@ -133,7 +133,7 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
         Description = "Starts background MQM analysis for translated file content and outputs a batch ID to download results later.")]
     public async Task<BackgroundProcessingResponse> CreateMqmReportInBackground([ActionParameter] CreateMqmReportInBackgroundRequest request)
     {
-        var stream = await fileManagementClient.DownloadAsync(request.File);
+        var stream = await FileManagementClient.DownloadAsync(request.File);
         var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => Transformation.Parse(stream, request.File.Name));
 
         content.SourceLanguage ??= request.SourceLanguage;
@@ -249,7 +249,7 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
             Status = batchResponse.Status,
             CreatedAt = batchResponse.CreatedAt,
             ExpectedCompletionTime = batchResponse.ExpectedCompletionTime,
-            TransformationFile = await fileManagementClient.UploadAsync(content.Serialize().ToStream(), MediaTypes.Xliff, content.XliffFileName)
+            TransformationFile = await FileManagementClient.UploadAsync(content.Serialize().ToStream(), MediaTypes.Xliff, content.XliffFileName)
         };
     }
 

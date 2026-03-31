@@ -44,7 +44,7 @@ public class RepurposeActions(InvocationContext invocationContext, IFileManageme
         [ActionParameter] RepurposeRequest input, 
         [ActionParameter] GlossaryRequest glossary)
     {
-        var stream = await fileManagementClient.DownloadAsync(file.File);
+        var stream = await FileManagementClient.DownloadAsync(file.File);
         var transformation = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => 
             Transformation.Parse(stream, file.File.Name)
         );
@@ -74,7 +74,7 @@ public class RepurposeActions(InvocationContext invocationContext, IFileManageme
         [ActionParameter] RepurposeRequest input, 
         [ActionParameter] GlossaryRequest glossary)
     {
-        var stream = await fileManagementClient.DownloadAsync(file.File);
+        var stream = await FileManagementClient.DownloadAsync(file.File);
         var transformation = await ErrorHandler.ExecuteWithErrorHandlingAsync(() =>
             Transformation.Parse(stream, file.File.Name)
         );
@@ -116,7 +116,7 @@ public class RepurposeActions(InvocationContext invocationContext, IFileManageme
             if (glossaryPromptPart != null) prompt += (glossaryAddition + glossaryPromptPart);
         }
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, prompt), new(MessageRoles.User, content) };
-        var response = await ExecuteApiRequestAsync(messages, UniversalClient.GetModel(modelIdentifier.ModelId), input);
+        var response = await ExecuteApiRequestAsync(messages, modelIdentifier.ModelId, input);
 
         return new()
         {

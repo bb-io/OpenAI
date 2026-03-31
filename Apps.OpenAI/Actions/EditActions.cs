@@ -224,7 +224,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
         if (input.OutputFileHandling == "original")
         {
-            var targetContent = content.Target();
+            var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target());
             result.File = await fileManagementClient.UploadAsync(targetContent.Serialize().ToStream(), targetContent.OriginalMediaType, targetContent.OriginalName);
         } 
         else if (input.OutputFileHandling == "xliff1")
@@ -314,7 +314,6 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                 }
             }
 
-            string modelId = UniversalClient.GetModel(processRequest.ModelId);
             var chatInput = new BaseChatRequest
             {
                 MaximumTokens = processRequest.MaximumTokens,
@@ -327,7 +326,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                 new { role = MessageRoles.User, content = userPrompt }
             };
 
-            var bodyDict = GenerateResponseBody(messages, modelId, chatInput);
+            var bodyDict = GenerateResponseBody(messages, processRequest.ModelId, chatInput);
             var batchRequest = new
             {
                 custom_id = bucketIndex.ToString(),
@@ -390,7 +389,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         }
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteApiRequestAsync(messages, UniversalClient.GetModel(modelIdentifier.ModelId), new() { ReasoningEffort = input.ReasoningEffort});
+        var response = await ExecuteApiRequestAsync(messages, modelIdentifier.ModelId, new() { ReasoningEffort = input.ReasoningEffort});
         return new EditResponse
         {
             UserPrompt = userPrompt,
@@ -541,7 +540,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
         if (input.OutputFileHandling == "original")
         {
-            var targetContent = content.Target();
+            var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target());
             result.File = await fileManagementClient.UploadAsync(
                 targetContent.Serialize().ToStream(),
                 targetContent.OriginalMediaType,

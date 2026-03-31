@@ -1,8 +1,6 @@
 ﻿using Apps.OpenAI.DataSourceHandlers;
-using Apps.OpenAI.DataSourceHandlers.ModelDataSourceHandlers;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
-using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.SDK.Blueprints.Interfaces.Review;
 using Newtonsoft.Json;
@@ -24,11 +22,6 @@ public class ReviewTextRequest : IReviewTextInput
     [Display("Target language")]
     [StaticDataSource(typeof(LocaleDataSourceHandler))]
     public string TargetLanguage { get; set; } = string.Empty;
-
-    [Display("Model", Description = "This parameter controls which version of OpenAI answers your request")]
-    [DataSource(typeof(TextChatModelDataSourceHandler))]
-    [JsonProperty("model")]
-    public string Model { get; set; } = string.Empty;
 
     [Display("Additional instructions", Description = "The additional instructions that you want to apply to the review.\nFor example, 'Focus on technical terminology accuracy.'")]
     public string? AdditionalInstructions { get; set; }
