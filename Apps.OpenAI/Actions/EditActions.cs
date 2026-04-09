@@ -73,7 +73,8 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             3,
             input.MaxTokens,
             reasoningEffortRequest.ReasoningEffort,
-            content.Notes);
+            content.Notes,
+            content.GetTerms().ToList());
 
         var errors = new List<string>();
         var usages = new List<UsageDto>();
@@ -432,7 +433,8 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             MaxRetryAttempts: 3,
             MaxTokens: null,
             reasoningEffortRequest.ReasoningEffort,
-            content.Notes);
+            content.Notes,
+            content.GetTerms().ToList());
 
         var errors = new List<string>();
         var usages = new List<UsageDto>();

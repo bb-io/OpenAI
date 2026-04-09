@@ -42,7 +42,8 @@ public class BatchProcessingService(OpenAiUniversalClient openAIClient, IFileMan
                     options.Prompt,
                     glossaryPrompt,
                     postEdit,
-                    options.Notes);
+                    options.Notes,
+                    options.Terms);
 
             result.SystemPrompt = systemPrompt;
 

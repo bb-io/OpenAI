@@ -79,7 +79,8 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
             3,
             null,
             reasoningEffortRequest.ReasoningEffort,
-            content.Notes);
+            content.Notes,
+            content.GetTerms().ToList());
 
         async Task<IEnumerable<TranslationEntity>> BatchTranslate(IEnumerable<(Unit Unit, Segment Segment)> batch)
         {
