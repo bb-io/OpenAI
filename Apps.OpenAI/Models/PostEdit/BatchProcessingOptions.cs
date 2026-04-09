@@ -16,4 +16,5 @@ public record BatchProcessingOptions(
     int MaxRetryAttempts,
     int? MaxTokens,
     string? ReasoningEffort,
-    List<Note>? Notes);
+    List<Note>? Notes,
+    List<Term>? Terms);

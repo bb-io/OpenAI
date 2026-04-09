@@ -61,6 +61,30 @@ public class TranslationActionsTests : TestBaseWithContext
     }
 
     [TestMethod, ContextDataSource]
+    public async Task Translate_with_glossaries(InvocationContext context)
+    {
+        var actions = new TranslationActions(context, FileManagementClient);
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5" };
+        var translateRequest = new TranslateContentRequest
+        {
+            File = new FileReference { Name = "contentful_with_glossaries.xlf" },
+            TargetLanguage = "nl"
+        };
+        var reasoningEffortRequest = new ReasoningEffortRequest
+        {
+            ReasoningEffort = "low"
+        };
+        string? systemMessage = null;
+        var glossaryRequest = new GlossaryRequest();
+
+        var result = await actions.TranslateContent(modelIdentifier, translateRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
+        Assert.IsNotNull(result);
+        Assert.Contains("contentful", result.File.Name);
+
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+    }
+
+    [TestMethod, ContextDataSource]
     public async Task Translate_xlf12(InvocationContext context)
     {
         var actions = new TranslationActions(context, FileManagementClient);

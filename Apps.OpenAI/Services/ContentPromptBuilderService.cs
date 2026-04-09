@@ -1,4 +1,5 @@
 using Apps.OpenAI.Utils;
+using Blackbird.Filters.Enums;
 using Blackbird.Filters.Transformations;
 using Newtonsoft.Json;
 using System.Collections.Generic;
@@ -9,7 +10,7 @@ namespace Apps.OpenAI.Services;
 
 public class ContentPromptBuilderService
 {
-    public string BuildSystemPrompt(string sourceLanguage, string targetLanguage, string? additionalPrompt, string? glossaryPrompt, bool isPostEdit, List<Note>? notes)
+    public string BuildSystemPrompt(string sourceLanguage, string targetLanguage, string? additionalPrompt, string? glossaryPrompt, bool isPostEdit, List<Note>? notes, List<Term>? terms)
     {
         var fullSourceLanguage = LanguageUtils.GetFullLanguageName(sourceLanguage);
         var fullTargetLanguage = LanguageUtils.GetFullLanguageName(targetLanguage);
@@ -50,11 +51,65 @@ public class ContentPromptBuilderService
         prompt.AppendLine("}");
         prompt.AppendLine();
 
-        if (!string.IsNullOrEmpty(glossaryPrompt))
+        if (!string.IsNullOrEmpty(glossaryPrompt) || terms.Count > 0)
         {
             prompt.AppendLine();
             prompt.AppendLine("### TERMINOLOGY GUIDELINES");
+        }
+
+        if (!string.IsNullOrEmpty(glossaryPrompt))
+        {           
             prompt.AppendLine(glossaryPrompt);
+        }
+
+        var globalDesiredTerms = terms.Where(x => x.Type == TermType.GlobalDesired);
+        var globalForbiddenTerms = terms.Where(x => x.Type == TermType.GlobalForbidden);
+        var localTranslations = terms.Where(x => x.Type == TermType.Local && x.Translations.Count != 0);
+        var localDefinitions = terms.Where(x => x.Type == TermType.Local && x.Translations.Count == 0);
+
+        if (globalDesiredTerms.Any())
+        {
+            prompt.AppendLine();
+            prompt.AppendLine("#### Global keywords (SEO). Try to incorporate the following words in the target text:");
+            foreach(var term in globalDesiredTerms)
+            {
+                var definition = term.Definition is not null ? $" ({term.Definition})" : string.Empty;
+                prompt.AppendLine($"{term.Value}{definition}");
+            }
+        }
+
+        if (globalForbiddenTerms.Any())
+        {
+            prompt.AppendLine();
+            prompt.AppendLine("#### Forbidden terms. The following terms are banned. Do not use them in the target text:");
+            foreach (var term in globalForbiddenTerms)
+            {
+                var definition = term.Definition is not null ? $" ({term.Definition})" : string.Empty;
+                prompt.AppendLine($"{term.Value}{definition}");
+            }
+        }
+
+        if (localDefinitions.Any())
+        {
+            prompt.AppendLine();
+            prompt.AppendLine("#### Local definitions. These words appear in the source text and this will give you more context:");
+            foreach (var term in localDefinitions)
+            {
+                var definition = term.Definition is not null ? $" ({term.Definition})" : string.Empty;
+                prompt.AppendLine($"{term.Value}{definition}");
+            }
+        }
+
+        if (localTranslations.Any())
+        {
+            prompt.AppendLine();
+            prompt.AppendLine("#### Translations. These words appear in the source text and should specifically be translated the following way:");
+            foreach (var term in localTranslations)
+            {
+                var definition = term.Definition is not null ? $" ({term.Definition})" : string.Empty;
+                var translation = term.Translations.Count > 0 ? string.Join(" or ", term.Translations.Select(x => x.Value)) : term.Translations.FirstOrDefault()?.Value ?? string.Empty;
+                prompt.AppendLine($"{term.Value}{definition} should be translated as {translation}");
+            }
         }
 
         if (!string.IsNullOrEmpty(additionalPrompt) || (notes != null && notes.Count > 0))
