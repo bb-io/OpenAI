@@ -32,7 +32,7 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
         var fileStream = await FileManagementClient.DownloadAsync(input.File);
         var fileBytes = await fileStream.GetByteData();
         request.AddFile("file", fileBytes, input.File.Name);
-        request.AddParameter("model", "whisper-1");
+        request.AddParameter("model", UniversalClient.GetModel("whisper-1"));
         request.AddParameter("response_format", "verbose_json");
         request.AddParameter("temperature", input.Temperature ?? 0);
 
@@ -55,7 +55,7 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
         var fileStream = await FileManagementClient.DownloadAsync(input.File);
         var fileBytes = await fileStream.GetByteData();
         request.AddFile("file", fileBytes, input.File.Name);
-        request.AddParameter("model", audioModelIdentifier.ModelId);
+        request.AddParameter("model", UniversalClient.GetModel(audioModelIdentifier.ModelId));
         request.AddParameter("response_format", GetResponseFormat(audioModelIdentifier.ModelId));
         request.AddParameter("temperature", input.Temperature ?? 0);
         request.AddParameter("language", input.Language);
@@ -116,7 +116,7 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
         [ActionParameter] SpeechCreationModelIdentifier modelIdentifier,
         [ActionParameter] CreateSpeechRequest input)
     {
-        var model = modelIdentifier.ModelId ?? "tts-1-hd";
+        var model = UniversalClient.GetModel(modelIdentifier.ModelId ?? "tts-1-hd");
         var responseFormat = input.ResponseFormat ?? "mp3";
 
         var request = new OpenAIRequest("/audio/speech", Method.Post);

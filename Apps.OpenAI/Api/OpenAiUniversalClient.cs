@@ -16,7 +16,8 @@ using System.Threading.Tasks;
 
 namespace Apps.OpenAI.Api;
 
-public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider> credentials) : BlackBirdRestClient(CreateOptions(credentials))
+public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider> credentials) 
+    : BlackBirdRestClient(CreateOptions(credentials))
 {
     private readonly AuthHeaderDto _authHeader = new(credentials);
 
@@ -25,23 +26,11 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
     public async ValueTask<ConnectionValidationResponse> ValidateConnection()
     {
         string model = credentials.FirstOrDefault(x => x.KeyName == CredNames.Model)?.Value ?? "gpt-3.5-turbo";
-        var body = new Dictionary<string, object>
-        {
-            ["model"] = model,
-            ["store"] = false,
-            ["input"] = new[]
-            {
-                new
-                {
-                    role = "user",
-                    content = "hello world!"
-                }
-            },
-        };
+        var request = new OpenAIRequest("/models", Method.Get);
 
         try
         {
-            await ExecuteApiRequestAsync(body);
+            await ExecuteWithErrorHandling(request);
             return new() { IsValid = true };
         }
         catch (Exception ex)
