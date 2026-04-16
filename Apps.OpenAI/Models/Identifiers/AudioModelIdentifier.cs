@@ -7,5 +7,5 @@ namespace Apps.OpenAI.Models.Identifiers;
 public class AudioModelIdentifier
 {
     [Display("Model"), StaticDataSource(typeof(AudioTranscriptionDataSourceHandler))]
-    public string ModelId { get; set; }
+    public string? ModelId { get; set; }
 }
