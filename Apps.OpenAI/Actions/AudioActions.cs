@@ -28,7 +28,6 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
     [Action("Create English translation", Description = "Translates speech from an audio or video file into English text.")]
     public async Task<TranslationResponse> CreateTranslation([ActionParameter] TranslationRequest input)
     {
-        ThrowForAzure("audio");
         var request = new OpenAIRequest("/audio/translations", Method.Post);
         var fileStream = await FileManagementClient.DownloadAsync(input.File);
         var fileBytes = await fileStream.GetByteData();
@@ -46,7 +45,6 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
         [ActionParameter] AudioModelIdentifier audioModelIdentifier,
         [ActionParameter] TranscriptionRequest input)
     {
-        ThrowForAzure("audio");
         bool isDiarizationModel = string.Equals(
             audioModelIdentifier.ModelId, 
             "gpt-4o-transcribe-diarize", 
@@ -118,7 +116,6 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
         [ActionParameter] SpeechCreationModelIdentifier modelIdentifier,
         [ActionParameter] CreateSpeechRequest input)
     {
-        ThrowForAzure("audio");
         var model = modelIdentifier.ModelId ?? "tts-1-hd";
         var responseFormat = input.ResponseFormat ?? "mp3";
 
