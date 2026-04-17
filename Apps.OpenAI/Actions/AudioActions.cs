@@ -1,6 +1,7 @@
 ﻿using Apps.OpenAI.Actions.Base;
 using Apps.OpenAI.Api.Requests;
 using Apps.OpenAI.Dtos;
+using Apps.OpenAI.Extensions;
 using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests;
 using Apps.OpenAI.Models.Requests.Audio;
@@ -51,15 +52,16 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
             StringComparison.OrdinalIgnoreCase);
         ValidateTranscriptionRequest(audioModelIdentifier, input, isDiarizationModel);
 
-        var request = new OpenAIRequest("/audio/transcriptions", Method.Post);
+        var request = GenerateBaseAudioRequest(audioModelIdentifier.ModelId, "/audio/transcriptions", Method.Post);
+
         var fileStream = await FileManagementClient.DownloadAsync(input.File);
         var fileBytes = await fileStream.GetByteData();
         request.AddFile("file", fileBytes, input.File.Name);
-        request.AddParameter("model", UniversalClient.GetModel(audioModelIdentifier.ModelId));
+
         request.AddParameter("response_format", GetResponseFormat(audioModelIdentifier.ModelId));
         request.AddParameter("temperature", input.Temperature ?? 0);
-        request.AddParameter("language", input.Language);
-        request.AddParameter("prompt", input.Prompt);
+        request.AddParameterIfNotNull("language", input.Language);
+        request.AddParameterIfNotNull("prompt", input.Prompt);
 
         if (isDiarizationModel)
         {

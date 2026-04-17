@@ -17,6 +17,7 @@ using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Xliff.Utils;
 using Blackbird.Xliff.Utils.Extensions;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using RestSharp;
 using System;
 using System.Collections.Generic;
@@ -26,7 +27,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml;
-using Newtonsoft.Json.Linq;
 
 namespace Apps.OpenAI.Actions.Base;
 
@@ -298,6 +298,24 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         }
 
         return body;
+    }
+
+    protected OpenAIRequest GenerateBaseAudioRequest(string? model, string endpoint, Method method)
+    {
+        if (UniversalClient.ConnectionType != ConnectionTypes.AzureOpenAi)
+        {
+            var request = new OpenAIRequest(endpoint, method);
+            request.AddParameter("model", model);
+            return request;
+        }
+
+        // Azure uses a different endpoint specifically for audio/transcriptions
+        // So we need to construct a new request manually
+        string rawAzureUrl = Creds.FirstOrDefault(x => x.KeyName == CredNames.Url)?.Value;
+        string azureDeploymentName = UniversalClient.GetModel();
+        return new OpenAIRequest(
+            $"{rawAzureUrl}/openai/deployments/{azureDeploymentName}{endpoint}?api-version=2024-02-01",
+            method);
     }
 
     private static IEnumerable<object> MapMessagesToResponsesInput(IEnumerable<object> messages)
