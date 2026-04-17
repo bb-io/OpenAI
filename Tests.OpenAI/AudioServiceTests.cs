@@ -29,8 +29,8 @@ public class AudioServiceTests : TestBaseWithContext
         var result = await handler.CreateTranscription(model, request);
 
         // Assert
-        Console.WriteLine(result.Transcription);
-        Console.WriteLine(result.Segments);
+        TestContext.WriteLine(result.Transcription);
+        TestContext.WriteLine(result.Segments);
         Assert.IsNotNull(result);
     }
 
@@ -50,8 +50,8 @@ public class AudioServiceTests : TestBaseWithContext
         var result = await handler.CreateTranscription(model, request);
 
         // Assert
-        Console.WriteLine(result.Transcription);
-        Console.WriteLine(result.Segments);
+        TestContext.WriteLine(result.Transcription);
+        TestContext.WriteLine(result.Segments);
         Assert.IsNotNull(result);
     }
 
@@ -71,30 +71,29 @@ public class AudioServiceTests : TestBaseWithContext
         var result = await handler.CreateTranscription(model, request);
 
         // Assert
-        Console.WriteLine(result.Transcription);
-        Console.WriteLine(result.Segments);
+        TestContext.WriteLine(result.Transcription);
+        TestContext.WriteLine(result.Segments);
         Assert.IsNotNull(result);
     }
 
     [TestMethod, ContextDataSource(ConnectionTypes.AzureOpenAi)]
-    public async Task CreateTranscription_AzureOpenAi_ThrowsMisconfigException(InvocationContext context)
+    public async Task CreateTranscription_AzureOpenAi_ReturnsTranscription(InvocationContext context)
     {
         // Arrange
-        var handler = new AudioActions(context, FileManagementClient);
-        var model = new AudioModelIdentifier { ModelId = "gpt-4o-transcribe-diarize" };
+        var actions = new AudioActions(context, FileManagementClient);
+        var model = new AudioModelIdentifier { };
         var request = new TranscriptionRequest
         {
-            File = new FileReference { Name = "tts delorean.mp3" },
-            Language = "en",
+            File = new FileReference { Name = "test.mp3" },
         };
 
         // Act
-        var ex = await Assert.ThrowsExactlyAsync<PluginMisconfigurationException>(async () => 
-            await handler.CreateTranscription(model, request)
-        );
+        var result = await actions.CreateTranscription(model, request);
 
         // Assert
-        Assert.Contains("Azure OpenAI does not support audio actions. Please use OpenAI for such tasks", ex.Message);
+        TestContext.WriteLine(result.Transcription);
+        TestContext.WriteLine(result.Segments);
+        Assert.IsNotNull(result);
     }
 
     [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded, ConnectionTypes.OpenAi)]
