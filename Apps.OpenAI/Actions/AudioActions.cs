@@ -82,7 +82,7 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
         
         return new()
         {
-            Transcription = response.Text,
+            Transcription = BuildTranscription(response, isDiarizationModel),
             Words = JsonConvert.SerializeObject(words),
             Segments = JsonConvert.SerializeObject(segments)
         };
@@ -110,6 +110,47 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
             {
                 throw new PluginMisconfigurationException("Timestamp granularities are only supported when using the 'whisper-1' model.");
             }
+        }
+
+        static string BuildTranscription(TranscriptionDto response, bool isDiarizationModel)
+        {
+            if (!isDiarizationModel || response.Segments is null || !response.Segments.Any())
+            {
+                return response.Text;
+            }
+
+            var speakerTurns = new List<string>();
+            string? currentSpeaker = null;
+            var currentText = new List<string>();
+
+            foreach (var segment in response.Segments.Where(x => !string.IsNullOrWhiteSpace(x.Text)))
+            {
+                var speaker = string.IsNullOrWhiteSpace(segment.Speaker) ? "Unknown" : segment.Speaker.Trim();
+                var text = segment.Text.Trim();
+
+                if (!string.Equals(currentSpeaker, speaker, StringComparison.Ordinal))
+                {
+                    AddSpeakerTurn(speakerTurns, currentSpeaker, currentText);
+                    currentSpeaker = speaker;
+                    currentText = [text];
+                    continue;
+                }
+
+                currentText.Add(text);
+            }
+
+            AddSpeakerTurn(speakerTurns, currentSpeaker, currentText);
+            return speakerTurns.Count > 0 ? string.Join(Environment.NewLine, speakerTurns) : response.Text;
+        }
+
+        static void AddSpeakerTurn(List<string> speakerTurns, string? speaker, List<string> currentText)
+        {
+            if (string.IsNullOrWhiteSpace(speaker) || currentText.Count == 0)
+            {
+                return;
+            }
+
+            speakerTurns.Add($"{speaker}: {string.Join(" ", currentText)}");
         }
     }
 
