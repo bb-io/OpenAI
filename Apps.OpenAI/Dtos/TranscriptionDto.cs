@@ -1,13 +1,13 @@
-﻿using Apps.OpenAI.Utils;
+using Apps.OpenAI.Utils;
 using Newtonsoft.Json;
 
 namespace Apps.OpenAI.Dtos;
 
 public record TranscriptionDto(string Text) : TextDto(Text)
 {
-    public WordDto[] Words { get; init; }
+    public WordDto[]? Words { get; init; }
     
-    public SegmentDto[] Segments { get; init; }
+    public SegmentDto[]? Segments { get; init; }
     
     public double Temperature { get; init; }
     
@@ -20,4 +20,30 @@ public record TranscriptionDto(string Text) : TextDto(Text)
 
 public record WordDto(string Word, double Start, double End);
 
-public record SegmentDto([property: JsonConverter(typeof(FlexibleIdConverter))] string Id, int Seek, double Start, double End, string Text, int[] Tokens, double Temperature, double AvgLogprob, double CompressionRatio, double NoSpeechProb);
+public class SegmentDto
+{
+    public string? Type { get; init; }
+
+    [JsonConverter(typeof(FlexibleIdConverter))]
+    public string Id { get; init; } = string.Empty;
+
+    public int? Seek { get; init; }
+
+    public double Start { get; init; }
+
+    public double End { get; init; }
+
+    public string Text { get; init; } = string.Empty;
+
+    public string? Speaker { get; init; }
+
+    public int[]? Tokens { get; init; }
+
+    public double? Temperature { get; init; }
+
+    public double? AvgLogprob { get; init; }
+
+    public double? CompressionRatio { get; init; }
+
+    public double? NoSpeechProb { get; init; }
+}

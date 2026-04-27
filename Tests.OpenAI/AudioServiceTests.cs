@@ -7,6 +7,7 @@ using Apps.OpenAI.Models.Requests.Audio;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using Newtonsoft.Json.Linq;
 
 namespace Tests.OpenAI;
 
@@ -21,50 +22,52 @@ public class AudioServiceTests : TestBaseWithContext
         var model = new AudioModelIdentifier { ModelId = "gpt-4o-transcribe-diarize" };
         var request = new TranscriptionRequest
         {
-            File = new FileReference { Name = "tts delorean.mp3" },
-            Language = "en",
+            File = new FileReference { Name = "Transcription sample short.mp3" },
+            Language = "pt",
         };
 
         // Act
         var result = await handler.CreateTranscription(model, request);
+        var segments = JArray.Parse(result.Segments);
 
         // Assert
         TestContext.WriteLine(result.Transcription);
         TestContext.WriteLine(result.Segments);
         Assert.IsNotNull(result);
+        Assert.IsTrue(segments.Count > 0);
+        Assert.IsTrue(segments.Any(x => x["Speaker"] != null));
     }
 
     [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded, ConnectionTypes.OpenAi)]
-    public async Task CreateTranscription_OpenAi_ReturnsTranscription_VerboseJsonFormat(InvocationContext context)
+    public async Task CreateTranscription_OpenAi_DiarizedModel_AssemblesTranscriptionBySpeaker(InvocationContext context)
     {
         // Arrange
         var handler = new AudioActions(context, FileManagementClient);
         var model = new AudioModelIdentifier { ModelId = "gpt-4o-transcribe-diarize" };
         var request = new TranscriptionRequest
         {
-            File = new FileReference { Name = "tts delorean.mp3" },
-            Language = "en",
+            File = new FileReference { Name = "Transcription sample short.mp3" },
+            Language = "pt",
         };
 
         // Act
         var result = await handler.CreateTranscription(model, request);
 
         // Assert
-        TestContext.WriteLine(result.Transcription);
-        TestContext.WriteLine(result.Segments);
+        Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(result, Newtonsoft.Json.Formatting.Indented));
         Assert.IsNotNull(result);
     }
 
     [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded, ConnectionTypes.OpenAi)]
-    public async Task CreateTranscription_OpenAi_ReturnsTranscription_JsonFormat(InvocationContext context)
+    public async Task CreateTranscription_OpenAi_StandardModel_ReturnsSingleBlobText(InvocationContext context)
     {
         // Arrange
         var handler = new AudioActions(context, FileManagementClient);
-        var model = new AudioModelIdentifier { ModelId = "gpt-4o-transcribe-diarize" };
+        var model = new AudioModelIdentifier { ModelId = "gpt-4o-transcribe" };
         var request = new TranscriptionRequest
         {
-            File = new FileReference { Name = "tts delorean.mp3" },
-            Language = "en",
+            File = new FileReference { Name = "Transcription sample short.mp3" },
+            Language = "pt",
         };
 
         // Act
@@ -74,6 +77,7 @@ public class AudioServiceTests : TestBaseWithContext
         TestContext.WriteLine(result.Transcription);
         TestContext.WriteLine(result.Segments);
         Assert.IsNotNull(result);
+        Assert.IsFalse(result.Transcription.Contains("A:"));
     }
 
     [TestMethod, ContextDataSource(ConnectionTypes.AzureOpenAi)]
@@ -104,7 +108,7 @@ public class AudioServiceTests : TestBaseWithContext
         var model = new AudioModelIdentifier { ModelId = "gpt-4o-transcribe-diarize" };
         var request = new TranscriptionRequest
         {
-            File = new FileReference { Name = "tts delorean.mp3" },
+            File = new FileReference { Name = "Transcription sample short.mp3" },
             Prompt = "Some prompt",
         };
 
@@ -125,7 +129,7 @@ public class AudioServiceTests : TestBaseWithContext
         var model = new AudioModelIdentifier { ModelId = "gpt-4o-transcribe-diarize" };
         var request = new TranscriptionRequest
         {
-            File = new FileReference { Name = "tts delorean.mp3" },
+            File = new FileReference { Name = "Transcription sample short.mp3" },
             TimestampGranularities = ["word"]
         };
 

@@ -28,7 +28,11 @@ public record SegmentResponse(SegmentDto dto)
     [Display("Segment ID")]
     public string Id { get; set; } = dto.Id;
 
+    public string? Type { get; set; } = dto.Type;
+
     public string Text { get; set; } = dto.Text;
+
+    public string? Speaker { get; set; } = dto.Speaker;
 
     public double Start { get; set; } = dto.Start;
 

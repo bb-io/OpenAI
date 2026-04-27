@@ -21,19 +21,21 @@ public class EditTests : TestBaseWithContext
         var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4o" };
         var editRequest = new EditContentRequest
         {
-            File = new FileReference { Name = "GUID-99E95005-E212-481D-AEBC-67DFA3BD38E8_1_en-US-en-zh_cn-Tr.mxliff" },
+            File = new FileReference { Name = "pmdm-13460-all-locales5832465158620282096-en-ja-Pe.mxliff" },
             OutputFileHandling = "xliff1",
             ProcessOnlySegmentState = "Initial",
+            FilterGlossary = true,
+
             ModifiedBy = "1441948"
         };
         var reasoningEffortRequest = new ReasoningEffortRequest
         {
-            //ReasoningEffort = "low"
+            
         };
-        string? systemMessage = "Your task is to post-edit translation segments by correcting critical errors, comparing each target to its source. Critical errors include tag misplacements, malformed tags, number mismatches, translation omissions, or glossary term violations.  Tags appear as combinations of {, }, <, or > with a number (e.g., {1}, <2}, {3>), and these must match the source exactly. Tags define font styles of texts between two tags or represent inserted links and line breaks. \nDo not revert any translation to English.\nDo no change translation style. ";
-        var glossaryRequest = new GlossaryRequest();
+        string? systemMessage = "Perform critical-errors-only post-editing.\r\n\r\nAssume every target segment is already final and approved.\r\nLeave the target unchanged unless there is a clear critical error.\r\n\r\nCritical errors are limited to:\r\n- number or unit mismatch\r\n- omission or unjustified addition\r\n- clear mistranslation that changes meaning\r\n- broken tags/formatting\r\n- explicit glossary violation where a Japanese glossary target exists\r\n\r\nDo not edit for fluency, style, consistency, or terminology normalization alone.\r\nDo not replace approved English terms in the Japanese target unless clearly required by an explicit Japanese glossary entry.\r\nIf no clear critical error exists, return the target exactly unchanged.\r\nWhen unsure, do not change anything.\r\n";
+        var glossaryRequest = new GlossaryRequest { Glossary= new FileReference { Name= "PMDM TB.tbx" } };
 
-        var result = await actions.EditContent(modelIdentifier, editRequest, systemMessage, glossaryRequest, reasoningEffortRequest);
+        var result = await actions.EditContent(modelIdentifier, editRequest, systemMessage, glossaryRequest, reasoningEffortRequest, bucketSize: 25, ProcessLockedSegments: false);
 
         Assert.IsNotNull(result);
         //Assert.Contains("contentful", result.File.Name);
