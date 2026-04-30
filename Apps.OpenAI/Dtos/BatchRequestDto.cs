@@ -82,7 +82,13 @@ public class BodyDto
 
     public UsageDto GetUsage()
     {
-        return Usage ?? UsageDto.Zero;
+        var usage = Usage ?? UsageDto.Zero;
+        if (string.IsNullOrWhiteSpace(usage.ModelUsed))
+        {
+            usage.ModelUsed = Model;
+        }
+
+        return usage;
     }
 }
 

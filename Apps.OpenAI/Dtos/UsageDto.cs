@@ -7,6 +7,9 @@ namespace Apps.OpenAI.Dtos
 {
     public class UsageDto
     {
+        [Display("Model used")]
+        public string? ModelUsed { get; set; }
+
         [Display("Prompt tokens")]
         [JsonProperty("prompt_tokens")]
         public int PromptTokens { get; set; }
@@ -35,6 +38,7 @@ namespace Apps.OpenAI.Dtos
         {
             return new UsageDto
             {
+                ModelUsed = MergeModelUsed(u1.ModelUsed, u2.ModelUsed),
                 PromptTokens = u1.PromptTokens + u2.PromptTokens,
                 CompletionTokens = u1.CompletionTokens + u2.CompletionTokens,
                 TotalTokens = u1.TotalTokens + u2.TotalTokens,
@@ -46,6 +50,17 @@ namespace Apps.OpenAI.Dtos
         public static UsageDto Sum(IEnumerable<UsageDto> usages)
         {
             return usages.Aggregate(Zero, (acc, x) => acc + x);
+        }
+
+        private static string? MergeModelUsed(string? model1, string? model2)
+        {
+            if (string.IsNullOrWhiteSpace(model1))
+                return model2;
+
+            if (string.IsNullOrWhiteSpace(model2))
+                return model1;
+
+            return string.Equals(model1, model2) ? model1 : "multiple";
         }
     }    
 }

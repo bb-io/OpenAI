@@ -119,6 +119,7 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
 
         var usage = new UsageDto
         {
+            ModelUsed = response.Model,
             PromptTokens = response.Usage?.InputTokens ?? 0,
             CompletionTokens = response.Usage?.OutputTokens ?? 0,
             TotalTokens = response.Usage?.TotalTokens ?? 0
