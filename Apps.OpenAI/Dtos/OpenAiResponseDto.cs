@@ -7,6 +7,9 @@ namespace Apps.OpenAI.Dtos;
 
 public class OpenAiResponseDto
 {
+    [JsonProperty("model")]
+    public string? Model { get; set; }
+
     [JsonProperty("status")]
     public string Status { get; set; } = string.Empty;
 

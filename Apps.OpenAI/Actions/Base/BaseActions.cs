@@ -256,13 +256,18 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         BaseChatRequest input = null,
         object responseFormat = null)
     {
+        var resolvedModel = UniversalClient.GetModel(model);
         var body = new Dictionary<string, object>
         {
-            { "model", UniversalClient.GetModel(model) },
+            { "model", resolvedModel },
             { "store", false },
-            { "input", MapMessagesToResponsesInput(messages) },
-            { "top_p", input?.TopP ?? 1 }
+            { "input", MapMessagesToResponsesInput(messages) }
         };
+
+        if (SupportsTopP(resolvedModel, input?.ReasoningEffort))
+        {
+            body["top_p"] = input?.TopP ?? 1;
+        }
 
         if (input?.Temperature != null)
         {
@@ -477,6 +482,29 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
 
         var normalizedModel = model.Trim().ToLowerInvariant();
         return normalizedModel.StartsWith("gpt-5") || normalizedModel.StartsWith("o");
+    }
+
+    private static bool SupportsTopP(string model, string? reasoningEffort)
+    {
+        if (string.IsNullOrWhiteSpace(model))
+        {
+            return true;
+        }
+
+        var normalizedModel = model.Trim().ToLowerInvariant();
+        var normalizedReasoningEffort = reasoningEffort?.Trim().ToLowerInvariant();
+
+        if (normalizedModel is "gpt-5" or "gpt-5-mini" or "gpt-5-nano" or "gpt-5.5" or "gpt-5.2-pro" or "gpt-5.2-codex")
+        {
+            return false;
+        }
+
+        if (normalizedModel is "gpt-5.1" or "gpt-5.2")
+        {
+            return normalizedReasoningEffort == "none";
+        }
+
+        return true;
     }
 
     protected async Task<string> IdentifySourceLanguage(TextChatModelIdentifier modelIdentifier, string content)
