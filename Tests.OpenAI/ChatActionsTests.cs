@@ -17,11 +17,11 @@ public class ChatActionsTests : TestBaseWithContext
     {
         // Arrange
         var actions = new ChatActions(context, FileManagementClient);
-        var model = new TextChatModelIdentifier { ModelId = "gpt-4" };
+        var model = new TextChatModelIdentifier { ModelId = "gpt-5" };
         var chatRequest = new ChatRequest
         {
             Message = "Tell me about Scania S",
-            MaximumTokens = 300
+            TopP=1
         };
         var glossary = new GlossaryRequest();
 
@@ -108,7 +108,7 @@ public class ChatActionsTests : TestBaseWithContext
     {
         // Arrange
         var actions = new ChatActions(context, FileManagementClient);
-        var model = new TextChatModelIdentifier { ModelId = null };
+        var model = new TextChatModelIdentifier { ModelId = "" };
         var chatRequest = new ChatRequest
         {
             Message = "Who are you? State your model, creator, and your main responsibilities."

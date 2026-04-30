@@ -26,8 +26,12 @@ public class OpenAICompletionService(OpenAiUniversalClient openAIClient) : IOpen
             { "model", modelId },
             { "store", false },
             { "input", messages },
-            { "top_p", request?.TopP ?? 1 },
         };
+
+        if (SupportsTopP(modelId, request?.ReasoningEffort))
+        {
+            jsonDictionary["top_p"] = request?.TopP ?? 1;
+        }
 
         if (responseFormat != null)
         {
@@ -97,5 +101,28 @@ public class OpenAICompletionService(OpenAiUniversalClient openAIClient) : IOpen
 
         var normalizedModel = modelId.Trim().ToLowerInvariant();
         return normalizedModel.StartsWith("gpt-5") || normalizedModel.StartsWith("o");
+    }
+
+    private static bool SupportsTopP(string modelId, string? reasoningEffort)
+    {
+        if (string.IsNullOrWhiteSpace(modelId))
+        {
+            return true;
+        }
+
+        var normalizedModel = modelId.Trim().ToLowerInvariant();
+        var normalizedReasoningEffort = reasoningEffort?.Trim().ToLowerInvariant();
+
+        if (normalizedModel is "gpt-5" or "gpt-5-mini" or "gpt-5-nano" or "gpt-5.5" or "gpt-5.2-pro" or "gpt-5.2-codex")
+        {
+            return false;
+        }
+
+        if (normalizedModel is "gpt-5.1" or "gpt-5.2")
+        {
+            return normalizedReasoningEffort == "none";
+        }
+
+        return true;
     }
 }
