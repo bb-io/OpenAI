@@ -113,14 +113,26 @@ public class OpenAICompletionService(OpenAiUniversalClient openAIClient) : IOpen
         var normalizedModel = modelId.Trim().ToLowerInvariant();
         var normalizedReasoningEffort = reasoningEffort?.Trim().ToLowerInvariant();
 
-        if (normalizedModel is "gpt-5" or "gpt-5-mini" or "gpt-5-nano" or "gpt-5.5" or "gpt-5.2-pro" or "gpt-5.2-codex")
+        if (normalizedModel.StartsWith("gpt-5-chat-latest") ||
+            normalizedModel.StartsWith("gpt-5-pro") ||
+            normalizedModel.StartsWith("gpt-5-codex") ||
+            normalizedModel.StartsWith("gpt-5-mini") ||
+            normalizedModel.StartsWith("gpt-5-nano") ||
+            normalizedModel.StartsWith("gpt-5.3") ||
+            normalizedModel.StartsWith("gpt-5.4") ||
+            normalizedModel.StartsWith("gpt-5.5"))
         {
             return false;
         }
 
-        if (normalizedModel is "gpt-5.1" or "gpt-5.2")
+        if (normalizedModel.StartsWith("gpt-5.1") || normalizedModel.StartsWith("gpt-5.2"))
         {
             return normalizedReasoningEffort == "none";
+        }
+
+        if (normalizedModel == "gpt-5" || normalizedModel.StartsWith("gpt-5-"))
+        {
+            return false;
         }
 
         return true;
