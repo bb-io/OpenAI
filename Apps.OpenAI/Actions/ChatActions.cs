@@ -5,10 +5,10 @@ using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Models.Responses.Chat;
 using Apps.OpenAI.Utils;
+using Apps.OpenAI.Extensions;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
-using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
@@ -35,7 +35,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         [ActionParameter] ChatRequest input,
         [ActionParameter] GlossaryRequest glossary)
     {
-        HandleInput(modelIdentifier, input);
+        HandleInput(input);
 
         var messages = await GenerateChatMessages(input, glossary);
         var completeMessage = string.Empty;
@@ -97,7 +97,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             Message = input.Message,
             MaximumTokens = input.MaximumTokens,
             FrequencyPenalty = input.FrequencyPenalty,
-            File = input.Image,
+            File = input.File,
             Parameters = input.Parameters,
             PresencePenalty = input.PresencePenalty,
             Temperature = input.Temperature,
@@ -127,22 +127,22 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             var fileStream = await FileManagementClient.DownloadAsync(input.File);
             var fileBytes = await fileStream.GetByteData();
             
-            if (input.File.ContentType.StartsWith("audio") || input.File.Name.EndsWith("wav") || input.File.Name.EndsWith("mp3"))
+            if (input.File.IsAudio())
             {
-                messages.Add(new ChatAudioMessageDto(MessageRoles.User, new List<ChatAudioMessageContentDto>
-                {
-
-                    new ChatAudioMessageTextContentDto("text", input.Message),
-                    new ChatAudioMessageAudioContentDto("input_audio", new InputAudio(){Format = input.File.Name.Substring(input.File.Name.Length-3).ToLower(),Data = Convert.ToBase64String(fileBytes) })
-                }));
+                // The Completions API did support audio inputs, but the Responses API doesn't
+                throw new PluginMisconfigurationException(
+                    "OpenAI does not support audio files for chat endpoints. " +
+                    "Please use Audio actions for such files");
             }
-            else if (input.File.ContentType.StartsWith("image") || input.File.Name.EndsWith("png") || input.File.Name.EndsWith("jpg") || input.File.Name.EndsWith("jpeg") || input.File.Name.EndsWith("webp") || input.File.Name.EndsWith("gif"))
+            
+            if (input.File.IsImage())
             {
                 messages.Add(new ChatImageMessageDto(MessageRoles.User, new List<ChatImageMessageContentDto>
                 {
                     new ChatImageMessageTextContentDto("text", input.Message),
-                    new ChatImageMessageImageContentDto("image_url", new ImageUrlDto(
-                        $"data:{input.File.ContentType};base64,{Convert.ToBase64String(fileBytes)}"))
+                    new ChatImageMessageImageContentDto(
+                        "image_url", 
+                        new ImageUrlDto($"data:{input.File.ContentType};base64,{Convert.ToBase64String(fileBytes)}"))
                 }));
             }
             else
@@ -199,59 +199,12 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         return messages;
     }
 
-    private void HandleInput(TextChatModelIdentifier modelIdentifier, ChatRequest input)
+    private void HandleInput(ChatRequest input)
     {
         if (input.EnableWebSearch == true && UniversalClient.ConnectionType == ConnectionTypes.AzureOpenAi)
         {
-            throw new PluginMisconfigurationException("Web search is not supported for Azure OpenAI connections in this action. Please use an OpenAI connection.");
-        }
-
-        if (UniversalClient.ConnectionType == ConnectionTypes.OpenAi)
-        {
-            if (string.IsNullOrEmpty(modelIdentifier.ModelId))
-                throw new PluginMisconfigurationException("Please select a model to execute this action using the OpenAI connection");
-            HandleOpenAiFileInput(modelIdentifier, input.File);
-        }
-        else if (UniversalClient.ConnectionType == ConnectionTypes.AzureOpenAi)
-            HandleAzureFileInput(input.File);
-        else HandleOpenAiFileInput(modelIdentifier, input.File);
-    }
-
-    private static void HandleOpenAiFileInput(TextChatModelIdentifier modelIdentifier, FileReference? file)
-    {
-        if (file == null) return;
-
-        var name = file.Name.ToLowerInvariant();
-        var type = file.ContentType.ToLowerInvariant();
-
-        if (IsAudioFile(name, type))
-        {
-            modelIdentifier.ModelId = "gpt-4o-audio-preview";
-        }
-        else if (IsImageFile(name, type))
-        {
-            modelIdentifier.ModelId = "gpt-4-vision-preview";
-        }
-    }
-
-    private static void HandleAzureFileInput(FileReference? file)
-    {
-        if (file == null) return;
-
-        var name = file.Name.ToLowerInvariant();
-        var type = file.ContentType.ToLowerInvariant();
-
-        if (IsAudioFile(name, type))
-        {
             throw new PluginMisconfigurationException(
-                "Azure OpenAI does not support chat actions with audio files. Please use OpenAI for such tasks"
-            );
+                "Web search is not supported for Azure OpenAI connections in this action. Please use an OpenAI connection.");
         }
     }
-
-    private static bool IsAudioFile(string name, string contentType) =>
-        contentType.StartsWith("audio") || name.EndsWith(".wav") || name.EndsWith(".mp3");
-
-    private static bool IsImageFile(string name, string contentType) =>
-        contentType.StartsWith("image") || new[] { ".png", ".jpg", ".jpeg", ".webp", ".gif" }.Any(name.EndsWith);
 }

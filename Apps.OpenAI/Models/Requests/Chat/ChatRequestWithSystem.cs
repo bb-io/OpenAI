@@ -18,7 +18,7 @@ public class ChatRequestWithSystem : BaseChatRequest, IWebSearchRequest
             "Texts that will be added to the user prompt along with the message. Useful if you want to add collection of messages to the prompt.")]
     public IEnumerable<string>? Parameters { get; set; }
 
-    public FileReference? Image { get; set; }
+    public FileReference? File { get; set; }
 
     [Display("Enable web search")]
     public bool? EnableWebSearch { get; set; }
