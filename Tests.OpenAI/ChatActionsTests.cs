@@ -78,8 +78,8 @@ public class ChatActionsTests : TestBaseWithContext
         Assert.IsNotNull(result.Message);
     }
 
-    [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded)]
-    public async Task ChatMessageRequest_OpenAiEmbeddedWithAudioFile_ReturnsValidResponse(InvocationContext context)
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]
+    public async Task ChatMessageRequest_OpenAiWithAudioFile_ThrowsMisconfigException(InvocationContext context)
     {
         // Arrange
         var actions = new ChatActions(context, FileManagementClient);
@@ -96,11 +96,11 @@ public class ChatActionsTests : TestBaseWithContext
         var glossary = new GlossaryRequest();
 
         // Act
-        var result = await actions.ChatMessageRequest(modelIdentifier, chatRequest, glossary);
+        var ex = await Assert.ThrowsExactlyAsync<PluginMisconfigurationException>(() =>
+            actions.ChatMessageRequest(modelIdentifier, chatRequest, glossary));
 
         // Assert
-        PrintResult(result);
-        Assert.IsNotNull(result.Message);
+        Assert.Contains("use Audio actions", ex.Message);
     }
 
     [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]
@@ -247,6 +247,35 @@ public class ChatActionsTests : TestBaseWithContext
 
         // Act
         var result = await actions.ChatMessageRequest(model, chatRequest, new GlossaryRequest());
+
+        // Assert
+        PrintResult(result);
+        Assert.IsNotNull(result.Message);
+    }
+
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]
+    public async Task ChatWithSystemMessageRequest_OpenAiWithImage_ReturnsValidResponse(InvocationContext context)
+    {
+        // Arrange
+        var action = new ChatActions(context, FileManagementClient);
+        var modelIdentifier = new TextChatModelIdentifier
+        {
+            ModelId = "gpt-5"
+        };
+        var input = new ChatRequestWithSystem
+        {
+            SystemPrompt = "You are very funny assistant",
+            Message = "Please describe this image",
+            File = new FileReference
+            {
+                Name = "tyrol-italy.jpg",
+                ContentType = "image/jpeg"
+            }
+        };
+        var glossary = new GlossaryRequest();
+
+        // Act
+        var result = await action.ChatWithSystemMessageRequest(modelIdentifier, input, glossary);
 
         // Assert
         PrintResult(result);
