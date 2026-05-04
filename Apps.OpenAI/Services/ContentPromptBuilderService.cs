@@ -26,7 +26,10 @@ public class ContentPromptBuilderService
         if (isPostEdit)
         {
             prompt.AppendLine("1. Review each translation unit containing source text and initial target translation");
-            prompt.AppendLine("2. Edit the target text to ensure accuracy and fluency in the target language");
+            prompt.AppendLine("2. When additional requirements define a specific issue, scope, or type of change, limit edits to those requested changes");
+            prompt.AppendLine("3. Only when no specific editing scope is provided in the additional requirements, improve the target text as needed to ensure accuracy and fluency in the target language");
+            prompt.AppendLine("4. Keep translation units unchanged when no edits are required");
+            prompt.AppendLine("5. Do not make unrelated fluency, style, terminology, or grammar changes when the additional requirements are specific");
         }
         else
         {
