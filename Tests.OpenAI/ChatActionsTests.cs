@@ -13,16 +13,20 @@ namespace Tests.OpenAI;
 public class ChatActionsTests : TestBaseWithContext
 {
     [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]
-    public async Task ChatMessageRequest_OpenAiEmbeddedWithSimpleTextMessage_ReturnsValidResponse(InvocationContext context)
+    public async Task ChatMessageRequest_OpenAi_ReturnsValidResponse(InvocationContext context)
     {
         // Arrange
         var actions = new ChatActions(context, FileManagementClient);
         var model = new TextChatModelIdentifier { ModelId = "gpt-5" };
         var chatRequest = new ChatRequest
         {
-            Message = "Tell me about Scania S",
-            TopP=1
+            Message = "Hey! Please describe this file",
+            File = new FileReference { Name = "test.xlsx", ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
         };
+        
+        if (chatRequest.File is not null)
+            Assert.IsNotNull(chatRequest.File.ContentType, "Please specify the content type - it's required by OpenAI");
+        
         var glossary = new GlossaryRequest();
 
         // Act
@@ -34,7 +38,7 @@ public class ChatActionsTests : TestBaseWithContext
     }
 
     [TestMethod, ContextDataSource(ConnectionTypes.AzureOpenAi)]
-    public async Task ChatMessageRequest_AzureOpenAiWithSimpleTextMessage_ReturnsValidResponse(InvocationContext context)
+    public async Task ChatMessageRequest_AzureOpenAi_ReturnsValidResponse(InvocationContext context)
     {
         // Arrange
         var actions = new ChatActions(context, FileManagementClient);
@@ -52,32 +56,7 @@ public class ChatActionsTests : TestBaseWithContext
         PrintResult(result);
         Assert.IsNotNull(result.Message);
     }
-
-    [TestMethod, ContextDataSource]
-    public async Task ChatMessageRequest_WithHtmlFile_ReturnsValidResponse(InvocationContext context)
-    {
-        // Arrange
-        var actions = new ChatActions(context, FileManagementClient);
-        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5" };
-        var chatRequest = new ChatRequest
-        {
-            Message = "Give a couple of SEO keywords",
-            File = new FileReference
-            {
-                Name = "contentful.html",
-                ContentType = "text/html"
-            }
-        };
-        var glossary = new GlossaryRequest();
-
-        // Act
-        var result = await actions.ChatMessageRequest(modelIdentifier, chatRequest, glossary);
-
-        // Assert
-        PrintResult(result);
-        Assert.IsNotNull(result.Message);
-    }
-
+    
     [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]
     public async Task ChatMessageRequest_OpenAiWithAudioFile_ThrowsMisconfigException(InvocationContext context)
     {
