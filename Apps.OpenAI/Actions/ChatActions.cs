@@ -142,9 +142,22 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                     new ChatImageMessageTextContentDto("text", input.Message),
                     new ChatImageMessageImageContentDto(
                         "image_url", 
-                        new ImageUrlDto($"data:{input.File.ContentType};base64,{Convert.ToBase64String(fileBytes)}"))
+                        new ImageUrlDto(FileHelper.GenerateBase64String(input.File.ContentType, fileBytes)))
                 }));
             }
+
+            if (input.File.IsSupportedFileType())
+            {
+                var base64Data = FileHelper.GenerateBase64String(input.File.ContentType, fileBytes);
+                var contentParts = new List<object>
+                {
+                    new ChatInputFileContentDto("input_file", input.File.Name, base64Data),
+                    new ChatInputTextContentDto("input_text", input.Message)
+                };
+
+                messages.Add(new ChatFileMessageDto(MessageRoles.User, contentParts));
+            }
+            
             else
             {
                 var content = Encoding.UTF8.GetString(fileBytes);

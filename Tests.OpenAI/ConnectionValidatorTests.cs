@@ -9,7 +9,7 @@ namespace Tests.OpenAI;
 [TestClass]
 public class ConnectionValidatorTests : TestBaseWithContext
 {
-    [TestMethod, ContextDataSource(ConnectionTypes.AzureOpenAi)]
+    [TestMethod, ContextDataSource]
     public async Task ValidateConnection_WithCorrectCredentials_ReturnsValidResult(InvocationContext context)
     {
         var validator = new ConnectionValidator();
