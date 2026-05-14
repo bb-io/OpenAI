@@ -12,7 +12,6 @@ using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using Newtonsoft.Json;
 using RestSharp;
 using System;
 using System.Collections.Generic;
@@ -77,14 +76,14 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
         }
         
         var response = await UniversalClient.ExecuteWithErrorHandling<TranscriptionDto>(request);
-        var words = response.Words?.Select(x => new WordResponse(x)).ToList() ?? new List<WordResponse>();
-        var segments = response.Segments?.Select(x => new SegmentResponse(x)).ToList() ?? new List<SegmentResponse>();
+        var words = response.Words?.Select(x => new WordResponse(x)).ToList() ?? [];
+        var segments = response.Segments?.Select(x => new SegmentResponse(x)).ToList() ?? [];
         
         return new()
         {
             Transcription = BuildTranscription(response, isDiarizationModel),
-            Words = JsonConvert.SerializeObject(words),
-            Segments = JsonConvert.SerializeObject(segments)
+            Words = words,
+            Segments = segments
         };
 
         static string GetResponseFormat(string model) => model switch
