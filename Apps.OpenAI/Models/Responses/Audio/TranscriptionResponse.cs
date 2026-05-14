@@ -8,10 +8,10 @@ public class TranscriptionResponse
 {
     public string Transcription { get; set; }
 
-    [Display("Words (serialized)")]
+    [Display("Words")]
     public List<WordResponse> Words { get; set; }
     
-    [Display("Segments (serialized)")]
+    [Display("Segments")]
     public List<SegmentResponse> Segments { get; set; }
 }
 
