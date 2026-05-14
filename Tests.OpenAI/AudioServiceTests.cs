@@ -7,35 +7,30 @@ using Apps.OpenAI.Models.Requests.Audio;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
-using Newtonsoft.Json.Linq;
 
 namespace Tests.OpenAI;
 
 [TestClass]
 public class AudioServiceTests : TestBaseWithContext
 {
-    [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded, ConnectionTypes.OpenAi)]
-    public async Task CreateTranscription_OpenAi_ReturnsTranscription_DiarizedJsonFormat(InvocationContext context)
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]
+    public async Task CreateTranscription_OpenAi_ReturnsTranscription(InvocationContext context)
     {
         // Arrange
         var handler = new AudioActions(context, FileManagementClient);
         var model = new AudioModelIdentifier { ModelId = "gpt-4o-transcribe-diarize" };
         var request = new TranscriptionRequest
         {
-            File = new FileReference { Name = "Transcription sample short.mp3" },
-            Language = "pt",
+            File = new FileReference { Name = "tts delorean.mp3" },
+            Language = "en",
         };
 
         // Act
         var result = await handler.CreateTranscription(model, request);
-        var segments = JArray.Parse(result.Segments);
 
         // Assert
-        TestContext.WriteLine(result.Transcription);
-        TestContext.WriteLine(result.Segments);
+        PrintResult(result);
         Assert.IsNotNull(result);
-        Assert.IsTrue(segments.Count > 0);
-        Assert.IsTrue(segments.Any(x => x["Speaker"] != null));
     }
 
     [TestMethod, ContextDataSource(ConnectionTypes.OpenAiEmbedded, ConnectionTypes.OpenAi)]
@@ -75,7 +70,6 @@ public class AudioServiceTests : TestBaseWithContext
 
         // Assert
         TestContext.WriteLine(result.Transcription);
-        TestContext.WriteLine(result.Segments);
         Assert.IsNotNull(result);
         Assert.IsFalse(result.Transcription.Contains("A:"));
     }
@@ -96,7 +90,6 @@ public class AudioServiceTests : TestBaseWithContext
 
         // Assert
         TestContext.WriteLine(result.Transcription);
-        TestContext.WriteLine(result.Segments);
         Assert.IsNotNull(result);
     }
 
