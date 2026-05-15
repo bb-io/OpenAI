@@ -15,7 +15,6 @@ using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Filters.Content;
 using Blackbird.Filters.Transformations;
 using Blackbird.Filters.Xliff.Xliff2;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
