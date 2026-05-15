@@ -123,8 +123,8 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
                 var speakerTurns = new List<string>();
                 string? currentSpeaker = null;
                 var currentText = new List<string>();
-
-                foreach (var segment in response.Segments.Where(x => !string.IsNullOrWhiteSpace(x.Text)))
+                
+                foreach (var segment in response.Segments.Where(x => x is not null && !string.IsNullOrWhiteSpace(x.Text)))
                 {
                     var speaker = string.IsNullOrWhiteSpace(segment.Speaker) ? "Unknown" : segment.Speaker.Trim();
                     var text = segment.Text.Trim();
@@ -145,7 +145,7 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
             }
 
             var segmentTexts = response.Segments
-                .Where(x => !string.IsNullOrWhiteSpace(x.Text))
+                .Where(x => x is not null && !string.IsNullOrWhiteSpace(x.Text))
                 .Select(x => x.Text.Trim());
 
             var joinedSegments = string.Join(Environment.NewLine, segmentTexts);
