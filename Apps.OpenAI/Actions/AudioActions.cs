@@ -113,33 +113,44 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
 
         static string BuildTranscription(TranscriptionDto response, bool isDiarizationModel)
         {
-            if (!isDiarizationModel || response.Segments is null || !response.Segments.Any())
+            if (response.Segments is null || response.Segments.Length == 0)
             {
                 return response.Text;
             }
 
-            var speakerTurns = new List<string>();
-            string? currentSpeaker = null;
-            var currentText = new List<string>();
-
-            foreach (var segment in response.Segments.Where(x => !string.IsNullOrWhiteSpace(x.Text)))
+            if (isDiarizationModel)
             {
-                var speaker = string.IsNullOrWhiteSpace(segment.Speaker) ? "Unknown" : segment.Speaker.Trim();
-                var text = segment.Text.Trim();
+                var speakerTurns = new List<string>();
+                string? currentSpeaker = null;
+                var currentText = new List<string>();
 
-                if (!string.Equals(currentSpeaker, speaker, StringComparison.Ordinal))
+                foreach (var segment in response.Segments.Where(x => !string.IsNullOrWhiteSpace(x.Text)))
                 {
-                    AddSpeakerTurn(speakerTurns, currentSpeaker, currentText);
-                    currentSpeaker = speaker;
-                    currentText = [text];
-                    continue;
+                    var speaker = string.IsNullOrWhiteSpace(segment.Speaker) ? "Unknown" : segment.Speaker.Trim();
+                    var text = segment.Text.Trim();
+
+                    if (!string.Equals(currentSpeaker, speaker, StringComparison.Ordinal))
+                    {
+                        AddSpeakerTurn(speakerTurns, currentSpeaker, currentText);
+                        currentSpeaker = speaker;
+                        currentText = [text];
+                        continue;
+                    }
+
+                    currentText.Add(text);
                 }
 
-                currentText.Add(text);
+                AddSpeakerTurn(speakerTurns, currentSpeaker, currentText);
+                return speakerTurns.Count > 0 ? string.Join(Environment.NewLine, speakerTurns) : response.Text;
             }
 
-            AddSpeakerTurn(speakerTurns, currentSpeaker, currentText);
-            return speakerTurns.Count > 0 ? string.Join(Environment.NewLine, speakerTurns) : response.Text;
+            var segmentTexts = response.Segments
+                .Where(x => !string.IsNullOrWhiteSpace(x.Text))
+                .Select(x => x.Text.Trim());
+
+            var joinedSegments = string.Join(Environment.NewLine, segmentTexts);
+
+            return !string.IsNullOrWhiteSpace(joinedSegments) ? joinedSegments : response.Text;
         }
 
         static void AddSpeakerTurn(List<string> speakerTurns, string? speaker, List<string> currentText)
