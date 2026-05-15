@@ -149,7 +149,7 @@ public class AudioActions(InvocationContext invocationContext, IFileManagementCl
                 return;
             }
 
-            speakerTurns.Add($"{speaker}: {string.Join(" ", currentText)}");
+            speakerTurns.Add($"{speaker}: {string.Join(Environment.NewLine, currentText)}");
         }
     }
 
