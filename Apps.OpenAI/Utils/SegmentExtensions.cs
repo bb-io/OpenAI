@@ -7,13 +7,23 @@ namespace Apps.OpenAI.Utils;
 
 public static class SegmentExtensions
 {
+    public static bool IsTranslatable(this Segment segment)
+    {
+        return !segment.IsIgnorbale && segment.IsInitial;
+    }
+
+    public static bool IsEditable(this Segment segment)
+    {
+        return !segment.IsIgnorbale && segment.State == SegmentState.Translated;
+    }
+
     public static IEnumerable<Segment> GetSegmentsForTranslation(this IEnumerable<Segment> segments)
     {
-        return segments.Where(x => !x.IsIgnorbale && x.IsInitial);
+        return segments.Where(x => x.IsTranslatable());
     }
     
     public static IEnumerable<Segment> GetSegmentsForEditing(this IEnumerable<Segment> segments)
     {
-        return segments.Where(x => !x.IsIgnorbale && x.State == SegmentState.Translated);
+        return segments.Where(x => x.IsEditable());
     }
 }

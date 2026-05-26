@@ -34,7 +34,11 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
     public async Task<ChatResponse> CreateMqmReportFromXliff([ActionParameter] CreateMqmReportFromFileRequest request)
     {
         var stream = await FileManagementClient.DownloadAsync(request.File);
-        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => Transformation.Parse(stream, request.File.Name));
+        var loadResult = Transformation.Load(stream, request.File.Name, request.File.ContentType);
+        if (!loadResult.Success)
+            throw new PluginMisconfigurationException(loadResult.Error);
+
+        var content = loadResult.Value;
 
         content.SourceLanguage ??= request.SourceLanguage;
         content.TargetLanguage ??= request.TargetLanguage;
@@ -134,7 +138,11 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
     public async Task<BackgroundProcessingResponse> CreateMqmReportInBackground([ActionParameter] CreateMqmReportInBackgroundRequest request)
     {
         var stream = await FileManagementClient.DownloadAsync(request.File);
-        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => Transformation.Parse(stream, request.File.Name));
+        var loadResult = Transformation.Load(stream, request.File.Name, request.File.ContentType);
+        if (!loadResult.Success)
+            throw new PluginMisconfigurationException(loadResult.Error);
+
+        var content = loadResult.Value;
 
         content.SourceLanguage ??= request.SourceLanguage;
         content.TargetLanguage ??= request.TargetLanguage;
@@ -249,7 +257,7 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
             Status = batchResponse.Status,
             CreatedAt = batchResponse.CreatedAt,
             ExpectedCompletionTime = batchResponse.ExpectedCompletionTime,
-            TransformationFile = await FileManagementClient.UploadAsync(content.Serialize().ToStream(), MediaTypes.Xliff, content.XliffFileName)
+            TransformationFile = await UploadGeneratedFileAsync(content.ToStream(), MediaTypes.Xliff2, content.BilingualFileName)
         };
     }
 

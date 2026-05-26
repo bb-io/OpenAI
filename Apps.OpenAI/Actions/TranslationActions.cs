@@ -48,9 +48,11 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         var batchSize = bucketSize ?? 1500;
         var result = new ContentProcessingResult();
         var stream = await FileManagementClient.DownloadAsync(input.File);
-        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() =>
-            Transformation.Parse(stream, input.File.Name)
-        );
+        var loadResult = Transformation.Load(stream, input.File.Name, input.File.ContentType);
+        if (!loadResult.Success)
+            throw new PluginMisconfigurationException(loadResult.Error);
+
+        var content = loadResult.Value;
         content.SourceLanguage ??= input.SourceLanguage;
         content.TargetLanguage ??= input.TargetLanguage;        
         if (content.TargetLanguage == null) throw new PluginMisconfigurationException("The target language is not defined yet. Please assign the target language in this action.");
@@ -146,13 +148,13 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
             return allResults;
         }
 
-        var units = content.GetUnits();        
+        var units = content.GetUnits().ToList();
         result.TotalSegmentsCount = units.SelectMany(x => x.Segments).Count();
-        units = units.Where(x => x.IsInitial);
-        var segments = units.Where(x => x.IsInitial).SelectMany(x => x.Segments);
-        result.TotalTranslatable = segments.Count();
+        result.TotalTranslatable = units.SelectMany(x => x.Segments).Count(x => x.IsTranslatable());
 
-        var processedBatches = await units.Where(x => x.IsInitial).Batch(batchSize).Process(BatchTranslate);
+        var processedBatches = await units
+            .Batch(batchSize, segment => segment.IsTranslatable())
+            .Process(BatchTranslate);
         result.ProcessedBatchesCount = batchCounter;
         result.Usage = UsageDto.Sum(usages);
         result.SystemPrompt = systemprompt;
@@ -172,8 +174,9 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
                 {
                     updatedCount++;
                     segment.SetTarget(translation.TranslatedText);
-                    segment.State = SegmentState.Translated;
                 }
+
+                segment.State = SegmentState.Translated;
             }
 
             var model = modelIdentifier.ModelId;
@@ -187,16 +190,16 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         if (input.OutputFileHandling == "original")
         {
             var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target());
-            result.File = await FileManagementClient.UploadAsync(targetContent.Serialize().ToStream(), targetContent.OriginalMediaType, targetContent.OriginalName);
+            result.File = await UploadGeneratedFileAsync(targetContent.ToStream(), targetContent.OriginalMediaType, targetContent.OriginalName);
         } 
         else if (input.OutputFileHandling == "xliff1")
         {
             var xliff1String = Xliff1Serializer.Serialize(content);
-            result.File = await FileManagementClient.UploadAsync(xliff1String.ToStream(), MediaTypes.Xliff, content.XliffFileName);
+            result.File = await UploadGeneratedFileAsync(xliff1String.ToStream(), MediaTypes.Xliff1, content.BilingualFileName);
         }
         else
         {
-            result.File = await FileManagementClient.UploadAsync(content.Serialize().ToStream(), MediaTypes.Xliff, content.XliffFileName);
+            result.File = await UploadGeneratedFileAsync(content.ToStream(), MediaTypes.Xliff2, content.BilingualFileName);
         }
 
         return result;
@@ -206,9 +209,11 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
     public async Task<BackgroundProcessingResponse> TranslateInBackground([ActionParameter] StartBackgroundProcessRequest startBackgroundProcessRequest)
     {
         var stream = await FileManagementClient.DownloadAsync(startBackgroundProcessRequest.File);
-        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => 
-            Transformation.Parse(stream, startBackgroundProcessRequest.File.Name)
-        );
+        var loadResult = Transformation.Load(stream, startBackgroundProcessRequest.File.Name, startBackgroundProcessRequest.File.ContentType);
+        if (!loadResult.Success || loadResult.Value is null)
+            throw new PluginMisconfigurationException(loadResult.Error);
+
+        var content = loadResult.Value;
         
         content.SourceLanguage ??= startBackgroundProcessRequest.SourceLanguage;
         content.TargetLanguage ??= startBackgroundProcessRequest.TargetLanguage;
@@ -320,14 +325,14 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         }
 
         var batchResponse = await CreateBatchAsync(batchRequests);
-        content.MetaData.Add(new Metadata("background-type", "translate") { Category = [Meta.Categories.Blackbird]});
+        content.MetaData.Set([Meta.Categories.Blackbird], "background-type", "translate");
         return new BackgroundProcessingResponse
         {
             BatchId = batchResponse.Id,
             Status = batchResponse.Status,
             CreatedAt = batchResponse.CreatedAt,
             ExpectedCompletionTime = batchResponse.ExpectedCompletionTime,
-            TransformationFile = await FileManagementClient.UploadAsync(content.Serialize().ToStream(), MediaTypes.Xliff, content.XliffFileName)
+            TransformationFile = await UploadGeneratedFileAsync(content.ToStream(), MediaTypes.Xliff2, content.BilingualFileName)
         };
     }
 

@@ -38,7 +38,11 @@ public class ContentPromptBuilderService
         }
 
         prompt.AppendLine("3. Preserve all XML tags exactly as they appear in the source text");
-        prompt.AppendLine("4. Maintain consistent terminology throughout the translations"); 
+        prompt.AppendLine("4. Maintain consistent terminology throughout the translations");
+        prompt.AppendLine("5. If a source segment contains XML or inline markup, keep the exact same tags, attributes, self-closing tags, entities, and tag order in the target text");
+        prompt.AppendLine("6. Do not add, remove, rename, expand, reorder, or reformat any XML or inline markup");
+        prompt.AppendLine("7. Translate only human-readable text nodes; leave tag syntax, attribute values, IDs, references, placeholders, and non-translatable code unchanged");
+        prompt.AppendLine("8. If a source segment contains markup, the translated_text must contain the exact same markup skeleton as the source and only the human-readable text between tags may change");
         
         prompt.AppendLine("### OUTPUT FORMAT (STRICT)");
         prompt.AppendLine("You must respond ONLY with a valid JSON object. Do NOT include any conversational text, headers (like '### TRANSLATION UNITS') or explanations.");
@@ -52,6 +56,8 @@ public class ContentPromptBuilderService
         prompt.AppendLine("    }");
         prompt.AppendLine("  ]");
         prompt.AppendLine("}");
+        prompt.AppendLine();
+        prompt.AppendLine("If any translation would require changing markup structure, keep the markup exactly as in the source and translate only the visible text around it.");
         prompt.AppendLine();
 
         if (!string.IsNullOrEmpty(glossaryPrompt) || terms.Count > 0)

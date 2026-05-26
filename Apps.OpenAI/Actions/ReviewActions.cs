@@ -216,8 +216,11 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
             throw new PluginMisconfigurationException("Threshold must be in range 0..1.");
 
         var stream = await FileManagementClient.DownloadAsync(input.File);
-        var content =
-            await ErrorHandler.ExecuteWithErrorHandlingAsync(() => Transformation.Parse(stream, input.File.Name));
+        var loadResult = Transformation.Load(stream, input.File.Name, input.File.ContentType);
+        if (!loadResult.Success)
+            throw new PluginMisconfigurationException(loadResult.Error);
+
+        var content = loadResult.Value;
 
         content.SourceLanguage ??= input.SourceLanguage;
         content.TargetLanguage ??= input.TargetLanguage;
@@ -352,14 +355,14 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         if (input.OutputFileHandling == "original")
         {
             var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target()); 
-            streamResult = targetContent.Serialize().ToStream();
+            streamResult = targetContent.ToStream();
         }
         else
         {
-            streamResult = content.Serialize().ToStream();
+            streamResult = content.ToStream();
         }
 
-        var finalFile = await FileManagementClient.UploadAsync(streamResult, MediaTypes.Xliff, content.XliffFileName);
+        var finalFile = await UploadGeneratedFileAsync(streamResult, MediaTypes.Xliff2, content.BilingualFileName);
 
         result.File = finalFile;
         result.TotalSegmentsProcessed = processedSegmentsCount;

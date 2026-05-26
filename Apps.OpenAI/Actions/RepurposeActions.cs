@@ -45,9 +45,11 @@ public class RepurposeActions(InvocationContext invocationContext, IFileManageme
         [ActionParameter] GlossaryRequest glossary)
     {
         var stream = await FileManagementClient.DownloadAsync(file.File);
-        var transformation = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => 
-            Transformation.Parse(stream, file.File.Name)
-        );
+        var loadResult = Transformation.Load(stream, file.File.Name, file.File.ContentType);
+        if (!loadResult.Success)
+            throw new Exception(loadResult.Error);
+
+        var transformation = loadResult.Value;
 
         var text = transformation.Target().GetPlaintext();
         if (string.IsNullOrWhiteSpace(text))
@@ -75,9 +77,11 @@ public class RepurposeActions(InvocationContext invocationContext, IFileManageme
         [ActionParameter] GlossaryRequest glossary)
     {
         var stream = await FileManagementClient.DownloadAsync(file.File);
-        var transformation = await ErrorHandler.ExecuteWithErrorHandlingAsync(() =>
-            Transformation.Parse(stream, file.File.Name)
-        );
+        var loadResult = Transformation.Load(stream, file.File.Name, file.File.ContentType);
+        if (!loadResult.Success)
+            throw new Exception(loadResult.Error);
+
+        var transformation = loadResult.Value;
 
         var text = transformation.Target().GetPlaintext();
         if (string.IsNullOrWhiteSpace(text))

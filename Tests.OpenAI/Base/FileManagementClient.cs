@@ -26,6 +26,11 @@ public class FileManagementClient : IFileManagementClient
     {
         if (stream == null) throw new ArgumentNullException(nameof(stream));
         if (string.IsNullOrEmpty(fileName)) throw new ArgumentNullException(nameof(fileName));
+
+        if (stream.CanSeek)
+        {
+            stream.Position = 0;
+        }
         
         var path = Path.Combine(_folderLocation, "Output", fileName);
         var directory = Path.GetDirectoryName(path);
@@ -38,6 +43,9 @@ public class FileManagementClient : IFileManagementClient
             await stream.CopyToAsync(fileStream);
         }
         
-        return new FileReference { Name = fileName };
+        return new FileReference
+        {
+            Name = fileName
+        };
     }
 }

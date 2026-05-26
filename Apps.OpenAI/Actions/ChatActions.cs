@@ -12,9 +12,7 @@ using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using Blackbird.Filters.Content;
 using Blackbird.Filters.Transformations;
-using Blackbird.Filters.Xliff.Xliff2;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -160,22 +158,19 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             else
             {
                 var content = Encoding.UTF8.GetString(fileBytes);
+                using var contentStream = new System.IO.MemoryStream(fileBytes);
+                var loadResult = Transformation.Load(contentStream, input.File.Name, input.File.ContentType);
+                var text = content;
 
-                CodedContent codedContent = null;
-                if (Xliff2Serializer.IsXliff2(content))
+                if (loadResult.Success && loadResult.Value is not null)
                 {
-                    var transformation = Transformation.Parse(content, input.File.Name);
-                    codedContent = transformation.Target();
-                }
-                else
-                {
-                    TryCatchHelper.TryCatch(
-                        () => codedContent = CodedContent.Parse(content, input.File.Name), 
-                        $"Can't process an input file with type {input.File.ContentType}"
-                    );
+                    text = loadResult.Value.Target().GetPlaintext();
+                    if (string.IsNullOrWhiteSpace(text))
+                    {
+                        text = loadResult.Value.Source().GetPlaintext();
+                    }
                 }
 
-                var text = codedContent.GetPlaintext();
                 messages.Add(new ChatMessageDto(MessageRoles.User, input.Message));
                 messages.Add(new ChatMessageDto(MessageRoles.User, $"File content:\r\n{text}"));
             }
