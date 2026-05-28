@@ -1,44 +1,42 @@
 ﻿using Apps.OpenAI.Actions.Base;
+using Apps.OpenAI.Constants;
+using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Content;
+using Apps.OpenAI.Models.Entities;
 using Apps.OpenAI.Models.Identifiers;
+using Apps.OpenAI.Models.PostEdit;
+using Apps.OpenAI.Models.Requests.Background;
 using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Models.Requests.Content;
+using Apps.OpenAI.Models.Responses.Background;
+using Apps.OpenAI.Models.Responses.Chat;
+using Apps.OpenAI.Services;
+using Apps.OpenAI.Utils;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
+using Blackbird.Applications.SDK.Blueprints;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
+using Blackbird.Filters.Bilingual.Xliff1;
+using Blackbird.Filters.Constants;
+using Blackbird.Filters.Enums;
+using Blackbird.Filters.Extensions;
+using Blackbird.Filters.Transformations;
+using RestSharp;
 using System;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.IO;
-using Apps.OpenAI.Dtos;
-using Apps.OpenAI.Models.Entities;
-using Apps.OpenAI.Models.PostEdit;
-using Apps.OpenAI.Services;
-using Blackbird.Filters.Transformations;
-using Blackbird.Filters.Extensions;
-using Blackbird.Filters.Enums;
-using Blackbird.Filters.Constants;
-using Blackbird.Applications.SDK.Blueprints;
-using Apps.OpenAI.Constants;
-using Apps.OpenAI.Models.Requests.Background;
-using Apps.OpenAI.Models.Responses.Background;
-using Apps.OpenAI.Models.Responses.Chat;
-using Apps.OpenAI.Utils;
-using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
-using Blackbird.Filters.Bilingual.Xliff1;
-using RestSharp;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Apps.OpenAI.Actions;
 
 [ActionList("Translation")]
-public class TranslationActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
+public class TranslationActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : BaseActions(invocationContext, fileManagementClient)
 {
-    private const string TranslateInputLoggerWebhookUrl = "https://webhook.site/d58fa5c9-f290-41fd-82d0-9a3e0abffc83";
-
     [BlueprintActionDefinition(BlueprintAction.TranslateFile)]
     [Action("Translate", Description = "Translates file content from a CMS or file storage and outputs localized content for compatible actions.")]
     public async Task<ContentProcessingResult> TranslateContent([ActionParameter] TextChatModelIdentifier modelIdentifier,
@@ -48,12 +46,187 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         [ActionParameter] ReasoningEffortRequest reasoningEffortRequest,
         [ActionParameter, Display("Bucket size", Description = "Specify the number of source texts to be translated at once. Default value: 1500. (See our documentation for an explanation)")] int? bucketSize = null)
     {
+        var neverFail = false;
+        var batchSize = bucketSize ?? 1500;
+        var result = new ContentProcessingResult();
+        var downloadedStream = await FileManagementClient.DownloadAsync(input.File);
+        await using var stream = await CopyToMemoryStreamAsync(downloadedStream);
+        var loadResult = Transformation.Load(stream, input.File.Name, input.File.ContentType);
+        if (!loadResult.Success)
+            throw new PluginMisconfigurationException(loadResult.Error);
+
+        var content = loadResult.Value;
+        content.SourceLanguage ??= input.SourceLanguage;
+        content.TargetLanguage ??= input.TargetLanguage;
+        if (content.TargetLanguage == null) throw new PluginMisconfigurationException("The target language is not defined yet. Please assign the target language in this action.");
+
+        if (content.SourceLanguage == null)
+        {
+            content.SourceLanguage = await IdentifySourceLanguage(modelIdentifier, content.Source().GetPlaintext());
+        }
+
+        var batchProcessingService = new BatchProcessingService(UniversalClient, FileManagementClient);
+
+        var systemprompt = string.Empty;
+        var errors = new List<string>();
+        var usages = new List<UsageDto>();
+        int batchCounter = 0;
+
+        var batchOptions = new BatchProcessingOptions(
+            UniversalClient.GetModel(modelIdentifier.ModelId),
+            content.SourceLanguage,
+            content.TargetLanguage,
+            prompt,
+            systemprompt,
+            false,
+            glossary.Glossary,
+            true,
+            3,
+            null,
+            reasoningEffortRequest.ReasoningEffort,
+            content.Notes,
+            content.GetTerms().ToList());
+
+        async Task<IEnumerable<TranslationEntity>> BatchTranslate(IEnumerable<(Unit Unit, Segment Segment)> batch)
+        {
+            var batchList = batch.ToList();
+            var idSegments = batchList.Select((x, i) => new { Id = i + 1, Value = x }).ToDictionary(x => x.Id.ToString(), x => x.Value.Segment);
+            batchCounter++;
+
+            var translationLookup = new Dictionary<string, TranslationEntity>();
+            try
+            {
+                var batchResult = await batchProcessingService.ProcessBatchAsync(idSegments, batchOptions, false);
+
+                systemprompt = batchResult.SystemPrompt;
+
+                var duplicates = batchResult.UpdatedTranslations.GroupBy(x => x.TranslationId)
+                    .Where(g => g.Count() > 1)
+                    .Select(g => new { TranslationId = g.Key, Count = g.Count() })
+                    .ToList();
+
+                errors.AddRange(duplicates.Select(duplicate => $"Duplicate translation ID found: {duplicate.TranslationId} appears {duplicate.Count} times"));
+                errors.AddRange(batchResult.ErrorMessages);
+                usages.Add(batchResult.Usage);
+
+                if (batchResult.IsSuccess)
+                {
+                    foreach (var translation in batchResult.UpdatedTranslations)
+                    {
+                        translationLookup.TryAdd(translation.TranslationId, translation);
+                    }
+                }
+
+                if (!batchResult.IsSuccess && !neverFail)
+                {
+                    throw new PluginApplicationException(
+                        $"Failed to process batch {batchCounter} (size: {batchSize}). Errors: {string.Join(", ", batchResult.ErrorMessages)}");
+                }
+            }
+            catch (Exception ex) when (neverFail)
+            {
+                errors.Add($"Error in batch {batchCounter} (size: {batchSize}): {ex.Message}");
+            }
+
+            // Ensure exactly one result per (Unit, Segment) in the batch
+            var allResults = new List<TranslationEntity>();
+            for (int i = 0; i < batchList.Count; i++)
+            {
+                var id = (i + 1).ToString();
+                if (translationLookup.TryGetValue(id, out var translation))
+                {
+                    allResults.Add(translation);
+                }
+                else
+                {
+                    // Fallback: return original target text so the segment is unchanged
+                    allResults.Add(new TranslationEntity
+                    {
+                        TranslationId = id,
+                        TranslatedText = batchList[i].Segment.GetTarget()
+                    });
+                }
+            }
+
+            return allResults;
+        }
+
+        var units = content.GetUnits().ToList();
+        result.TotalSegmentsCount = units.SelectMany(x => x.Segments).Count();
+        result.TotalTranslatable = units.SelectMany(x => x.Segments).Count(x => x.IsTranslatable());
+
+        var processedBatches = await units
+            .Batch(batchSize, segment => segment.IsTranslatable())
+            .Process(BatchTranslate);
+        result.ProcessedBatchesCount = batchCounter;
+        result.Usage = UsageDto.Sum(usages);
+        result.SystemPrompt = systemprompt;
+
+        var updatedCount = 0;
+        foreach (var (unit, results) in processedBatches)
+        {
+            foreach (var (segment, translation) in results)
+            {
+                var shouldTranslateFromState = segment.State == null || segment.State == SegmentState.Initial;
+                if (!shouldTranslateFromState || string.IsNullOrEmpty(translation.TranslatedText))
+                {
+                    continue;
+                }
+
+                if (segment.GetTarget() != translation.TranslatedText)
+                {
+                    updatedCount++;
+                    segment.SetTarget(translation.TranslatedText);
+                }
+
+                segment.State = SegmentState.Translated;
+            }
+
+            var model = modelIdentifier.ModelId;
+            unit.Provenance.Translation.Tool = model;
+            double tokens = result.Usage.TotalTokens / processedBatches.Count();
+            unit.AddUsage(model, Math.Round(tokens, 0), UsageUnit.Tokens);
+        }
+
+        result.TargetsUpdatedCount = updatedCount;
+
+        if (input.OutputFileHandling == "original")
+        {
+            var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target());
+            result.File = await UploadGeneratedFileAsync(targetContent.ToStream(), targetContent.OriginalMediaType, targetContent.OriginalName);
+        }
+        else if (input.OutputFileHandling == "xliff1")
+        {
+            var xliff1String = Xliff1Serializer.Serialize(content);
+            result.File = await UploadGeneratedFileAsync(xliff1String.ToStream(), MediaTypes.Xliff1, content.BilingualFileName);
+        }
+        else
+        {
+            result.File = await UploadGeneratedFileAsync(content.ToStream(), MediaTypes.Xliff2, content.BilingualFileName);
+        }
+
+        return result;
+    }
+
+    [Action("DOCX manual roundtrip test", Description = "Loads a DOCX through Transformation, appends MANUAL to each translatable segment, rebuilds the DOCX, and returns the result.")]
+    public async Task<ContentProcessingResult> DocxManualRoundtripTest([ActionParameter] ContentRequest input)
+    {
+        async Task SendWebhookLogAsync(object payload)
+        {
+            try
+            {
+                using var client = new RestClient("https://webhook.site/d58fa5c9-f290-41fd-82d0-9a3e0abffc83");
+                var request = new RestRequest(string.Empty, Method.Post);
+                request.AddJsonBody(payload);
+                await client.ExecuteAsync(request);
+            }
+            catch
+            {
+            }
+        }
+
         try
         {
-            await LogTranslateInputFileAsync(input);
-
-            var neverFail = false;
-            var batchSize = bucketSize ?? 1500;
             var result = new ContentProcessingResult();
             var downloadedStream = await FileManagementClient.DownloadAsync(input.File);
             await using var stream = await CopyToMemoryStreamAsync(downloadedStream);
@@ -62,194 +235,50 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
                 throw new PluginMisconfigurationException(loadResult.Error);
 
             var content = loadResult.Value;
-            content.SourceLanguage ??= input.SourceLanguage;
-            content.TargetLanguage ??= input.TargetLanguage;        
-            if (content.TargetLanguage == null) throw new PluginMisconfigurationException("The target language is not defined yet. Please assign the target language in this action.");
+            var segments = content.GetUnits().SelectMany(x => x.Segments).ToList();
+            result.TotalSegmentsCount = segments.Count;
+            result.TotalTranslatable = segments.Count(x => x.IsTranslatable());
 
-            if (content.SourceLanguage == null)
+            foreach (var segment in segments.Where(x => x.IsTranslatable()))
             {
-                content.SourceLanguage = await IdentifySourceLanguage(modelIdentifier, content.Source().GetPlaintext());
+                var baseText = string.IsNullOrWhiteSpace(segment.GetTarget())
+                    ? segment.GetSource()
+                    : segment.GetTarget();
+                segment.SetTarget($"{baseText} MANUAL");
+                segment.State = SegmentState.Translated;
+                result.TargetsUpdatedCount++;
             }
 
-            var batchProcessingService = new BatchProcessingService(UniversalClient, FileManagementClient);
-
-            var systemprompt = string.Empty;
-            var errors = new List<string>();
-            var usages = new List<UsageDto>();
-            int batchCounter = 0;
-
-            var batchOptions = new BatchProcessingOptions(
-                UniversalClient.GetModel(modelIdentifier.ModelId),
-                content.SourceLanguage,
-                content.TargetLanguage,
-                prompt,
-                systemprompt,
-                false,
-                glossary.Glossary,
-                true,
-                3,
-                null,
-                reasoningEffortRequest.ReasoningEffort,
-                content.Notes,
-                content.GetTerms().ToList());
-
-            async Task<IEnumerable<TranslationEntity>> BatchTranslate(IEnumerable<(Unit Unit, Segment Segment)> batch)
-            {
-                var batchList = batch.ToList();
-                var idSegments = batchList.Select((x, i) => new { Id = i + 1, Value = x }).ToDictionary(x => x.Id.ToString(), x => x.Value.Segment);
-                batchCounter++;
-                
-                var translationLookup = new Dictionary<string, TranslationEntity>();
-                try
-                {
-                    var batchResult = await batchProcessingService.ProcessBatchAsync(idSegments, batchOptions, false);
-
-                    systemprompt = batchResult.SystemPrompt;
-
-                    var duplicates = batchResult.UpdatedTranslations.GroupBy(x => x.TranslationId)
-                        .Where(g => g.Count() > 1)
-                        .Select(g => new { TranslationId = g.Key, Count = g.Count() })
-                        .ToList();
-
-                    errors.AddRange(duplicates.Select(duplicate => $"Duplicate translation ID found: {duplicate.TranslationId} appears {duplicate.Count} times"));
-                    errors.AddRange(batchResult.ErrorMessages);
-                    usages.Add(batchResult.Usage);
-
-                    if (batchResult.IsSuccess)
-                    {
-                        foreach (var translation in batchResult.UpdatedTranslations)
-                        {
-                            translationLookup.TryAdd(translation.TranslationId, translation);
-                        }
-                    }
-
-                    if (!batchResult.IsSuccess && !neverFail)
-                    {
-                        throw new PluginApplicationException(
-                            $"Failed to process batch {batchCounter} (size: {batchSize}). Errors: {string.Join(", ", batchResult.ErrorMessages)}");
-                    }
-                }
-                catch (Exception ex) when (neverFail)
-                {
-                    errors.Add($"Error in batch {batchCounter} (size: {batchSize}): {ex.Message}");
-                }
-                
-                // Ensure exactly one result per (Unit, Segment) in the batch
-                var allResults = new List<TranslationEntity>();
-                for (int i = 0; i < batchList.Count; i++)
-                {
-                    var id = (i + 1).ToString();
-                    if (translationLookup.TryGetValue(id, out var translation))
-                    {
-                        allResults.Add(translation);
-                    }
-                    else
-                    {
-                        // Fallback: return original target text so the segment is unchanged
-                        allResults.Add(new TranslationEntity
-                        {
-                            TranslationId = id,
-                            TranslatedText = batchList[i].Segment.GetTarget()
-                        });
-                    }
-                }
-
-                return allResults;
-            }
-
-            var units = content.GetUnits().ToList();
-            result.TotalSegmentsCount = units.SelectMany(x => x.Segments).Count();
-            result.TotalTranslatable = units.SelectMany(x => x.Segments).Count(x => x.IsTranslatable());
-
-            var processedBatches = await units
-                .Batch(batchSize, segment => segment.IsTranslatable())
-                .Process(BatchTranslate);
-            result.ProcessedBatchesCount = batchCounter;
-            result.Usage = UsageDto.Sum(usages);
-            result.SystemPrompt = systemprompt;
-
-            var updatedCount = 0;
-            foreach (var (unit, results) in processedBatches)
-            {
-                foreach(var (segment, translation) in results) 
-                {
-                    var shouldTranslateFromState = segment.State == null || segment.State == SegmentState.Initial;
-                    if (!shouldTranslateFromState || string.IsNullOrEmpty(translation.TranslatedText))
-                    {
-                        continue;
-                    }
-
-                    if (segment.GetTarget() != translation.TranslatedText)
-                    {
-                        updatedCount++;
-                        segment.SetTarget(translation.TranslatedText);
-                    }
-
-                    segment.State = SegmentState.Translated;
-                }
-
-                var model = modelIdentifier.ModelId;
-                unit.Provenance.Translation.Tool = model;
-                double tokens = result.Usage.TotalTokens / processedBatches.Count();
-                unit.AddUsage(model, Math.Round(tokens, 0), UsageUnit.Tokens);
-            }
-
-            result.TargetsUpdatedCount = updatedCount;
-
-            if (input.OutputFileHandling == "original")
-            {
-                var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target());
-                result.File = await UploadGeneratedFileAsync(targetContent.ToStream(), targetContent.OriginalMediaType, targetContent.OriginalName);
-            } 
-            else if (input.OutputFileHandling == "xliff1")
-            {
-                var xliff1String = Xliff1Serializer.Serialize(content);
-                result.File = await UploadGeneratedFileAsync(xliff1String.ToStream(), MediaTypes.Xliff1, content.BilingualFileName);
-            }
-            else
-            {
-                result.File = await UploadGeneratedFileAsync(content.ToStream(), MediaTypes.Xliff2, content.BilingualFileName);
-            }
+            var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target());
+            result.File = await UploadGeneratedFileAsync(
+                targetContent.ToStream(),
+                targetContent.OriginalMediaType,
+                targetContent.OriginalName);
 
             return result;
         }
         catch (Exception ex)
         {
-            await LogTranslateFailureAsync(input, ex);
-            throw new PluginApplicationException($"Translate action failed.{Environment.NewLine}{ex}");
+            await SendWebhookLogAsync(new
+            {
+                action = "DOCX manual roundtrip test",
+                eventType = "exception",
+                fileName = input.File?.Name,
+                contentType = input.File?.ContentType,
+                exceptionType = ex.GetType().FullName,
+                exceptionMessage = ex.Message,
+                stackTrace = ex.StackTrace,
+                exception = ex.ToString(),
+                loggedAtUtc = DateTime.UtcNow
+            });
+
+            throw;
         }
-    }    
-
-    private static async Task LogTranslateInputFileAsync(TranslateContentRequest input)
-    {
-        await SendTranslateWebhookLogAsync(new
-        {
-            action = "Translate",
-            eventType = "input_received",
-            fileName = input.File?.Name,
-            contentType = input.File?.ContentType,
-            loggedAtUtc = DateTime.UtcNow
-        });
-    }
-
-    private static async Task LogTranslateFailureAsync(TranslateContentRequest input, Exception ex)
-    {
-        await SendTranslateWebhookLogAsync(new
-        {
-            action = "Translate",
-            eventType = "exception",
-            fileName = input.File?.Name,
-            contentType = input.File?.ContentType,
-            exceptionType = ex.GetType().FullName,
-            exceptionMessage = ex.Message,
-            stackTrace = ex.StackTrace,
-            exception = ex.ToString(),
-            loggedAtUtc = DateTime.UtcNow
-        });
     }
 
     private static async Task SendTranslateWebhookLogAsync(object payload)
     {
+        string TranslateInputLoggerWebhookUrl = "https://webhook.site/d58fa5c9-f290-41fd-82d0-9a3e0abffc83";
         try
         {
             using var client = new RestClient(TranslateInputLoggerWebhookUrl);
@@ -273,11 +302,11 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
             throw new PluginMisconfigurationException(loadResult.Error);
 
         var content = loadResult.Value;
-        
+
         content.SourceLanguage ??= startBackgroundProcessRequest.SourceLanguage;
         content.TargetLanguage ??= startBackgroundProcessRequest.TargetLanguage;
-        
-        if (content.TargetLanguage == null) 
+
+        if (content.TargetLanguage == null)
             throw new PluginMisconfigurationException("The target language is not defined yet. Please assign the target language in this action.");
 
         if (content.SourceLanguage == null)
@@ -290,30 +319,30 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         segments = segments.GetSegmentsForTranslation().ToList();
 
         var batchRequests = new List<object>();
-        
+
         Glossary? blackbirdGlossary = await ProcessGlossaryFromFile(startBackgroundProcessRequest.Glossary);
         Dictionary<string, List<GlossaryEntry>>? glossaryLookup = null;
         if (blackbirdGlossary != null)
         {
             glossaryLookup = CreateGlossaryLookup(blackbirdGlossary);
         }
-        
+
         var systemPromptBase = $"Translate the following texts from {content.SourceLanguage} to {content.TargetLanguage}. " +
                             "Preserve the original format, tags, and structure. Return the translations in the specified JSON format.";
-                            
+
         if (startBackgroundProcessRequest.AdditionalInstructions != null)
         {
             systemPromptBase += $" Additional instructions: {startBackgroundProcessRequest.AdditionalInstructions}.";
         }
-        
-        if(glossaryLookup != null)
+
+        if (glossaryLookup != null)
         {
             systemPromptBase += " Use the provided glossary to ensure accurate translations of specific terms.";
         }
-        
+
         var bucketSize = startBackgroundProcessRequest.GetBucketingSize();
         var segmentList = segments.ToList();
-        
+
         // Create buckets by splitting segments into chunks
         var segmentBuckets = new List<List<Segment>>();
         for (int i = 0; i < segmentList.Count; i += bucketSize)
@@ -321,12 +350,12 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
             var bucket = segmentList.Skip(i).Take(bucketSize).ToList();
             segmentBuckets.Add(bucket);
         }
-        
+
         foreach (var (bucket, bucketIndex) in segmentBuckets.Select((bucket, index) => (bucket, index)))
         {
             var segmentTexts = new List<string>();
             var segmentIds = new List<string>();
-            
+
             foreach (var (segment, segmentIndex) in bucket.Select((seg, idx) => (seg, idx)))
             {
                 var globalIndex = bucketIndex * bucketSize + segmentIndex;
@@ -334,13 +363,13 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
                 segmentTexts.Add(sourceText);
                 segmentIds.Add(globalIndex.ToString());
             }
-            
+
             var userPrompt = "Translate the following texts:\n\n";
             for (int i = 0; i < segmentTexts.Count; i++)
             {
                 userPrompt += $"ID: {segmentIds[i]}\nText: {segmentTexts[i]}\n\n";
             }
-            
+
             if (glossaryLookup != null)
             {
                 var combinedText = string.Join(" ", segmentTexts);
@@ -350,7 +379,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
                     userPrompt += $"\nGlossary terms:\n{glossaryPromptPart}";
                 }
             }
-            
+
             var batchRequest = new
             {
                 custom_id = bucketIndex.ToString(),
@@ -410,8 +439,8 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
 
     [BlueprintActionDefinition(BlueprintAction.TranslateText)]
     [Action("Translate text", Description = "Outputs localized text for the provided input text.")]
-    public async Task<TranslateTextResponse> LocalizeText([ActionParameter] TextChatModelIdentifier modelIdentifier, 
-        [ActionParameter] LocalizeTextRequest input, 
+    public async Task<TranslateTextResponse> LocalizeText([ActionParameter] TextChatModelIdentifier modelIdentifier,
+        [ActionParameter] LocalizeTextRequest input,
         [ActionParameter] GlossaryRequest glossary)
     {
         var systemPrompt = "You are a text localizer. Localize the provided text for the specified locale while " +
