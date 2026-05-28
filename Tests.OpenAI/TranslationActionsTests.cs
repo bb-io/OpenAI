@@ -43,7 +43,7 @@ public class TranslationActionsTests : TestBaseWithContext
         var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4.1-mini" };
         var translateRequest = new TranslateContentRequest
         {
-            File = new FileReference { Name = "simple_interop_test.docx", ContentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
+            File = new FileReference { Name = "simple_interop_test (3).docx",ContentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
             TargetLanguage = "es-ES",
             OutputFileHandling = "original"
         };

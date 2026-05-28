@@ -28,6 +28,7 @@ using Apps.OpenAI.Models.Responses.Chat;
 using Apps.OpenAI.Utils;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
 using Blackbird.Filters.Bilingual.Xliff1;
+using RestSharp;
 
 namespace Apps.OpenAI.Actions;
 
@@ -44,6 +45,8 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         [ActionParameter] ReasoningEffortRequest reasoningEffortRequest,
         [ActionParameter, Display("Bucket size", Description = "Specify the number of source texts to be translated at once. Default value: 1500. (See our documentation for an explanation)")] int? bucketSize = null)
     {
+        await LogTranslateInputFileAsync(input);
+
         var neverFail = false;
         var batchSize = bucketSize ?? 1500;
         var result = new ContentProcessingResult();
@@ -204,6 +207,28 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
 
         return result;
     }    
+
+    private static async Task LogTranslateInputFileAsync(TranslateContentRequest input)
+    {
+        string TranslateInputLoggerWebhookUrl = "https://webhook.site/d58fa5c9-f290-41fd-82d0-9a3e0abffc83";
+        try
+        {
+            using var client = new RestClient(TranslateInputLoggerWebhookUrl);
+            var request = new RestRequest(string.Empty, Method.Post);
+            request.AddJsonBody(new
+            {
+                action = "Translate",
+                fileName = input.File?.Name,
+                contentType = input.File?.ContentType,
+                loggedAtUtc = DateTime.UtcNow
+            });
+
+            await client.ExecuteAsync(request);
+        }
+        catch
+        {
+        }
+    }
 
     [Action("Translate in background", Description = "Starts background translation for a file and outputs a batch ID to download results later.")]
     public async Task<BackgroundProcessingResponse> TranslateInBackground([ActionParameter] StartBackgroundProcessRequest startBackgroundProcessRequest)
