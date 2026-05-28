@@ -12,6 +12,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.IO;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Entities;
 using Apps.OpenAI.Models.PostEdit;
@@ -54,7 +55,8 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
             var neverFail = false;
             var batchSize = bucketSize ?? 1500;
             var result = new ContentProcessingResult();
-            var stream = await FileManagementClient.DownloadAsync(input.File);
+            var downloadedStream = await FileManagementClient.DownloadAsync(input.File);
+            await using var stream = await CopyToMemoryStreamAsync(downloadedStream);
             var loadResult = Transformation.Load(stream, input.File.Name, input.File.ContentType);
             if (!loadResult.Success)
                 throw new PluginMisconfigurationException(loadResult.Error);
@@ -264,7 +266,8 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
     [Action("Translate in background", Description = "Starts background translation for a file and outputs a batch ID to download results later.")]
     public async Task<BackgroundProcessingResponse> TranslateInBackground([ActionParameter] StartBackgroundProcessRequest startBackgroundProcessRequest)
     {
-        var stream = await FileManagementClient.DownloadAsync(startBackgroundProcessRequest.File);
+        var downloadedStream = await FileManagementClient.DownloadAsync(startBackgroundProcessRequest.File);
+        await using var stream = await CopyToMemoryStreamAsync(downloadedStream);
         var loadResult = Transformation.Load(stream, startBackgroundProcessRequest.File.Name, startBackgroundProcessRequest.File.ContentType);
         if (!loadResult.Success || loadResult.Value is null)
             throw new PluginMisconfigurationException(loadResult.Error);
@@ -390,6 +393,19 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
             ExpectedCompletionTime = batchResponse.ExpectedCompletionTime,
             TransformationFile = await UploadGeneratedFileAsync(content.ToStream(), MediaTypes.Xliff2, content.BilingualFileName)
         };
+    }
+
+    private static async Task<MemoryStream> CopyToMemoryStreamAsync(Stream input)
+    {
+        var memoryStream = new MemoryStream();
+        if (input.CanSeek)
+        {
+            input.Position = 0;
+        }
+
+        await input.CopyToAsync(memoryStream);
+        memoryStream.Position = 0;
+        return memoryStream;
     }
 
     [BlueprintActionDefinition(BlueprintAction.TranslateText)]
