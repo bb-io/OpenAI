@@ -27,7 +27,7 @@ using Apps.OpenAI.Models.Responses.Background;
 using Apps.OpenAI.Models.Responses.Chat;
 using Apps.OpenAI.Utils;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
-using Blackbird.Filters.Xliff.Xliff1;
+using Blackbird.Filters.Bilingual.Xliff1;
 
 namespace Apps.OpenAI.Actions;
 
