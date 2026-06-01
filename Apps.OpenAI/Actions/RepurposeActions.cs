@@ -8,6 +8,7 @@ using Apps.OpenAI.Models.Responses.Chat;
 using Apps.OpenAI.Utils;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Filters.Transformations;
@@ -47,7 +48,7 @@ public class RepurposeActions(InvocationContext invocationContext, IFileManageme
         var stream = await FileManagementClient.DownloadAsync(file.File);
         var loadResult = Transformation.Load(stream, file.File.Name, file.File.ContentType);
         if (!loadResult.Success)
-            throw new Exception(loadResult.Error);
+            throw new PluginMisconfigurationException(loadResult.Error);
 
         var transformation = loadResult.Value;
 
@@ -79,7 +80,7 @@ public class RepurposeActions(InvocationContext invocationContext, IFileManageme
         var stream = await FileManagementClient.DownloadAsync(file.File);
         var loadResult = Transformation.Load(stream, file.File.Name, file.File.ContentType);
         if (!loadResult.Success)
-            throw new Exception(loadResult.Error);
+            throw new PluginMisconfigurationException(loadResult.Error);
 
         var transformation = loadResult.Value;
 

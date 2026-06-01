@@ -352,17 +352,23 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         }
 
         Stream streamResult;
+        string contentType;
+        string fileName;
         if (input.OutputFileHandling == "original")
         {
-            var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target()); 
+            var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target());
             streamResult = targetContent.ToStream();
+            contentType = targetContent.OriginalMediaType;
+            fileName = targetContent.OriginalName;
         }
         else
         {
             streamResult = content.ToStream();
+            contentType = MediaTypes.Xliff2;
+            fileName = content.BilingualFileName;
         }
 
-        var finalFile = await UploadGeneratedFileAsync(streamResult, MediaTypes.Xliff2, content.BilingualFileName);
+        var finalFile = await UploadGeneratedFileAsync(streamResult, contentType, fileName);
 
         result.File = finalFile;
         result.TotalSegmentsProcessed = processedSegmentsCount;

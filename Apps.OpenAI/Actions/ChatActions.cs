@@ -158,11 +158,11 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             else
             {
                 var content = Encoding.UTF8.GetString(fileBytes);
-                using var contentStream = new System.IO.MemoryStream(fileBytes);
+                using var contentStream = new System.IO.MemoryStream(fileBytes, writable: false);
                 var loadResult = Transformation.Load(contentStream, input.File.Name, input.File.ContentType);
                 var text = content;
 
-                if (loadResult.Success && loadResult.Value is not null)
+                if (loadResult.Success)
                 {
                     text = loadResult.Value.Target().GetPlaintext();
                     if (string.IsNullOrWhiteSpace(text))
