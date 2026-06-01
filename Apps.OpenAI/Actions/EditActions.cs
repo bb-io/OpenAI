@@ -227,7 +227,10 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
         if (input.OutputFileHandling == "original")
         {
-            var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target());
+            var targetContentResult = content.Target();
+            if (!targetContentResult.Success)
+                throw new PluginMisconfigurationException(targetContentResult.Error);
+            var targetContent = targetContentResult.Value;
             result.File = await FileManagementClient.UploadAsync(targetContent.ToStream(), targetContent.OriginalMediaType, targetContent.OriginalName);
         } 
         else if (input.OutputFileHandling == "xliff1")
@@ -548,7 +551,10 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
         if (input.OutputFileHandling == "original")
         {
-            var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target());
+            var targetContentResult = content.Target();
+            if (!targetContentResult.Success)
+                throw new PluginMisconfigurationException(targetContentResult.Error);
+            var targetContent = targetContentResult.Value;
             result.File = await FileManagementClient.UploadAsync(
                 targetContent.ToStream(),
                 targetContent.OriginalMediaType,

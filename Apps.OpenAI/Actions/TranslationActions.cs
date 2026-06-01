@@ -60,7 +60,11 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
 
         if (content.SourceLanguage == null)
         {
-            content.SourceLanguage = await IdentifySourceLanguage(modelIdentifier, content.Source().GetPlaintext());
+            var sourceContentResult = content.Source();
+            if (!sourceContentResult.Success)
+                throw new PluginMisconfigurationException(sourceContentResult.Error);
+            var sourceContent = sourceContentResult.Value;
+            content.SourceLanguage = await IdentifySourceLanguage(modelIdentifier, sourceContent.GetPlaintext());
         }
 
         var batchProcessingService = new BatchProcessingService(UniversalClient, FileManagementClient);
@@ -190,7 +194,10 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
 
         if (input.OutputFileHandling == "original")
         {
-            var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target());
+            var targetContentResult = content.Target();
+            if (!targetContentResult.Success)
+                throw new PluginMisconfigurationException(targetContentResult.Error);
+            var targetContent = targetContentResult.Value;
             result.File = await FileManagementClient.UploadAsync(targetContent.ToStream(), targetContent.OriginalMediaType, targetContent.OriginalName);
         }
         else if (input.OutputFileHandling == "xliff1")
@@ -224,7 +231,11 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
 
         if (content.SourceLanguage == null)
         {
-            content.SourceLanguage = await IdentifySourceLanguage(startBackgroundProcessRequest, content.Source().GetPlaintext());
+            var sourceContentResult = content.Source();
+            if (!sourceContentResult.Success)
+                throw new PluginMisconfigurationException(sourceContentResult.Error);
+            var sourceContent = sourceContentResult.Value;
+            content.SourceLanguage = await IdentifySourceLanguage(startBackgroundProcessRequest, sourceContent.GetPlaintext());
         }
 
         var units = content.GetUnits();

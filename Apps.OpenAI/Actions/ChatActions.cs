@@ -165,10 +165,18 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
                 if (loadResult.Success)
                 {
-                    text = loadResult.Value.Target().GetPlaintext();
+                    var targetContentResult = loadResult.Value.Target();
+                    if (!targetContentResult.Success)
+                        throw new PluginMisconfigurationException(targetContentResult.Error);
+                    var targetContent = targetContentResult.Value;
+                    text = targetContent.GetPlaintext();
                     if (string.IsNullOrWhiteSpace(text))
                     {
-                        text = loadResult.Value.Source().GetPlaintext();
+                        var sourceContentResult = loadResult.Value.Source();
+                        if (!sourceContentResult.Success)
+                            throw new PluginMisconfigurationException(sourceContentResult.Error);
+                        var sourceContent = sourceContentResult.Value;
+                        text = sourceContent.GetPlaintext();
                     }
                 }
 

@@ -52,10 +52,18 @@ public class RepurposeActions(InvocationContext invocationContext, IFileManageme
 
         var transformation = loadResult.Value;
 
-        var text = transformation.Target().GetPlaintext();
+        var targetContentResult = transformation.Target();
+        if (!targetContentResult.Success)
+            throw new PluginMisconfigurationException(targetContentResult.Error);
+        var targetContent = targetContentResult.Value;
+        var text = targetContent.GetPlaintext();
         if (string.IsNullOrWhiteSpace(text))
         {
-            text = transformation.Source().GetPlaintext();
+            var sourceContentResult = transformation.Source();
+            if (!sourceContentResult.Success)
+                throw new PluginMisconfigurationException(sourceContentResult.Error);
+            var sourceContent = sourceContentResult.Value;
+            text = sourceContent.GetPlaintext();
         }
 
         return await CreateSummary(modelIdentifier, text, input, glossary);
@@ -84,10 +92,18 @@ public class RepurposeActions(InvocationContext invocationContext, IFileManageme
 
         var transformation = loadResult.Value;
 
-        var text = transformation.Target().GetPlaintext();
+        var targetContentResult = transformation.Target();
+        if (!targetContentResult.Success)
+            throw new PluginMisconfigurationException(targetContentResult.Error);
+        var targetContent = targetContentResult.Value;
+        var text = targetContent.GetPlaintext();
         if (string.IsNullOrWhiteSpace(text))
         {
-            text = transformation.Source().GetPlaintext();
+            var sourceContentResult = transformation.Source();
+            if (!sourceContentResult.Success)
+                throw new PluginMisconfigurationException(sourceContentResult.Error);
+            var sourceContent = sourceContentResult.Value;
+            text = sourceContent.GetPlaintext();
         }
 
         return await RepurposeContent(modelIdentifier, text, input, glossary);

@@ -146,7 +146,10 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
         FileReference resultFile;
         if (request.OutputFileHandling == "original")
         {
-            var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target());
+            var targetContentResult = content.Target();
+            if (!targetContentResult.Success)
+                throw new PluginMisconfigurationException(targetContentResult.Error);
+            var targetContent = targetContentResult.Value;
             resultFile = await FileManagementClient.UploadAsync(
                 targetContent.ToStream(), 
                 targetContent.OriginalMediaType, 

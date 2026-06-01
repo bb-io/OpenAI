@@ -48,7 +48,11 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
 
         if (content.SourceLanguage == null)
         {
-            var plaintext = content.Source().GetPlaintext();
+            var sourceContentResult = content.Source();
+            if (!sourceContentResult.Success)
+                throw new PluginMisconfigurationException(sourceContentResult.Error);
+            var sourceContent = sourceContentResult.Value;
+            var plaintext = sourceContent.GetPlaintext();
             content.SourceLanguage = await IdentifySourceLanguage(request, plaintext);
         }
 
@@ -152,7 +156,11 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
 
         if (content.SourceLanguage == null)
         {
-            content.SourceLanguage = await IdentifySourceLanguage(request, content.Source().GetPlaintext());
+            var sourceContentResult = content.Source();
+            if (!sourceContentResult.Success)
+                throw new PluginMisconfigurationException(sourceContentResult.Error);
+            var sourceContent = sourceContentResult.Value;
+            content.SourceLanguage = await IdentifySourceLanguage(request, sourceContent.GetPlaintext());
         }
 
         var units = content.GetUnits();

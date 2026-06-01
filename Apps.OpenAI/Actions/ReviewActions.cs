@@ -356,7 +356,10 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         string fileName;
         if (input.OutputFileHandling == "original")
         {
-            var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target());
+            var targetContentResult = content.Target();
+            if (!targetContentResult.Success)
+                throw new PluginMisconfigurationException(targetContentResult.Error);
+            var targetContent = targetContentResult.Value;
             streamResult = targetContent.ToStream();
             contentType = targetContent.OriginalMediaType;
             fileName = targetContent.OriginalName;
