@@ -257,7 +257,7 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
             Status = batchResponse.Status,
             CreatedAt = batchResponse.CreatedAt,
             ExpectedCompletionTime = batchResponse.ExpectedCompletionTime,
-            TransformationFile = await UploadGeneratedFileAsync(content.ToStream(), MediaTypes.Xliff2, content.BilingualFileName)
+            TransformationFile = await FileManagementClient.UploadAsync(content.ToStream(), MediaTypes.Xliff2, content.BilingualFileName)
         };
     }
 

@@ -14,11 +14,11 @@ using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using Blackbird.Filters.Bilingual.Xliff1;
 using Blackbird.Filters.Constants;
 using Blackbird.Filters.Enums;
 using Blackbird.Filters.Extensions;
 using Blackbird.Filters.Transformations;
+using Blackbird.Filters.Xliff.Xliff1;
 using Newtonsoft.Json;
 using RestSharp;
 using System.Collections.Generic;
@@ -147,7 +147,7 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
         if (request.OutputFileHandling == "original")
         {
             var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target());
-            resultFile = await UploadGeneratedFileAsync(
+            resultFile = await FileManagementClient.UploadAsync(
                 targetContent.ToStream(), 
                 targetContent.OriginalMediaType, 
                 targetContent.OriginalName);
@@ -155,14 +155,14 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
         else if (request.OutputFileHandling == "xliff1")
         {
             var xliff1String = Xliff1Serializer.Serialize(content);
-            resultFile = await UploadGeneratedFileAsync(
+            resultFile = await FileManagementClient.UploadAsync(
                 xliff1String.ToStream(), 
                 MediaTypes.Xliff1, 
                 content.BilingualFileName);
         }
         else
         {
-            resultFile = await UploadGeneratedFileAsync(
+            resultFile = await FileManagementClient.UploadAsync(
                 content.ToStream(), 
                 MediaTypes.Xliff2, 
                 content.BilingualFileName);

@@ -368,7 +368,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
             fileName = content.BilingualFileName;
         }
 
-        var finalFile = await UploadGeneratedFileAsync(streamResult, contentType, fileName);
+        var finalFile = await FileManagementClient.UploadAsync(streamResult, contentType, fileName);
 
         result.File = finalFile;
         result.TotalSegmentsProcessed = processedSegmentsCount;

@@ -40,7 +40,7 @@ public class TranslationActionsTests : TestBaseWithContext
     public async Task Translate_docx(InvocationContext context)
     {
         var actions = new TranslationActions(context, FileManagementClient);
-        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4.1-mini" };
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4.1" };
         var translateRequest = new TranslateContentRequest
         {
             File = new FileReference { Name = "demo.docx" },

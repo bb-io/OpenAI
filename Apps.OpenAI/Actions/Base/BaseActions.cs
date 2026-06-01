@@ -36,16 +36,6 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
     protected readonly OpenAiUniversalClient UniversalClient = new OpenAiUniversalClient(invocationContext.AuthenticationCredentialsProviders);
     protected readonly IFileManagementClient FileManagementClient = fileManagementClient;
 
-    protected async Task<FileReference> UploadGeneratedFileAsync(Stream stream, string contentType, string fileName)
-    {
-        if (stream.CanSeek)
-        {
-            stream.Position = 0;
-        }
-
-        return await FileManagementClient.UploadAsync(stream, contentType, fileName);
-    }
-
     protected string? GetGlossaryPromptPart(Glossary blackbirdGlossary, string sourceContent, bool filter)
     {
         var glossaryPromptPart = new StringBuilder();

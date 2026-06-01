@@ -29,7 +29,7 @@ using Apps.OpenAI.Models.Responses.Background;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
-using Blackbird.Filters.Bilingual.Xliff1;
+using Blackbird.Filters.Xliff.Xliff1;
 
 namespace Apps.OpenAI.Actions;
 
@@ -228,16 +228,16 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         if (input.OutputFileHandling == "original")
         {
             var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target());
-            result.File = await UploadGeneratedFileAsync(targetContent.ToStream(), targetContent.OriginalMediaType, targetContent.OriginalName);
+            result.File = await FileManagementClient.UploadAsync(targetContent.ToStream(), targetContent.OriginalMediaType, targetContent.OriginalName);
         } 
         else if (input.OutputFileHandling == "xliff1")
         {
             var xliff1String = Xliff1Serializer.Serialize(content);
-            result.File = await UploadGeneratedFileAsync(xliff1String.ToStream(), MediaTypes.Xliff1, content.BilingualFileName);
+            result.File = await FileManagementClient.UploadAsync(xliff1String.ToStream(), MediaTypes.Xliff1, content.BilingualFileName);
         }
         else
         {
-            result.File = await UploadGeneratedFileAsync(content.ToStream(), MediaTypes.Xliff2, content.BilingualFileName);
+            result.File = await FileManagementClient.UploadAsync(content.ToStream(), MediaTypes.Xliff2, content.BilingualFileName);
         }        
 
         result.ErrorDetails = errors;
@@ -351,7 +351,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             Status = batchResponse.Status,
             CreatedAt = batchResponse.CreatedAt,
             ExpectedCompletionTime = batchResponse.ExpectedCompletionTime,
-            TransformationFile = await UploadGeneratedFileAsync(content.ToStream(), MediaTypes.Xliff2, content.BilingualFileName)
+            TransformationFile = await FileManagementClient.UploadAsync(content.ToStream(), MediaTypes.Xliff2, content.BilingualFileName)
         };
     }
     
@@ -549,21 +549,21 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         if (input.OutputFileHandling == "original")
         {
             var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target());
-            result.File = await UploadGeneratedFileAsync(
+            result.File = await FileManagementClient.UploadAsync(
                 targetContent.ToStream(),
                 targetContent.OriginalMediaType,
                 targetContent.OriginalName);
         }
         else if (input.OutputFileHandling == "xliff1")
         {
-            result.File = await UploadGeneratedFileAsync(
+            result.File = await FileManagementClient.UploadAsync(
                 Xliff1Serializer.Serialize(content).ToStream(),
                 MediaTypes.Xliff1,
                 content.BilingualFileName);
         }
         else
         {
-            result.File = await UploadGeneratedFileAsync(
+            result.File = await FileManagementClient.UploadAsync(
                 content.ToStream(),
                 MediaTypes.Xliff2,
                 content.BilingualFileName);

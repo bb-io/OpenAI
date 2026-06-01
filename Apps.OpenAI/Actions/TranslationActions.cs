@@ -19,11 +19,11 @@ using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
 using Blackbird.Applications.SDK.Blueprints;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using Blackbird.Filters.Bilingual.Xliff1;
 using Blackbird.Filters.Constants;
 using Blackbird.Filters.Enums;
 using Blackbird.Filters.Extensions;
 using Blackbird.Filters.Transformations;
+using Blackbird.Filters.Xliff.Xliff1;
 using RestSharp;
 using System;
 using System.Collections.Generic;
@@ -191,16 +191,16 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         if (input.OutputFileHandling == "original")
         {
             var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target());
-            result.File = await UploadGeneratedFileAsync(targetContent.ToStream(), targetContent.OriginalMediaType, targetContent.OriginalName);
+            result.File = await FileManagementClient.UploadAsync(targetContent.ToStream(), targetContent.OriginalMediaType, targetContent.OriginalName);
         }
         else if (input.OutputFileHandling == "xliff1")
         {
             var xliff1String = Xliff1Serializer.Serialize(content);
-            result.File = await UploadGeneratedFileAsync(xliff1String.ToStream(), MediaTypes.Xliff1, content.BilingualFileName);
+            result.File = await FileManagementClient.UploadAsync(xliff1String.ToStream(), MediaTypes.Xliff1, content.BilingualFileName);
         }
         else
         {
-            result.File = await UploadGeneratedFileAsync(content.ToStream(), MediaTypes.Xliff2, content.BilingualFileName);
+            result.File = await FileManagementClient.UploadAsync(content.ToStream(), MediaTypes.Xliff2, content.BilingualFileName);
         }
 
         return result;
@@ -333,7 +333,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
             Status = batchResponse.Status,
             CreatedAt = batchResponse.CreatedAt,
             ExpectedCompletionTime = batchResponse.ExpectedCompletionTime,
-            TransformationFile = await UploadGeneratedFileAsync(content.ToStream(), MediaTypes.Xliff2, content.BilingualFileName)
+            TransformationFile = await FileManagementClient.UploadAsync(content.ToStream(), MediaTypes.Xliff2, content.BilingualFileName)
         };
     }
 

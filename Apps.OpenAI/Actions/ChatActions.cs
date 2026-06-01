@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Blackbird.Filters.Extensions;
 
 namespace Apps.OpenAI.Actions;
 
@@ -158,7 +159,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             else
             {
                 var content = Encoding.UTF8.GetString(fileBytes);
-                using var contentStream = new System.IO.MemoryStream(fileBytes, writable: false);
+                using var contentStream = content.ToStream();
                 var loadResult = Transformation.Load(contentStream, input.File.Name, input.File.ContentType);
                 var text = content;
 
