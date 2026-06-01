@@ -27,6 +27,7 @@ using Blackbird.Filters.Xliff.Xliff1;
 using RestSharp;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -48,7 +49,11 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         var neverFail = false;
         var batchSize = bucketSize ?? 1500;
         var result = new ContentProcessingResult();
-        await using var stream = await FileManagementClient.DownloadAsync(input.File);
+        await using var downloadedStream = await FileManagementClient.DownloadAsync(input.File);
+        // await using var stream = downloadedStream;
+        await using var stream = new MemoryStream();
+        await downloadedStream.CopyToAsync(stream);
+        stream.Position = 0;
         var loadResult = Transformation.Load(stream, input.File.Name, input.File.ContentType);
         if (!loadResult.Success)
             throw new PluginMisconfigurationException(loadResult.Error);
@@ -216,7 +221,11 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
     [Action("Translate in background", Description = "Starts background translation for a file and outputs a batch ID to download results later.")]
     public async Task<BackgroundProcessingResponse> TranslateInBackground([ActionParameter] StartBackgroundProcessRequest startBackgroundProcessRequest)
     {
-        await using var stream = await FileManagementClient.DownloadAsync(startBackgroundProcessRequest.File);
+        await using var downloadedStream = await FileManagementClient.DownloadAsync(startBackgroundProcessRequest.File);
+        // await using var stream = downloadedStream;
+        await using var stream = new MemoryStream();
+        await downloadedStream.CopyToAsync(stream);
+        stream.Position = 0;
         var loadResult = Transformation.Load(stream, startBackgroundProcessRequest.File.Name, startBackgroundProcessRequest.File.ContentType);
         if (!loadResult.Success)
             throw new PluginMisconfigurationException(loadResult.Error);
