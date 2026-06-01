@@ -50,21 +50,12 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         var batchSize = bucketSize ?? 1500;
         var result = new ContentProcessingResult();
         await using var downloadedStream = await FileManagementClient.DownloadAsync(input.File);
-        await using var stream = downloadedStream;
-        try
-        {
-            stream.Position = 0;
-        }
-        catch (Exception ex)
-        {
-            throw new PluginApplicationException(
-                $"Downloaded stream is not seekable. CanSeek: {stream.CanSeek}. Stream type: {stream.GetType().FullName}. Error: {ex.Message}");
-        }
+        // await using var stream = downloadedStream;
         
         //testing purposes
-        //await using var stream = new MemoryStream();
-        //await downloadedStream.CopyToAsync(stream);
-        //stream.Position = 0;
+        await using var stream = new MemoryStream();
+        await downloadedStream.CopyToAsync(stream);
+        stream.Position = 0;
         var loadResult = Transformation.Load(stream, input.File.Name, input.File.ContentType);
         if (!loadResult.Success)
             throw new PluginMisconfigurationException(loadResult.Error);
@@ -233,21 +224,10 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
     public async Task<BackgroundProcessingResponse> TranslateInBackground([ActionParameter] StartBackgroundProcessRequest startBackgroundProcessRequest)
     {
         await using var downloadedStream = await FileManagementClient.DownloadAsync(startBackgroundProcessRequest.File);
-        await using var stream = downloadedStream;
-        try
-        {
-            stream.Position = 0;
-        }
-        catch (Exception ex)
-        {
-            throw new PluginApplicationException(
-                $"Downloaded stream is not seekable. CanSeek: {stream.CanSeek}. Stream type: {stream.GetType().FullName}. Error: {ex.Message}");
-        }
-
-        //testing purposes
-        //await using var stream = new MemoryStream();
-        //await downloadedStream.CopyToAsync(stream);
-        //stream.Position = 0;
+        // await using var stream = downloadedStream;
+        await using var stream = new MemoryStream();
+        await downloadedStream.CopyToAsync(stream);
+        stream.Position = 0;
         var loadResult = Transformation.Load(stream, startBackgroundProcessRequest.File.Name, startBackgroundProcessRequest.File.ContentType);
         if (!loadResult.Success)
             throw new PluginMisconfigurationException(loadResult.Error);
