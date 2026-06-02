@@ -29,7 +29,7 @@ using Apps.OpenAI.Models.Responses.Background;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
-using Blackbird.Filters.Xliff.Xliff1;
+using Blackbird.Filters.Bilingual.Xliff1;
 
 namespace Apps.OpenAI.Actions;
 
