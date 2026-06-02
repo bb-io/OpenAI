@@ -50,12 +50,12 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         var batchSize = bucketSize ?? 1500;
         var result = new ContentProcessingResult();
         await using var downloadedStream = await FileManagementClient.DownloadAsync(input.File);
-        // await using var stream = downloadedStream;
+        await using var stream = downloadedStream;
         
         //testing purposes
-        await using var stream = new MemoryStream();
-        await downloadedStream.CopyToAsync(stream);
-        stream.Position = 0;
+        //await using var stream = new MemoryStream();
+        //await downloadedStream.CopyToAsync(stream);
+        //stream.Position = 0;
         var loadResult = Transformation.Load(stream, input.File.Name, input.File.ContentType);
         if (!loadResult.Success)
             throw new PluginMisconfigurationException(loadResult.Error);
