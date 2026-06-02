@@ -12,13 +12,12 @@ using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using Blackbird.Filters.Content;
 using Blackbird.Filters.Transformations;
-using Blackbird.Filters.Xliff.Xliff2;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Blackbird.Filters.Extensions;
 
 namespace Apps.OpenAI.Actions;
 
@@ -160,22 +159,27 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             else
             {
                 var content = Encoding.UTF8.GetString(fileBytes);
+                using var contentStream = content.ToStream();
+                var loadResult = Transformation.Load(contentStream, input.File.Name, input.File.ContentType);
+                var text = content;
 
-                CodedContent codedContent = null;
-                if (Xliff2Serializer.IsXliff2(content))
+                if (loadResult.Success)
                 {
-                    var transformation = Transformation.Parse(content, input.File.Name);
-                    codedContent = transformation.Target();
-                }
-                else
-                {
-                    TryCatchHelper.TryCatch(
-                        () => codedContent = CodedContent.Parse(content, input.File.Name), 
-                        $"Can't process an input file with type {input.File.ContentType}"
-                    );
+                    var targetContentResult = loadResult.Value.Target();
+                    if (!targetContentResult.Success)
+                        throw new PluginMisconfigurationException(targetContentResult.Error);
+                    var targetContent = targetContentResult.Value;
+                    text = targetContent.GetPlaintext();
+                    if (string.IsNullOrWhiteSpace(text))
+                    {
+                        var sourceContentResult = loadResult.Value.Source();
+                        if (!sourceContentResult.Success)
+                            throw new PluginMisconfigurationException(sourceContentResult.Error);
+                        var sourceContent = sourceContentResult.Value;
+                        text = sourceContent.GetPlaintext();
+                    }
                 }
 
-                var text = codedContent.GetPlaintext();
                 messages.Add(new ChatMessageDto(MessageRoles.User, input.Message));
                 messages.Add(new ChatMessageDto(MessageRoles.User, $"File content:\r\n{text}"));
             }

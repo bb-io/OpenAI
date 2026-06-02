@@ -34,7 +34,11 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
     public async Task<ChatResponse> CreateMqmReportFromXliff([ActionParameter] CreateMqmReportFromFileRequest request)
     {
         var stream = await FileManagementClient.DownloadAsync(request.File);
-        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => Transformation.Parse(stream, request.File.Name));
+        var loadResult = Transformation.Load(stream, request.File.Name, request.File.ContentType);
+        if (!loadResult.Success)
+            throw new PluginMisconfigurationException(loadResult.Error);
+
+        var content = loadResult.Value;
 
         content.SourceLanguage ??= request.SourceLanguage;
         content.TargetLanguage ??= request.TargetLanguage;
@@ -44,7 +48,11 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
 
         if (content.SourceLanguage == null)
         {
-            var plaintext = content.Source().GetPlaintext();
+            var sourceContentResult = content.Source();
+            if (!sourceContentResult.Success)
+                throw new PluginMisconfigurationException(sourceContentResult.Error);
+            var sourceContent = sourceContentResult.Value;
+            var plaintext = sourceContent.GetPlaintext();
             content.SourceLanguage = await IdentifySourceLanguage(request, plaintext);
         }
 
@@ -134,7 +142,11 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
     public async Task<BackgroundProcessingResponse> CreateMqmReportInBackground([ActionParameter] CreateMqmReportInBackgroundRequest request)
     {
         var stream = await FileManagementClient.DownloadAsync(request.File);
-        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => Transformation.Parse(stream, request.File.Name));
+        var loadResult = Transformation.Load(stream, request.File.Name, request.File.ContentType);
+        if (!loadResult.Success)
+            throw new PluginMisconfigurationException(loadResult.Error);
+
+        var content = loadResult.Value;
 
         content.SourceLanguage ??= request.SourceLanguage;
         content.TargetLanguage ??= request.TargetLanguage;
@@ -144,7 +156,11 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
 
         if (content.SourceLanguage == null)
         {
-            content.SourceLanguage = await IdentifySourceLanguage(request, content.Source().GetPlaintext());
+            var sourceContentResult = content.Source();
+            if (!sourceContentResult.Success)
+                throw new PluginMisconfigurationException(sourceContentResult.Error);
+            var sourceContent = sourceContentResult.Value;
+            content.SourceLanguage = await IdentifySourceLanguage(request, sourceContent.GetPlaintext());
         }
 
         var units = content.GetUnits();
@@ -249,7 +265,7 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
             Status = batchResponse.Status,
             CreatedAt = batchResponse.CreatedAt,
             ExpectedCompletionTime = batchResponse.ExpectedCompletionTime,
-            TransformationFile = await FileManagementClient.UploadAsync(content.Serialize().ToStream(), MediaTypes.Xliff, content.XliffFileName)
+            TransformationFile = await FileManagementClient.UploadAsync(content.ToStream(), MediaTypes.Xliff2, content.BilingualFileName)
         };
     }
 

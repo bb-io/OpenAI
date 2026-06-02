@@ -27,9 +27,9 @@ using Apps.OpenAI.Constants;
 using Apps.OpenAI.Models.Requests.Background;
 using Apps.OpenAI.Models.Responses.Background;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
-using Blackbird.Filters.Xliff.Xliff1;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using Blackbird.Filters.Bilingual.Xliff1;
 
 namespace Apps.OpenAI.Actions;
 
@@ -51,9 +51,11 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         var result = new ContentProcessingEditResult();
         var stream = await fileManagementClient.DownloadAsync(input.File);
 
-        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() =>
-            Transformation.Parse(stream, input.File.Name)
-        );
+        var loadResult = Transformation.Load(stream, input.File.Name, input.File.ContentType);
+        if (!loadResult.Success)
+            throw new PluginMisconfigurationException(loadResult.Error);
+
+        var content = loadResult.Value;
 
         var sourceLanguage = input.SourceLanguage ?? content.SourceLanguage;
         var targetLanguage = input.TargetLanguage ?? content.TargetLanguage;
@@ -225,17 +227,20 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
         if (input.OutputFileHandling == "original")
         {
-            var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target());
-            result.File = await fileManagementClient.UploadAsync(targetContent.Serialize().ToStream(), targetContent.OriginalMediaType, targetContent.OriginalName);
+            var targetContentResult = content.Target();
+            if (!targetContentResult.Success)
+                throw new PluginMisconfigurationException(targetContentResult.Error);
+            var targetContent = targetContentResult.Value;
+            result.File = await FileManagementClient.UploadAsync(targetContent.ToStream(), targetContent.OriginalMediaType, targetContent.OriginalName);
         } 
         else if (input.OutputFileHandling == "xliff1")
         {
             var xliff1String = Xliff1Serializer.Serialize(content);
-            result.File = await fileManagementClient.UploadAsync(xliff1String.ToStream(), MediaTypes.Xliff, content.XliffFileName);
+            result.File = await FileManagementClient.UploadAsync(xliff1String.ToStream(), MediaTypes.Xliff1, content.BilingualFileName);
         }
         else
         {
-            result.File = await fileManagementClient.UploadAsync(content.Serialize().ToStream(), MediaTypes.Xliff, content.XliffFileName);
+            result.File = await FileManagementClient.UploadAsync(content.ToStream(), MediaTypes.Xliff2, content.BilingualFileName);
         }        
 
         result.ErrorDetails = errors;
@@ -248,9 +253,11 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         [ActionParameter] StartBackgroundProcessRequest processRequest)
     {
         var stream = await fileManagementClient.DownloadAsync(processRequest.File);
-        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => 
-            Transformation.Parse(stream, processRequest.File.Name)
-        );
+        var loadResult = Transformation.Load(stream, processRequest.File.Name, processRequest.File.ContentType);
+        if (!loadResult.Success)
+            throw new PluginMisconfigurationException(loadResult.Error);
+
+        var content = loadResult.Value;
 
         var units = content.GetUnits();
         var segments = units.SelectMany(x => x.Segments).GetSegmentsForEditing().ToList();
@@ -347,7 +354,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             Status = batchResponse.Status,
             CreatedAt = batchResponse.CreatedAt,
             ExpectedCompletionTime = batchResponse.ExpectedCompletionTime,
-            TransformationFile = await fileManagementClient.UploadAsync(content.Serialize().ToStream(), MediaTypes.Xliff, content.XliffFileName)
+            TransformationFile = await FileManagementClient.UploadAsync(content.ToStream(), MediaTypes.Xliff2, content.BilingualFileName)
         };
     }
     
@@ -416,9 +423,11 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         var batchSize = bucketSize ?? 1500;
 
         var inputFileStream = await fileManagementClient.DownloadAsync(input.File);
-        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => 
-            Transformation.Parse(inputFileStream, input.File.Name)
-        );
+        var loadResult = Transformation.Load(inputFileStream, input.File.Name, input.File.ContentType);
+        if (!loadResult.Success)
+            throw new PluginMisconfigurationException(loadResult.Error);
+
+        var content = loadResult.Value;
 
         var batchProcessingService = new BatchProcessingService(UniversalClient, FileManagementClient);
         var batchOptions = new BatchProcessingOptions(
@@ -542,25 +551,28 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
         if (input.OutputFileHandling == "original")
         {
-            var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target());
-            result.File = await fileManagementClient.UploadAsync(
-                targetContent.Serialize().ToStream(),
+            var targetContentResult = content.Target();
+            if (!targetContentResult.Success)
+                throw new PluginMisconfigurationException(targetContentResult.Error);
+            var targetContent = targetContentResult.Value;
+            result.File = await FileManagementClient.UploadAsync(
+                targetContent.ToStream(),
                 targetContent.OriginalMediaType,
                 targetContent.OriginalName);
         }
         else if (input.OutputFileHandling == "xliff1")
         {
-            result.File = await fileManagementClient.UploadAsync(
+            result.File = await FileManagementClient.UploadAsync(
                 Xliff1Serializer.Serialize(content).ToStream(),
-                MediaTypes.Xliff,
-                content.XliffFileName);
+                MediaTypes.Xliff1,
+                content.BilingualFileName);
         }
         else
         {
-            result.File = await fileManagementClient.UploadAsync(
-                content.Serialize().ToStream(),
-                MediaTypes.Xliff,
-                content.XliffFileName);
+            result.File = await FileManagementClient.UploadAsync(
+                content.ToStream(),
+                MediaTypes.Xliff2,
+                content.BilingualFileName);
         }
 
         return result;

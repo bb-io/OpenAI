@@ -36,6 +36,30 @@ public class TranslationActionsTests : TestBaseWithContext
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
 
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]
+    public async Task Translate_docx(InvocationContext context)
+    {
+        var actions = new TranslationActions(context, FileManagementClient);
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4.1" };
+        var translateRequest = new TranslateContentRequest
+        {
+            File = new FileReference { Name = "simple_interop_test.docx" },
+            TargetLanguage = "es-ES",
+            //OutputFileHandling = "original"
+        };
+        var reasoningEffortRequest = new ReasoningEffortRequest { };
+        string systemMessage = "Translate accurately while maintaining the original meaning. Never change the formatting or structure of the document/xml/tags.";
+        var glossaryRequest = new GlossaryRequest
+        {
+            //Glossary = new FileReference { Name = "Glossary.tbx" } 
+        };
+
+        var result = await actions.TranslateContent(modelIdentifier, translateRequest, systemMessage, glossaryRequest, reasoningEffortRequest, bucketSize:25);
+        Assert.IsNotNull(result);
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+    }
+
+
     [TestMethod, ContextDataSource]
     public async Task Translate_xlf(InvocationContext context)
     {

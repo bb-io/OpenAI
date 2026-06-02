@@ -216,8 +216,11 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
             throw new PluginMisconfigurationException("Threshold must be in range 0..1.");
 
         var stream = await FileManagementClient.DownloadAsync(input.File);
-        var content =
-            await ErrorHandler.ExecuteWithErrorHandlingAsync(() => Transformation.Parse(stream, input.File.Name));
+        var loadResult = Transformation.Load(stream, input.File.Name, input.File.ContentType);
+        if (!loadResult.Success)
+            throw new PluginMisconfigurationException(loadResult.Error);
+
+        var content = loadResult.Value;
 
         content.SourceLanguage ??= input.SourceLanguage;
         content.TargetLanguage ??= input.TargetLanguage;
@@ -349,17 +352,26 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         }
 
         Stream streamResult;
+        string contentType;
+        string fileName;
         if (input.OutputFileHandling == "original")
         {
-            var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target()); 
-            streamResult = targetContent.Serialize().ToStream();
+            var targetContentResult = content.Target();
+            if (!targetContentResult.Success)
+                throw new PluginMisconfigurationException(targetContentResult.Error);
+            var targetContent = targetContentResult.Value;
+            streamResult = targetContent.ToStream();
+            contentType = targetContent.OriginalMediaType;
+            fileName = targetContent.OriginalName;
         }
         else
         {
-            streamResult = content.Serialize().ToStream();
+            streamResult = content.ToStream();
+            contentType = MediaTypes.Xliff2;
+            fileName = content.BilingualFileName;
         }
 
-        var finalFile = await FileManagementClient.UploadAsync(streamResult, MediaTypes.Xliff, content.XliffFileName);
+        var finalFile = await FileManagementClient.UploadAsync(streamResult, contentType, fileName);
 
         result.File = finalFile;
         result.TotalSegmentsProcessed = processedSegmentsCount;

@@ -14,11 +14,11 @@ using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
+using Blackbird.Filters.Bilingual.Xliff1;
 using Blackbird.Filters.Constants;
 using Blackbird.Filters.Enums;
 using Blackbird.Filters.Extensions;
 using Blackbird.Filters.Transformations;
-using Blackbird.Filters.Xliff.Xliff1;
 using Newtonsoft.Json;
 using RestSharp;
 using System.Collections.Generic;
@@ -41,19 +41,18 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
         var batchResponse = await GetBatchStatusAsync(request.BatchId);
         
         var originalFileStream = await fileManagementClient.DownloadAsync(request.TransformationFile);
-        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() =>
-            Transformation.Parse(originalFileStream, request.TransformationFile.Name)
-        );
+        var loadResult = Transformation.Load(originalFileStream, request.TransformationFile.Name, request.TransformationFile.ContentType);
+        if (!loadResult.Success)
+            throw new PluginMisconfigurationException(loadResult.Error);
 
-        var units = content.GetUnits();
+        var content = loadResult.Value;
+
+        var units = content.GetUnits().ToList();
         var totalSegments = units.SelectMany(x => x.Segments).Count();
         var updatedCount = 0;
         var processedCount = 0;
         var usageList = new List<UsageDto>();
-        
-        var stream = await fileManagementClient.DownloadAsync(request.TransformationFile);
-        var transformation = await Transformation.Parse(stream, request.TransformationFile.Name);
-        var backgroundType = transformation.MetaData.FirstOrDefault(x => x.Type == "background-type")?.Value;
+        var backgroundType = content.MetaData.Get([Meta.Categories.Blackbird], "background-type");
 
         var segments = backgroundType switch
         {
@@ -110,28 +109,28 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
                     }
 
                     var newContent = translation.TranslatedText;
-                    if (segment.GetTarget() != newContent)
+                    if (backgroundType == "translate")
                     {
-                        if (backgroundType == "translate")
-                        {
-                            segment.State = SegmentState.Translated;
-                            segment.SetTarget(newContent);
-                            updatedCount++;
-                        }
-                        else if (backgroundType == "edit")
-                        {
-                            if (segment.GetTarget() != newContent)
-                            {
-                                segment.SetTarget(newContent);
-                                updatedCount++;
-                            }
-                            segment.State = SegmentState.Reviewed;
-                        }
-                        else
+                        if (segment.GetTarget() != newContent)
                         {
                             segment.SetTarget(newContent);
                             updatedCount++;
                         }
+                        segment.State = SegmentState.Translated;
+                    }
+                    else if (backgroundType == "edit")
+                    {
+                        if (segment.GetTarget() != newContent)
+                        {
+                            segment.SetTarget(newContent);
+                            updatedCount++;
+                        }
+                        segment.State = SegmentState.Reviewed;
+                    }
+                    else if (segment.GetTarget() != newContent)
+                    {
+                        segment.SetTarget(newContent);
+                        updatedCount++;
                     }
                 }
             }
@@ -147,26 +146,29 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
         FileReference resultFile;
         if (request.OutputFileHandling == "original")
         {
-            var targetContent = ErrorHandler.ExecuteWithErrorHandling(() => content.Target());
-            resultFile = await fileManagementClient.UploadAsync(
-                targetContent.Serialize().ToStream(), 
+            var targetContentResult = content.Target();
+            if (!targetContentResult.Success)
+                throw new PluginMisconfigurationException(targetContentResult.Error);
+            var targetContent = targetContentResult.Value;
+            resultFile = await FileManagementClient.UploadAsync(
+                targetContent.ToStream(), 
                 targetContent.OriginalMediaType, 
                 targetContent.OriginalName);
         } 
         else if (request.OutputFileHandling == "xliff1")
         {
             var xliff1String = Xliff1Serializer.Serialize(content);
-            resultFile = await fileManagementClient.UploadAsync(
+            resultFile = await FileManagementClient.UploadAsync(
                 xliff1String.ToStream(), 
-                MediaTypes.Xliff, 
-                content.XliffFileName);
+                MediaTypes.Xliff1, 
+                content.BilingualFileName);
         }
         else
         {
-            resultFile = await fileManagementClient.UploadAsync(
-                content.Serialize().ToStream(), 
-                MediaTypes.Xliff, 
-                content.XliffFileName);
+            resultFile = await FileManagementClient.UploadAsync(
+                content.ToStream(), 
+                MediaTypes.Xliff2, 
+                content.BilingualFileName);
         }
         
         return new BackgroundContentResponse
@@ -188,9 +190,11 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
         var batchResponse = await GetBatchStatusAsync(request.BatchId);
 
         var stream = await fileManagementClient.DownloadAsync(request.TransformationFile);
-        var content = await ErrorHandler.ExecuteWithErrorHandlingAsync(() =>
-            Transformation.Parse(stream, request.TransformationFile.Name)
-        );
+        var loadResult = Transformation.Load(stream, request.TransformationFile.Name, request.TransformationFile.ContentType);
+        if (!loadResult.Success)
+            throw new PluginMisconfigurationException(loadResult.Error);
+
+        var content = loadResult.Value;
         var units = content.GetUnits();
         var segments = units.SelectMany(x => x.Segments).Where(x => !x.IsIgnorbale && x.State == SegmentState.Translated).ToList();
         

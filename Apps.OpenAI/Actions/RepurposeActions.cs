@@ -8,6 +8,7 @@ using Apps.OpenAI.Models.Responses.Chat;
 using Apps.OpenAI.Utils;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Filters.Transformations;
@@ -45,14 +46,24 @@ public class RepurposeActions(InvocationContext invocationContext, IFileManageme
         [ActionParameter] GlossaryRequest glossary)
     {
         var stream = await FileManagementClient.DownloadAsync(file.File);
-        var transformation = await ErrorHandler.ExecuteWithErrorHandlingAsync(() => 
-            Transformation.Parse(stream, file.File.Name)
-        );
+        var loadResult = Transformation.Load(stream, file.File.Name, file.File.ContentType);
+        if (!loadResult.Success)
+            throw new PluginMisconfigurationException(loadResult.Error);
 
-        var text = transformation.Target().GetPlaintext();
+        var transformation = loadResult.Value;
+
+        var targetContentResult = transformation.Target();
+        if (!targetContentResult.Success)
+            throw new PluginMisconfigurationException(targetContentResult.Error);
+        var targetContent = targetContentResult.Value;
+        var text = targetContent.GetPlaintext();
         if (string.IsNullOrWhiteSpace(text))
         {
-            text = transformation.Source().GetPlaintext();
+            var sourceContentResult = transformation.Source();
+            if (!sourceContentResult.Success)
+                throw new PluginMisconfigurationException(sourceContentResult.Error);
+            var sourceContent = sourceContentResult.Value;
+            text = sourceContent.GetPlaintext();
         }
 
         return await CreateSummary(modelIdentifier, text, input, glossary);
@@ -75,14 +86,24 @@ public class RepurposeActions(InvocationContext invocationContext, IFileManageme
         [ActionParameter] GlossaryRequest glossary)
     {
         var stream = await FileManagementClient.DownloadAsync(file.File);
-        var transformation = await ErrorHandler.ExecuteWithErrorHandlingAsync(() =>
-            Transformation.Parse(stream, file.File.Name)
-        );
+        var loadResult = Transformation.Load(stream, file.File.Name, file.File.ContentType);
+        if (!loadResult.Success)
+            throw new PluginMisconfigurationException(loadResult.Error);
 
-        var text = transformation.Target().GetPlaintext();
+        var transformation = loadResult.Value;
+
+        var targetContentResult = transformation.Target();
+        if (!targetContentResult.Success)
+            throw new PluginMisconfigurationException(targetContentResult.Error);
+        var targetContent = targetContentResult.Value;
+        var text = targetContent.GetPlaintext();
         if (string.IsNullOrWhiteSpace(text))
         {
-            text = transformation.Source().GetPlaintext();
+            var sourceContentResult = transformation.Source();
+            if (!sourceContentResult.Success)
+                throw new PluginMisconfigurationException(sourceContentResult.Error);
+            var sourceContent = sourceContentResult.Value;
+            text = sourceContent.GetPlaintext();
         }
 
         return await RepurposeContent(modelIdentifier, text, input, glossary);
