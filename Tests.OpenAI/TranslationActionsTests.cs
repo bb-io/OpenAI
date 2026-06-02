@@ -45,7 +45,7 @@ public class TranslationActionsTests : TestBaseWithContext
         {
             File = new FileReference { Name = "simple_interop_test.docx" },
             TargetLanguage = "es-ES",
-            OutputFileHandling = "original"
+            //OutputFileHandling = "original"
         };
         var reasoningEffortRequest = new ReasoningEffortRequest { };
         string systemMessage = "Translate accurately while maintaining the original meaning. Never change the formatting or structure of the document/xml/tags.";
