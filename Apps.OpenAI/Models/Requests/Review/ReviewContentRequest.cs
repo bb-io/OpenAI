@@ -2,9 +2,9 @@
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Files;
-using Blackbird.Applications.SDK.Blueprints.Handlers;
 using Blackbird.Applications.SDK.Blueprints.Interfaces.Review;
 using System.Collections.Generic;
+using Apps.OpenAI.DataSourceHandlers.ModelDataSourceHandlers;
 
 namespace Apps.OpenAI.Models.Requests.Review
 {
@@ -20,7 +20,7 @@ namespace Apps.OpenAI.Models.Requests.Review
         [StaticDataSource(typeof(LocaleDataSourceHandler))]
         public string TargetLanguage { get; set; } = string.Empty;
 
-        [Display("Output file handling", Description = "Determine the format of the output file. The default Blackbird behavior is to convert to XLIFF for future steps."), StaticDataSource(typeof(ProcessFileFormatHandler))]
+        [Display("Output file handling", Description = "Determine the format of the output file. The default Blackbird behavior is to convert to XLIFF for future steps."), StaticDataSource(typeof(OpenAiProcessFileFormatHandler))]
         public string? OutputFileHandling { get; set; }
 
         [Display("Score threshold", Description = "All segments above this score will automatically be finalized (0..1)")]

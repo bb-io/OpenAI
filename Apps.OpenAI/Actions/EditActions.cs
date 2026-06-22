@@ -29,7 +29,6 @@ using Apps.OpenAI.Models.Responses.Background;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
-using Blackbird.Filters.Bilingual.Xliff1;
 
 namespace Apps.OpenAI.Actions;
 
@@ -224,24 +223,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         }
 
         result.TotalSegmentsUpdated = updatedCount;
-
-        if (input.OutputFileHandling == "original")
-        {
-            var targetContentResult = content.Target();
-            if (!targetContentResult.Success)
-                throw new PluginMisconfigurationException(targetContentResult.Error);
-            var targetContent = targetContentResult.Value;
-            result.File = await FileManagementClient.UploadAsync(targetContent.ToStream(), targetContent.OriginalMediaType, targetContent.OriginalName);
-        } 
-        else if (input.OutputFileHandling == "xliff1")
-        {
-            var xliff1String = Xliff1Serializer.Serialize(content);
-            result.File = await FileManagementClient.UploadAsync(xliff1String.ToStream(), MediaTypes.Xliff1, content.BilingualFileName);
-        }
-        else
-        {
-            result.File = await FileManagementClient.UploadAsync(content.ToStream(), MediaTypes.Xliff2, content.BilingualFileName);
-        }        
+        result.File = await OutputFileHandler.ToOutputFile(FileManagementClient, content, input.OutputFileHandling); 
 
         result.ErrorDetails = errors;
         return result;
@@ -548,32 +530,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         }
 
         result.TotalSegmentsUpdated = updatedCount;
-
-        if (input.OutputFileHandling == "original")
-        {
-            var targetContentResult = content.Target();
-            if (!targetContentResult.Success)
-                throw new PluginMisconfigurationException(targetContentResult.Error);
-            var targetContent = targetContentResult.Value;
-            result.File = await FileManagementClient.UploadAsync(
-                targetContent.ToStream(),
-                targetContent.OriginalMediaType,
-                targetContent.OriginalName);
-        }
-        else if (input.OutputFileHandling == "xliff1")
-        {
-            result.File = await FileManagementClient.UploadAsync(
-                Xliff1Serializer.Serialize(content).ToStream(),
-                MediaTypes.Xliff1,
-                content.BilingualFileName);
-        }
-        else
-        {
-            result.File = await FileManagementClient.UploadAsync(
-                content.ToStream(),
-                MediaTypes.Xliff2,
-                content.BilingualFileName);
-        }
+        result.File = await OutputFileHandler.ToOutputFile(FileManagementClient, content, input.OutputFileHandling);
 
         return result;
     }

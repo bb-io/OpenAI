@@ -20,24 +20,29 @@ public abstract class BaseModelDataSourceHandler(InvocationContext invocationCon
     
     protected virtual IEnumerable<string> PriorityModels => Enumerable.Empty<string>();
 
+    protected virtual IEnumerable<ModelDto> SortModels(IEnumerable<ModelDto> models) => models;
+
     public async Task<IEnumerable<DataSourceItem>> GetDataAsync(DataSourceContext context, CancellationToken cancellationToken)
     {
         var client = new OpenAiUniversalClient(InvocationContext.AuthenticationCredentialsProviders);
         var request = new OpenAIRequest("/models", Method.Get);
         var models = await client.ExecuteWithErrorHandling<ModelsList>(request);
-        
+
         var filteredModels = models.Data
             .Where(model => ModelIdFilter(model.Id))
-            .Where(model => context.SearchString == null || model.Id.Contains(context.SearchString))
+            .Where(model => context.SearchString == null || model.Id.Contains(context.SearchString, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        var orderedModels = SortModels(filteredModels)
             .Select(model => new DataSourceItem(model.Id, model.Id))
             .ToList();
 
         var priorityModels = PriorityModels.ToList();
         var priorityItems = priorityModels
-            .Where(id => filteredModels.Any(m => m.Value == id))
+            .Where(id => orderedModels.Any(m => m.Value == id))
             .Select(id => new DataSourceItem(id, id));
         
-        var otherItems = filteredModels
+        var otherItems = orderedModels
             .Where(item => !priorityModels.Contains(item.Value));
 
         return priorityItems.Concat(otherItems).Distinct();
