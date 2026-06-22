@@ -67,7 +67,7 @@ public class TranslationActionsTests : TestBaseWithContext
         var translateRequest = new TranslateContentRequest
         {
             File = new FileReference { Name = "small_demo.pptx" },
-            TargetLanguage = "es-ES",
+            TargetLanguage = "de",
             OutputFileHandling = "original"
         };
         var reasoningEffortRequest = new ReasoningEffortRequest { };
@@ -90,7 +90,7 @@ public class TranslationActionsTests : TestBaseWithContext
         var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5" };
         var translateRequest = new TranslateContentRequest
         {
-            File = new FileReference { Name = "contentful.untranslated.xlf" },
+            File = new FileReference { Name = "340613_source.html (4).xlf" },
             TargetLanguage = "nl"
         };
         var reasoningEffortRequest = new ReasoningEffortRequest
