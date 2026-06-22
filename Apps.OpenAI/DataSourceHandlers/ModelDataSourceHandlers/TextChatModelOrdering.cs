@@ -54,6 +54,18 @@ public static class TextChatModelOrdering
             .ToList();
     }
 
+    public static string? SelectDefaultTextModel(IEnumerable<ModelDto> models)
+    {
+        var orderedModels = Sort(models.Where(model => IsRelevantTextModel(model.Id))).ToList();
+
+        return orderedModels.FirstOrDefault(model => IsGenericGptAlias(model.Id))?.Id
+            ?? orderedModels.FirstOrDefault(model => IsGenericGptSnapshot(model.Id))?.Id
+            ?? orderedModels.FirstOrDefault(model => IsGptProModel(model.Id))?.Id
+            ?? orderedModels.FirstOrDefault(model => IsGptMiniOrNanoModel(model.Id))?.Id
+            ?? orderedModels.FirstOrDefault(model => IsOModel(model.Id))?.Id
+            ?? orderedModels.FirstOrDefault()?.Id;
+    }
+
     private static bool IsSnapshot(string modelId) => SnapshotSuffixRegex.IsMatch(modelId);
 
     private static string GetFamilyKey(string modelId)
@@ -63,4 +75,40 @@ public static class TextChatModelOrdering
             ? modelId[..match.Index]
             : modelId;
     }
+
+    private static bool IsGenericGptAlias(string modelId)
+    {
+        var normalizedModelId = modelId.Trim().ToLowerInvariant();
+        return normalizedModelId.StartsWith("gpt-") &&
+               !IsSnapshot(normalizedModelId) &&
+               !normalizedModelId.Contains("-mini") &&
+               !normalizedModelId.Contains("-nano") &&
+               !normalizedModelId.Contains("-pro");
+    }
+
+    private static bool IsGenericGptSnapshot(string modelId)
+    {
+        if (!IsSnapshot(modelId))
+            return false;
+
+        var familyKey = GetFamilyKey(modelId).Trim().ToLowerInvariant();
+        return familyKey.StartsWith("gpt-") &&
+               !familyKey.Contains("-mini") &&
+               !familyKey.Contains("-nano") &&
+               !familyKey.Contains("-pro");
+    }
+
+    private static bool IsGptProModel(string modelId)
+        => modelId.Trim().ToLowerInvariant().StartsWith("gpt-") &&
+           modelId.Contains("-pro", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsGptMiniOrNanoModel(string modelId)
+    {
+        var normalizedModelId = modelId.Trim().ToLowerInvariant();
+        return normalizedModelId.StartsWith("gpt-") &&
+               (normalizedModelId.Contains("-mini") || normalizedModelId.Contains("-nano"));
+    }
+
+    private static bool IsOModel(string modelId)
+        => modelId.Trim().ToLowerInvariant().StartsWith("o");
 }

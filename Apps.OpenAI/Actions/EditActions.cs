@@ -45,6 +45,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         [ActionParameter, Display("Bucket size", Description = "Specify the number of source texts to be edited at once. Default value: 1500. (See our documentation for an explanation)")] int? bucketSize = null,
         [ActionParameter, Display("Process locked segments")] bool? ProcessLockedSegments = null)
     {
+        var effectiveModel = await ResolveTextChatModelAsync(modelIdentifier.ModelId);
         var neverFail = false;
         var batchSize = bucketSize ?? 1500;
         var result = new ContentProcessingEditResult();
@@ -63,7 +64,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
         var batchProcessingService = new BatchProcessingService(UniversalClient, FileManagementClient);
         var batchOptions = new BatchProcessingOptions(
-            UniversalClient.GetModel(modelIdentifier.ModelId),
+            effectiveModel,
             sourceLanguage,
             targetLanguage,
             prompt,
@@ -202,7 +203,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                 }
             }
 
-            var model = UniversalClient.GetModel(modelIdentifier.ModelId);
+            var model = effectiveModel;
             unit.Provenance.Review.Tool = model;
             double tokens = result.Usage.TotalTokens / processedBatches.Count();
             unit.AddUsage(model, Math.Round(tokens, 0), UsageUnit.Tokens);
@@ -234,6 +235,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     public async Task<BackgroundProcessingResponse> EditInBackground(
         [ActionParameter] StartBackgroundProcessRequest processRequest)
     {
+        var effectiveModel = await ResolveTextChatModelAsync(processRequest.ModelId);
         var stream = await fileManagementClient.DownloadAsync(processRequest.File);
         var loadResult = Transformation.Load(stream, processRequest.File.Name, processRequest.File.ContentType);
         if (!loadResult.Success)
@@ -316,7 +318,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                 new { role = MessageRoles.User, content = userPrompt }
             };
 
-            var bodyDict = GenerateResponseBody(messages, processRequest.ModelId, chatInput);
+            var bodyDict = await GenerateResponseBodyAsync(messages, effectiveModel, chatInput);
             var batchRequest = new
             {
                 custom_id = bucketIndex.ToString(),
@@ -399,6 +401,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         [ActionParameter] ReasoningEffortRequest reasoningEffortRequest,
         [ActionParameter, Display("Bucket size", Description = "Specify the number of source texts to be edited at once. Default value: 1500. (See our documentation for an explanation)")] int? bucketSize = 1500)
     {
+        var effectiveModel = await ResolveTextChatModelAsync(modelIdentifier.ModelId);
         var result = new ContentProcessingEditResult();
 
         var neverFail = false;
@@ -413,7 +416,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
         var batchProcessingService = new BatchProcessingService(UniversalClient, FileManagementClient);
         var batchOptions = new BatchProcessingOptions(
-            UniversalClient.GetModel(modelIdentifier.ModelId),
+            effectiveModel,
             content.SourceLanguage,
             content.TargetLanguage,
             Prompt: string.Empty,
@@ -523,7 +526,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                 segment.State = SegmentState.Reviewed;
             }
 
-            var model = UniversalClient.GetModel(modelIdentifier.ModelId);
+            var model = effectiveModel;
             unit.Provenance.Review.Tool = model;
             double tokens = result.Usage.TotalTokens / processedBatches.Count();
             unit.AddUsage(model, Math.Round(tokens, 0), UsageUnit.Tokens);

@@ -1,5 +1,6 @@
-﻿using Apps.OpenAI.Api.Requests;
+using Apps.OpenAI.Api.Requests;
 using Apps.OpenAI.Constants;
+using Apps.OpenAI.DataSourceHandlers.ModelDataSourceHandlers;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Utils;
 using Blackbird.Applications.Sdk.Common.Authentication;
@@ -16,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace Apps.OpenAI.Api;
 
-public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider> credentials) 
+public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider> credentials)
     : BlackBirdRestClient(CreateOptions(credentials))
 {
     private readonly AuthHeaderDto _authHeader = new(credentials);
@@ -25,7 +26,6 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
 
     public async ValueTask<ConnectionValidationResponse> ValidateConnection()
     {
-        string model = credentials.FirstOrDefault(x => x.KeyName == CredNames.Model)?.Value ?? "gpt-3.5-turbo";
         var request = new OpenAIRequest("/models", Method.Get);
 
         try
@@ -87,6 +87,38 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
 
             _ => throw new PluginApplicationException($"Unsupported connection type: {ConnectionType}")
         };
+    }
+
+    public async Task<string> ResolveTextChatModelAsync(string? inputModel)
+    {
+        if (!string.IsNullOrWhiteSpace(inputModel))
+        {
+            return ConnectionType == ConnectionTypes.AzureOpenAi
+                ? GetModel()
+                : inputModel;
+        }
+
+        return ConnectionType switch
+        {
+            ConnectionTypes.OpenAiEmbedded => GetModel(),
+            ConnectionTypes.AzureOpenAi => GetModel(),
+            ConnectionTypes.OpenAi => await ResolveLatestGeneralTextModelAsync(),
+            _ => throw new PluginApplicationException($"Unsupported connection type: {ConnectionType}")
+        };
+    }
+
+    private async Task<string> ResolveLatestGeneralTextModelAsync()
+    {
+        var request = new OpenAIRequest("/models", Method.Get);
+        var models = await ExecuteWithErrorHandling<ModelsList>(request);
+
+        var selectedModel = TextChatModelOrdering.SelectDefaultTextModel(models.Data);
+        if (string.IsNullOrWhiteSpace(selectedModel))
+        {
+            throw new PluginMisconfigurationException("No compatible text models are available for this connection.");
+        }
+
+        return selectedModel;
     }
 
     private static ChatCompletionDto MapToChatCompletionDto(OpenAiResponseDto response)

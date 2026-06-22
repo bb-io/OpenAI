@@ -244,19 +244,22 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         return xliffDocument;
     }
 
-    protected async Task<ChatCompletionDto> ExecuteApiRequestAsync(IEnumerable<object> messages, string model, BaseChatRequest input = null, object responseFormat = null)
+    protected Task<string> ResolveTextChatModelAsync(string? model)
+        => UniversalClient.ResolveTextChatModelAsync(model);
+
+    protected async Task<ChatCompletionDto> ExecuteApiRequestAsync(IEnumerable<object> messages, string? model, BaseChatRequest input = null, object responseFormat = null)
     {
-        var body = GenerateResponseBody(messages, model, input, responseFormat);
+        var body = await GenerateResponseBodyAsync(messages, model, input, responseFormat);
         return await UniversalClient.ExecuteApiRequestAsync(body);
     }
 
-    protected Dictionary<string, object> GenerateResponseBody(
+    protected async Task<Dictionary<string, object>> GenerateResponseBodyAsync(
         IEnumerable<object> messages,
-        string model,
+        string? model,
         BaseChatRequest input = null,
         object responseFormat = null)
     {
-        var resolvedModel = UniversalClient.GetModel(model);
+        var resolvedModel = await ResolveTextChatModelAsync(model);
         var body = new Dictionary<string, object>
         {
             { "model", resolvedModel },
@@ -276,7 +279,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
 
         body.AppendIfNotNull("max_output_tokens", input?.MaximumTokens);
 
-        if (SupportsReasoningEffort(model) && !string.IsNullOrWhiteSpace(input?.ReasoningEffort))
+        if (SupportsReasoningEffort(resolvedModel) && !string.IsNullOrWhiteSpace(input?.ReasoningEffort))
         {
             body["reasoning"] = new Dictionary<string, object>
             {
@@ -294,7 +297,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
 
         if (input is IWebSearchRequest webSearchRequest && webSearchRequest.EnableWebSearch == true)
         {
-            ValidateWebSearchConfiguration(model, input, webSearchRequest);
+            ValidateWebSearchConfiguration(resolvedModel, input, webSearchRequest);
 
             var webSearchTool = BuildWebSearchTool(webSearchRequest);
             body["tools"] = new[] { webSearchTool };
@@ -519,7 +522,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         return true;
     }
 
-    protected async Task<string> IdentifySourceLanguage(TextChatModelIdentifier modelIdentifier, string content)
+    protected async Task<string> IdentifySourceLanguage(string? modelId, string content)
     {
         var systemPrompt = "You are a linguist. Identify the language of the following text. Your response should be in the BCP 47 (language) or (language-country). You respond with the language only, not other text is required.";
 
@@ -527,7 +530,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         var userPrompt = snippet + ". The BCP 47 language code: ";
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteApiRequestAsync(messages, modelIdentifier.ModelId);
+        var response = await ExecuteApiRequestAsync(messages, modelId);
 
         return response.Choices.First().Message.Content;
     }
