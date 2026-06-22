@@ -13,7 +13,6 @@ using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Blueprints;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using Blackbird.Filters.Constants;
 using Blackbird.Filters.Enums;
 using Blackbird.Filters.Extensions;
 using Blackbird.Filters.Transformations;
@@ -21,7 +20,6 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -350,30 +348,8 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
             unit.Quality.ScoreThreshold = threshold;
             unit.Quality.Score = unitCount > 0 ? (unitScore / unitCount) : 0f;
         }
-
-        Stream streamResult;
-        string contentType;
-        string fileName;
-        if (input.OutputFileHandling == "original")
-        {
-            var targetContentResult = content.Target();
-            if (!targetContentResult.Success)
-                throw new PluginMisconfigurationException(targetContentResult.Error);
-            var targetContent = targetContentResult.Value;
-            streamResult = targetContent.ToStream();
-            contentType = targetContent.OriginalMediaType;
-            fileName = targetContent.OriginalName;
-        }
-        else
-        {
-            streamResult = content.ToStream();
-            contentType = MediaTypes.Xliff2;
-            fileName = content.BilingualFileName;
-        }
-
-        var finalFile = await FileManagementClient.UploadAsync(streamResult, contentType, fileName);
-
-        result.File = finalFile;
+        
+        result.File = await OutputFileHandler.ToOutputFile(FileManagementClient, content, input.OutputFileHandling);
         result.TotalSegmentsProcessed = processedSegmentsCount;
         result.TotalSegmentsFinalized = finalizedSegmentsCount;
         result.TotalSegmentsUnderThreshhold = riskySegmentsCount;
