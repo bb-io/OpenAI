@@ -9,6 +9,37 @@ namespace Apps.OpenAI.DataSourceHandlers.ModelDataSourceHandlers;
 public static class TextChatModelOrdering
 {
     private static readonly Regex SnapshotSuffixRegex = new(@"-\d{4}-\d{2}-\d{2}$", RegexOptions.Compiled);
+    private static readonly string[] ExcludedModelTokens =
+    [
+        "audio",
+        "codex",
+        "dall",
+        "embedding",
+        "image",
+        "instruct",
+        "moderation",
+        "realtime",
+        "search",
+        "sora",
+        "text-similarity",
+        "transcribe",
+        "tts",
+        "vision",
+        "whisper"
+    ];
+
+    public static bool IsRelevantTextModel(string modelId)
+    {
+        if (string.IsNullOrWhiteSpace(modelId))
+            return false;
+
+        var normalizedModelId = modelId.Trim().ToLowerInvariant();
+
+        if (normalizedModelId == "chat-latest" || normalizedModelId.Contains("chat-latest"))
+            return false;
+
+        return ExcludedModelTokens.All(token => !normalizedModelId.Contains(token));
+    }
 
     public static IReadOnlyList<ModelDto> Sort(IEnumerable<ModelDto> models)
     {

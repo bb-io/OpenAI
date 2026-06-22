@@ -9,17 +9,7 @@ namespace Apps.OpenAI.DataSourceHandlers.ModelDataSourceHandlers;
 public class TextChatModelDataSourceHandler(InvocationContext invocationContext)
     : BaseModelDataSourceHandler(invocationContext)
 {
-    protected override Func<string, bool> ModelIdFilter =>
-        id =>
-            !id.Contains("vision") &&
-            !id.Contains("instruct") &&
-            !id.Contains("tts") &&
-            !id.Contains("text-similarity") &&
-            !id.Contains("embedding") &&
-            !id.Contains("search") &&
-            !id.Contains("dall") &&
-            !id.Contains("whisper") &&
-            !id.Contains("davinici");
+    protected override Func<string, bool> ModelIdFilter => TextChatModelOrdering.IsRelevantTextModel;
 
     protected override IEnumerable<ModelDto> SortModels(IEnumerable<ModelDto> models)
         => TextChatModelOrdering.Sort(models);
