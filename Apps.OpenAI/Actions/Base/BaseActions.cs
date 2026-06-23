@@ -3,6 +3,7 @@ using Apps.OpenAI.Api.Requests;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Invocables;
+using Apps.OpenAI.Models;
 using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Models.Responses.Batch;
@@ -260,6 +261,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         object responseFormat = null)
     {
         var resolvedModel = await ResolveTextChatModelAsync(model);
+        var openAiModel = new OpenAiModel(resolvedModel);
         var body = new Dictionary<string, object>
         {
             { "model", resolvedModel },
@@ -267,7 +269,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
             { "input", MapMessagesToResponsesInput(messages) }
         };
 
-        if (SupportsTopP(resolvedModel, input?.ReasoningEffort))
+        if (openAiModel.SupportsTopP(input?.ReasoningEffort))
         {
             body["top_p"] = input?.TopP ?? 1;
         }
@@ -279,7 +281,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
 
         body.AppendIfNotNull("max_output_tokens", input?.MaximumTokens);
 
-        if (SupportsReasoningEffort(resolvedModel) && !string.IsNullOrWhiteSpace(input?.ReasoningEffort))
+        if (openAiModel.SupportsReasoningEffort() && !string.IsNullOrWhiteSpace(input?.ReasoningEffort))
         {
             body["reasoning"] = new Dictionary<string, object>
             {
@@ -474,52 +476,6 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         {
             throw new PluginMisconfigurationException("Web search domain filtering supports up to 100 allowed domains.");
         }
-    }
-
-    private static bool SupportsReasoningEffort(string model)
-    {
-        if (string.IsNullOrWhiteSpace(model))
-        {
-            return false;
-        }
-
-        var normalizedModel = model.Trim().ToLowerInvariant();
-        return normalizedModel.StartsWith("gpt-5") || normalizedModel.StartsWith("o");
-    }
-
-    private static bool SupportsTopP(string model, string? reasoningEffort)
-    {
-        if (string.IsNullOrWhiteSpace(model))
-        {
-            return true;
-        }
-
-        var normalizedModel = model.Trim().ToLowerInvariant();
-        var normalizedReasoningEffort = reasoningEffort?.Trim().ToLowerInvariant();
-
-        if (normalizedModel.StartsWith("gpt-5-chat-latest") ||
-            normalizedModel.StartsWith("gpt-5-pro") ||
-            normalizedModel.StartsWith("gpt-5-codex") ||
-            normalizedModel.StartsWith("gpt-5-mini") ||
-            normalizedModel.StartsWith("gpt-5-nano") ||
-            normalizedModel.StartsWith("gpt-5.3") ||
-            normalizedModel.StartsWith("gpt-5.4") ||
-            normalizedModel.StartsWith("gpt-5.5"))
-        {
-            return false;
-        }
-
-        if (normalizedModel.StartsWith("gpt-5.1") || normalizedModel.StartsWith("gpt-5.2"))
-        {
-            return normalizedReasoningEffort == "none";
-        }
-
-        if (normalizedModel == "gpt-5" || normalizedModel.StartsWith("gpt-5-"))
-        {
-            return false;
-        }
-
-        return true;
     }
 
     protected async Task<string> IdentifySourceLanguage(string? modelId, string content)

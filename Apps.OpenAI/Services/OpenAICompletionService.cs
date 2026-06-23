@@ -1,5 +1,6 @@
 using Apps.OpenAI.Api;
 using Apps.OpenAI.Dtos;
+using Apps.OpenAI.Models;
 using Apps.OpenAI.Models.PostEdit;
 using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Services.Abstract;
@@ -21,6 +22,7 @@ public class OpenAICompletionService(OpenAiUniversalClient openAIClient) : IOpen
         BaseChatRequest request,
         object responseFormat = null)
     {
+        var openAiModel = new OpenAiModel(modelId);
         var jsonDictionary = new Dictionary<string, object>
         {
             { "model", modelId },
@@ -28,7 +30,7 @@ public class OpenAICompletionService(OpenAiUniversalClient openAIClient) : IOpen
             { "input", messages },
         };
 
-        if (SupportsTopP(modelId, request?.ReasoningEffort))
+        if (openAiModel.SupportsTopP(request?.ReasoningEffort))
         {
             jsonDictionary["top_p"] = request?.TopP ?? 1;
         }
@@ -44,7 +46,7 @@ public class OpenAICompletionService(OpenAiUniversalClient openAIClient) : IOpen
         jsonDictionary.AppendIfNotNull("temperature", request.Temperature);
         jsonDictionary.AppendIfNotNull("max_output_tokens", request.MaximumTokens);
 
-        if (SupportsReasoningEffort(modelId) && !string.IsNullOrWhiteSpace(request?.ReasoningEffort))
+        if (openAiModel.SupportsReasoningEffort() && !string.IsNullOrWhiteSpace(request?.ReasoningEffort))
         {
             jsonDictionary.Add("reasoning", new
             {
@@ -92,49 +94,4 @@ public class OpenAICompletionService(OpenAiUniversalClient openAIClient) : IOpen
         return DefaultEncoding;
     }
 
-    private static bool SupportsReasoningEffort(string modelId)
-    {
-        if (string.IsNullOrWhiteSpace(modelId))
-        {
-            return false;
-        }
-
-        var normalizedModel = modelId.Trim().ToLowerInvariant();
-        return normalizedModel.StartsWith("gpt-5") || normalizedModel.StartsWith("o");
-    }
-
-    private static bool SupportsTopP(string modelId, string? reasoningEffort)
-    {
-        if (string.IsNullOrWhiteSpace(modelId))
-        {
-            return true;
-        }
-
-        var normalizedModel = modelId.Trim().ToLowerInvariant();
-        var normalizedReasoningEffort = reasoningEffort?.Trim().ToLowerInvariant();
-
-        if (normalizedModel.StartsWith("gpt-5-chat-latest") ||
-            normalizedModel.StartsWith("gpt-5-pro") ||
-            normalizedModel.StartsWith("gpt-5-codex") ||
-            normalizedModel.StartsWith("gpt-5-mini") ||
-            normalizedModel.StartsWith("gpt-5-nano") ||
-            normalizedModel.StartsWith("gpt-5.3") ||
-            normalizedModel.StartsWith("gpt-5.4") ||
-            normalizedModel.StartsWith("gpt-5.5"))
-        {
-            return false;
-        }
-
-        if (normalizedModel.StartsWith("gpt-5.1") || normalizedModel.StartsWith("gpt-5.2"))
-        {
-            return normalizedReasoningEffort == "none";
-        }
-
-        if (normalizedModel == "gpt-5" || normalizedModel.StartsWith("gpt-5-"))
-        {
-            return false;
-        }
-
-        return true;
-    }
 }
