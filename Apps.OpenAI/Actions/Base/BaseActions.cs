@@ -526,7 +526,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
     {
         var systemPrompt = "You are a linguist. Identify the language of the following text. Your response should be in the BCP 47 (language) or (language-country). You respond with the language only, not other text is required.";
 
-        var snippet = content.Length > 200 ? content.Substring(0, 300) : content;
+        var snippet = content.Length > 200 ? content[..Math.Min(content.Length, 300)] : content;
         var userPrompt = snippet + ". The BCP 47 language code: ";
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };

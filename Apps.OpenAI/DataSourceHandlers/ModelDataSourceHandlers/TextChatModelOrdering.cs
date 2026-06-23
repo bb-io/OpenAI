@@ -62,8 +62,7 @@ public static class TextChatModelOrdering
             ?? orderedModels.FirstOrDefault(model => IsGenericGptSnapshot(model.Id))?.Id
             ?? orderedModels.FirstOrDefault(model => IsGptProModel(model.Id))?.Id
             ?? orderedModels.FirstOrDefault(model => IsGptMiniOrNanoModel(model.Id))?.Id
-            ?? orderedModels.FirstOrDefault(model => IsOModel(model.Id))?.Id
-            ?? orderedModels.FirstOrDefault()?.Id;
+            ?? orderedModels.FirstOrDefault(model => IsOModel(model.Id))?.Id;
     }
 
     private static bool IsSnapshot(string modelId) => SnapshotSuffixRegex.IsMatch(modelId);
@@ -110,5 +109,5 @@ public static class TextChatModelOrdering
     }
 
     private static bool IsOModel(string modelId)
-        => modelId.Trim().ToLowerInvariant().StartsWith("o");
+        => Regex.IsMatch(modelId.Trim(), @"^o\d", RegexOptions.IgnoreCase);
 }
