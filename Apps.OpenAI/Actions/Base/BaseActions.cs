@@ -3,6 +3,7 @@ using Apps.OpenAI.Api.Requests;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Invocables;
+using Apps.OpenAI.Models;
 using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Models.Responses.Batch;
@@ -244,19 +245,23 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         return xliffDocument;
     }
 
-    protected async Task<ChatCompletionDto> ExecuteApiRequestAsync(IEnumerable<object> messages, string model, BaseChatRequest input = null, object responseFormat = null)
+    protected Task<string> ResolveTextChatModelAsync(string? model)
+        => UniversalClient.ResolveTextChatModelAsync(model);
+
+    protected async Task<ChatCompletionDto> ExecuteApiRequestAsync(IEnumerable<object> messages, string? model, BaseChatRequest input = null, object responseFormat = null)
     {
-        var body = GenerateResponseBody(messages, model, input, responseFormat);
+        var body = await GenerateResponseBodyAsync(messages, model, input, responseFormat);
         return await UniversalClient.ExecuteApiRequestAsync(body);
     }
 
-    protected Dictionary<string, object> GenerateResponseBody(
+    protected async Task<Dictionary<string, object>> GenerateResponseBodyAsync(
         IEnumerable<object> messages,
-        string model,
+        string? model,
         BaseChatRequest input = null,
         object responseFormat = null)
     {
-        var resolvedModel = UniversalClient.GetModel(model);
+        var resolvedModel = await ResolveTextChatModelAsync(model);
+        var openAiModel = new OpenAiModel(resolvedModel);
         var body = new Dictionary<string, object>
         {
             { "model", resolvedModel },
@@ -264,7 +269,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
             { "input", MapMessagesToResponsesInput(messages) }
         };
 
-        if (SupportsTopP(resolvedModel, input?.ReasoningEffort))
+        if (openAiModel.SupportsTopP(input?.ReasoningEffort))
         {
             body["top_p"] = input?.TopP ?? 1;
         }
@@ -276,7 +281,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
 
         body.AppendIfNotNull("max_output_tokens", input?.MaximumTokens);
 
-        if (SupportsReasoningEffort(model) && !string.IsNullOrWhiteSpace(input?.ReasoningEffort))
+        if (openAiModel.SupportsReasoningEffort() && !string.IsNullOrWhiteSpace(input?.ReasoningEffort))
         {
             body["reasoning"] = new Dictionary<string, object>
             {
@@ -294,7 +299,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
 
         if (input is IWebSearchRequest webSearchRequest && webSearchRequest.EnableWebSearch == true)
         {
-            ValidateWebSearchConfiguration(model, input, webSearchRequest);
+            ValidateWebSearchConfiguration(resolvedModel, input, webSearchRequest);
 
             var webSearchTool = BuildWebSearchTool(webSearchRequest);
             body["tools"] = new[] { webSearchTool };
@@ -473,61 +478,15 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         }
     }
 
-    private static bool SupportsReasoningEffort(string model)
-    {
-        if (string.IsNullOrWhiteSpace(model))
-        {
-            return false;
-        }
-
-        var normalizedModel = model.Trim().ToLowerInvariant();
-        return normalizedModel.StartsWith("gpt-5") || normalizedModel.StartsWith("o");
-    }
-
-    private static bool SupportsTopP(string model, string? reasoningEffort)
-    {
-        if (string.IsNullOrWhiteSpace(model))
-        {
-            return true;
-        }
-
-        var normalizedModel = model.Trim().ToLowerInvariant();
-        var normalizedReasoningEffort = reasoningEffort?.Trim().ToLowerInvariant();
-
-        if (normalizedModel.StartsWith("gpt-5-chat-latest") ||
-            normalizedModel.StartsWith("gpt-5-pro") ||
-            normalizedModel.StartsWith("gpt-5-codex") ||
-            normalizedModel.StartsWith("gpt-5-mini") ||
-            normalizedModel.StartsWith("gpt-5-nano") ||
-            normalizedModel.StartsWith("gpt-5.3") ||
-            normalizedModel.StartsWith("gpt-5.4") ||
-            normalizedModel.StartsWith("gpt-5.5"))
-        {
-            return false;
-        }
-
-        if (normalizedModel.StartsWith("gpt-5.1") || normalizedModel.StartsWith("gpt-5.2"))
-        {
-            return normalizedReasoningEffort == "none";
-        }
-
-        if (normalizedModel == "gpt-5" || normalizedModel.StartsWith("gpt-5-"))
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    protected async Task<string> IdentifySourceLanguage(TextChatModelIdentifier modelIdentifier, string content)
+    protected async Task<string> IdentifySourceLanguage(string? modelId, string content)
     {
         var systemPrompt = "You are a linguist. Identify the language of the following text. Your response should be in the BCP 47 (language) or (language-country). You respond with the language only, not other text is required.";
 
-        var snippet = content.Length > 200 ? content.Substring(0, 300) : content;
+        var snippet = content.Length > 200 ? content[..Math.Min(content.Length, 300)] : content;
         var userPrompt = snippet + ". The BCP 47 language code: ";
 
         var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteApiRequestAsync(messages, modelIdentifier.ModelId);
+        var response = await ExecuteApiRequestAsync(messages, modelId);
 
         return response.Choices.First().Message.Content;
     }

@@ -44,6 +44,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         [ActionParameter] ReasoningEffortRequest reasoningEffortRequest,
         [ActionParameter, Display("Bucket size", Description = "Specify the number of source texts to be translated at once. Default value: 1500. (See our documentation for an explanation)")] int? bucketSize = null)
     {
+        var effectiveModel = await ResolveTextChatModelAsync(modelIdentifier.ModelId);
         var neverFail = false;
         var batchSize = bucketSize ?? 1500;
         var result = new ContentProcessingResult();
@@ -65,7 +66,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
             if (!sourceContentResult.Success)
                 throw new PluginMisconfigurationException(sourceContentResult.Error);
             var sourceContent = sourceContentResult.Value;
-            content.SourceLanguage = await IdentifySourceLanguage(modelIdentifier, sourceContent.GetPlaintext());
+            content.SourceLanguage = await IdentifySourceLanguage(effectiveModel, sourceContent.GetPlaintext());
         }
 
         var batchProcessingService = new BatchProcessingService(UniversalClient, FileManagementClient);
@@ -76,7 +77,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         int batchCounter = 0;
 
         var batchOptions = new BatchProcessingOptions(
-            UniversalClient.GetModel(modelIdentifier.ModelId),
+            effectiveModel,
             content.SourceLanguage,
             content.TargetLanguage,
             prompt,
@@ -185,7 +186,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
                 segment.State = SegmentState.Translated;
             }
 
-            var model = modelIdentifier.ModelId;
+            var model = effectiveModel;
             unit.Provenance.Translation.Tool = model;
             double tokens = result.Usage.TotalTokens / processedBatches.Count();
             unit.AddUsage(model, Math.Round(tokens, 0), UsageUnit.Tokens);
@@ -200,6 +201,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
     [Action("Translate in background", Description = "Starts background translation for a file and outputs a batch ID to download results later.")]
     public async Task<BackgroundProcessingResponse> TranslateInBackground([ActionParameter] StartBackgroundProcessRequest startBackgroundProcessRequest)
     {
+        var effectiveModel = await ResolveTextChatModelAsync(startBackgroundProcessRequest.ModelId);
         await using var downloadedStream = await FileManagementClient.DownloadAsync(startBackgroundProcessRequest.File);
         // await using var stream = downloadedStream;
         await using var stream = new MemoryStream();
@@ -223,7 +225,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
             if (!sourceContentResult.Success)
                 throw new PluginMisconfigurationException(sourceContentResult.Error);
             var sourceContent = sourceContentResult.Value;
-            content.SourceLanguage = await IdentifySourceLanguage(startBackgroundProcessRequest, sourceContent.GetPlaintext());
+            content.SourceLanguage = await IdentifySourceLanguage(effectiveModel, sourceContent.GetPlaintext());
         }
 
         var units = content.GetUnits();
@@ -299,7 +301,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
                 url = "/v1/responses",
                 body = new
                 {
-                    model = startBackgroundProcessRequest.ModelId,
+                    model = effectiveModel,
                     store = false,
                     input = new object[]
                     {

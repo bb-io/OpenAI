@@ -7,9 +7,9 @@ namespace Apps.OpenAI.Models.Identifiers;
 public class TextChatModelIdentifier
 {
     [Display("Model", Description =
-        "Required for standard OpenAI connection type. " +
-        "Ovewrites the model from the connection for OpenAI (embedded). " +
-        "Does not work for Azure OpenAI connection type (specify the deployment name during connection)")] 
+        "Optional. If empty, the app resolves the latest compatible general text model automatically for standard OpenAI connections. " +
+        "Overrides the model from the connection for OpenAI (embedded). " +
+        "Does not override Azure OpenAI deployment; specify the deployment name in the connection.")] 
     [DataSource(typeof(TextChatModelDataSourceHandler))]
     public string? ModelId { get; set; }
 }

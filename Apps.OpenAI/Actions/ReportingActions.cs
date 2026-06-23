@@ -33,6 +33,7 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
         Description = "Perform an LQA analysis on a translated XLIFF file. The result will be in the MQM framework form.")]
     public async Task<ChatResponse> CreateMqmReportFromXliff([ActionParameter] CreateMqmReportFromFileRequest request)
     {
+        var effectiveModel = await ResolveTextChatModelAsync(request.ModelId);
         var stream = await FileManagementClient.DownloadAsync(request.File);
         var loadResult = Transformation.Load(stream, request.File.Name, request.File.ContentType);
         if (!loadResult.Success)
@@ -53,7 +54,7 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
                 throw new PluginMisconfigurationException(sourceContentResult.Error);
             var sourceContent = sourceContentResult.Value;
             var plaintext = sourceContent.GetPlaintext();
-            content.SourceLanguage = await IdentifySourceLanguage(request, plaintext);
+            content.SourceLanguage = await IdentifySourceLanguage(effectiveModel, plaintext);
         }
 
         var segments = content.GetUnits()
@@ -78,7 +79,7 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
             MaximumTokens = request.MaximumTokens
         };
 
-        var response = await ExecuteApiRequestAsync(messages, request.ModelId, chatRequest);
+        var response = await ExecuteApiRequestAsync(messages, effectiveModel, chatRequest);
 
         return new ChatResponse
         {
@@ -141,6 +142,7 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
         Description = "Starts background MQM analysis for translated file content and outputs a batch ID to download results later.")]
     public async Task<BackgroundProcessingResponse> CreateMqmReportInBackground([ActionParameter] CreateMqmReportInBackgroundRequest request)
     {
+        var effectiveModel = await ResolveTextChatModelAsync(request.ModelId);
         var stream = await FileManagementClient.DownloadAsync(request.File);
         var loadResult = Transformation.Load(stream, request.File.Name, request.File.ContentType);
         if (!loadResult.Success)
@@ -160,7 +162,7 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
             if (!sourceContentResult.Success)
                 throw new PluginMisconfigurationException(sourceContentResult.Error);
             var sourceContent = sourceContentResult.Value;
-            content.SourceLanguage = await IdentifySourceLanguage(request, sourceContent.GetPlaintext());
+            content.SourceLanguage = await IdentifySourceLanguage(effectiveModel, sourceContent.GetPlaintext());
         }
 
         var units = content.GetUnits();
@@ -226,7 +228,7 @@ public class ReportingActions(InvocationContext invocationContext, IFileManageme
                 url = "/v1/responses",
                 body = new
                 {
-                    model = UniversalClient.GetModel(request.ModelId),
+                    model = effectiveModel,
                     store = false,
                     input = new object[]
                     {
