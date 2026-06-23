@@ -115,7 +115,7 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
         var selectedModel = TextChatModelOrdering.SelectDefaultTextModel(models.Data);
         if (string.IsNullOrWhiteSpace(selectedModel))
         {
-            throw new PluginMisconfigurationException("No compatible text models are available for this connection.");
+            throw new PluginMisconfigurationException("Couldn't find a compatible model for this action. Please specify a model in the 'Model' input.");
         }
 
         return selectedModel;
