@@ -20,7 +20,7 @@ Before you can connect you need to make sure that:
 - You have generated a new `API key` in the [API keys](https://platform.openai.com/account/api-keys) section, granting programmatic access to OpenAI models on a 'pay-as-you-go' basis. With this, you only pay for your actual usage, which [starts at $0,002 per 1,000 tokens](https://openai.com/pricing) for the fastest chat model. Note that the ChatGPT Plus subscription plan is not applicable for this; it only provides access to the limited web interface at chat.openai.com and doesn't include OpenAI API access. Ensure you copy the entire API key, displayed once upon creation, rather than an abbreviated version. The API key has the shape `sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`.
 - Your API account has a payment method and a positive balance, with a minimum of $5. You can set this up in the [Billing settings](https://platform.openai.com/account/billing/overview) section.
 
-**Note**: Blackbird by default uses the latest models in its actions. If your subscription does not support these models then you have to add the models you can use in every Blackbird action.
+**Note**: For standard OpenAI connections, the `Model` input in text-based actions is optional. If you leave it empty, Blackbird resolves the latest compatible general text model automatically. For `OpenAI (embedded model)` connections, the connection model is used by default and can be overridden in the action. For `Azure OpenAI`, the deployment configured in the connection is always used.
 
 ### For Azure OpenAI actions
 
@@ -64,6 +64,17 @@ If you choose `OpenAI (embedded model)` connection type, please specify the mode
 ## Actions
 
 Actions are grouped below. Optional inputs are listed as Advanced settings.
+
+## Supported file formats
+
+File-based actions in this app support:
+
+- `.docx`
+- `.pptx`
+- `.xliff`
+- `.html`
+
+When an action exposes **Output file handling** and you select `original`, Blackbird attempts to return the processed file in its original format instead of XLIFF. This applies to actions that actually produce file outputs, such as translation, editing, and review.
 
 ### Chat
 
