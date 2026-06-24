@@ -148,28 +148,24 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             return allResults;
         }
 
-        var units = content.GetUnits();
+        var units = content.GetUnits().ToList();
         var segments = units.SelectMany(x => x.Segments);
         result.TotalSegmentsCount = segments.Count();
 
-        if (!string.IsNullOrEmpty(input.ProcessOnlySegmentState) && Enum.TryParse<SegmentState>(input.ProcessOnlySegmentState, out var filterState))
-        {
-            units = units.Where(x => x.State == filterState);
-        }
-        else
-        {
-            units = units.Where(x => x.State == SegmentState.Translated);
-        }
+        var editStatesToProcess = GetProcessingStates(input.ProcessOnlySegmentState, SegmentState.Translated);
 
         if (ProcessLockedSegments == null || ProcessLockedSegments == false) 
         {
-            units = units.Where(x => x.Translate == null || x.Translate == true);
+            units = units.Where(x => x.Translate == null || x.Translate == true).ToList();
         }
-        
-        segments = units.SelectMany(x => x.Segments);
-        result.TotalSegmentsReviewed = segments.Count();
 
-        var processedBatches = await units.Batch(batchSize).Process(BatchTranslate);
+        result.TotalSegmentsReviewed = units
+            .SelectMany(x => x.Segments)
+            .Count(segment => ShouldProcessSegment(segment, editStatesToProcess));
+
+        var processedBatches = await units
+            .Batch(batchSize, segment => ShouldProcessSegment(segment, editStatesToProcess))
+            .Process(BatchTranslate);
         result.ProcessedBatchesCount = batchCounter;
         result.Usage = UsageDto.Sum(usages);
         result.SystemPrompt = systemprompt;
@@ -499,15 +495,16 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             return allResults;
         }
 
-        var allUnits = content.GetUnits();
+        var allUnits = content.GetUnits().ToList();
         var allSegments = allUnits.SelectMany(x => x.Segments);
         result.TotalSegmentsCount = allSegments.Count();
 
-        var translatedUnits = allUnits.Where(x => x.State == SegmentState.Translated);
-        var translatedSegments = translatedUnits.SelectMany(x => x.Segments);
-        result.TotalSegmentsReviewed = translatedSegments.Count();
+        var statesToProcess = GetProcessingStates(input.ProcessOnlySegmentState, SegmentState.Initial, SegmentState.Translated);
+        result.TotalSegmentsReviewed = allSegments.Count(segment => ShouldProcessPromptSegment(segment, statesToProcess));
 
-        var processedBatches = await translatedUnits.Batch(batchSize).Process(BatchTranslate);
+        var processedBatches = await allUnits
+            .Batch(batchSize, segment => ShouldProcessPromptSegment(segment, statesToProcess))
+            .Process(BatchTranslate);
         result.ProcessedBatchesCount = batchCounter;
         result.Usage = UsageDto.Sum(usages);
         result.SystemPrompt = systemprompt;
@@ -537,6 +534,38 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
         return result;
     }
+
+    private static HashSet<SegmentState> GetProcessingStates(IEnumerable<string>? states, params SegmentState[] defaultStates)
+    {
+        var parsedStates = states?
+            .Select(state => Enum.TryParse<SegmentState>(state, true, out var parsedState)
+                ? parsedState
+                : (SegmentState?)null)
+            .Where(state => state.HasValue)
+            .Select(state => state!.Value)
+            .ToHashSet();
+
+        if (parsedStates is { Count: > 0 })
+        {
+            return parsedStates;
+        }
+
+        return defaultStates.ToHashSet();
+    }
+
+    private static bool ShouldProcessSegment(Segment segment, IReadOnlySet<SegmentState> states)
+    {
+        if (segment.IsIgnorbale)
+        {
+            return false;
+        }
+
+        var effectiveState = segment.State ?? SegmentState.Initial;
+        return states.Contains(effectiveState);
+    }
+
+    private static bool ShouldProcessPromptSegment(Segment segment, IReadOnlySet<SegmentState> states)
+        => ShouldProcessSegment(segment, states);
 
     private static string EscapeInlineTagBrackets(string text)
     {

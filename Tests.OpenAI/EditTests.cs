@@ -23,7 +23,7 @@ public class EditTests : TestBaseWithContext
         {
             File = new FileReference { Name = "pmdm-13460-all-locales5832465158620282096-en-ja-Pe.mxliff" },
             OutputFileHandling = "xliff1",
-            ProcessOnlySegmentState = "Initial",
+            ProcessOnlySegmentState = ["Initial"],
             FilterGlossary = true,
 
             ModifiedBy = "1441948"
