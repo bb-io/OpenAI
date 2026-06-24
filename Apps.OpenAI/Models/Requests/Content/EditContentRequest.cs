@@ -4,6 +4,7 @@ using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.SDK.Blueprints.Interfaces.Edit;
+using System.Collections.Generic;
 
 namespace Apps.OpenAI.Models.Requests.Content;
 
@@ -26,9 +27,9 @@ public class EditContentRequest : IEditFileInput
     [Display("Modified by")]
     public string? ModifiedBy { get; set; }
 
-    [Display("Process only segments with this state", Description = "Only segments with this state will be processed")]
+    [Display("Process only segments with these states", Description = "Only segments with these states will be processed")]
     [StaticDataSource(typeof(SegmentStateDataSourceHandler))]
-    public string? ProcessOnlySegmentState { get; set; }
+    public IEnumerable<string>? ProcessOnlySegmentState { get; set; }
 
     [Display("Max tokens", Description = "The maximum number of tokens to generate in the completion. By default it is set to 1000.")]
     public int? MaxTokens { get; set; }
