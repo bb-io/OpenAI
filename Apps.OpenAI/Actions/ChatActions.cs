@@ -9,6 +9,7 @@ using Apps.OpenAI.Extensions;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
+using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
@@ -120,68 +121,80 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             messages.Add(new ChatMessageDto(MessageRoles.System, input.SystemPrompt));
         }
 
-        if (input.File != null)
+        var files = input.File?.ToList();
+        if (files != null && files.Count != 0)
         {
-            var fileStream = await FileManagementClient.DownloadAsync(input.File);
-            var fileBytes = await fileStream.GetByteData();
-            
-            if (input.File.IsAudio())
+            if (files.Any(x => x.IsAudio()))
             {
                 // The Completions API did support audio inputs, but the Responses API doesn't
                 throw new PluginMisconfigurationException(
                     "OpenAI does not support audio files for chat endpoints. " +
                     "Please use Audio actions for such files");
             }
-            
-            if (input.File.IsImage())
-            {
-                messages.Add(new ChatImageMessageDto(MessageRoles.User, new List<ChatImageMessageContentDto>
-                {
-                    new ChatImageMessageTextContentDto("text", input.Message),
-                    new ChatImageMessageImageContentDto(
-                        "image_url", 
-                        new ImageUrlDto(FileHelper.GenerateBase64String(input.File.ContentType, fileBytes)))
-                }));
-            }
 
-            if (input.File.IsSupportedFileType())
+            if (files.Count > 1)
             {
-                var base64Data = FileHelper.GenerateBase64String(input.File.ContentType, fileBytes);
-                var contentParts = new List<object>
+                if (files.All(x => x.IsImage()))
                 {
-                    new ChatInputFileContentDto("input_file", input.File.Name, base64Data),
-                    new ChatInputTextContentDto("input_text", input.Message)
-                };
-
-                messages.Add(new ChatFileMessageDto(MessageRoles.User, contentParts));
+                    messages.Add(await BuildImageMessageAsync(files, input.Message));
+                }
+                else if (files.All(x => x.IsSupportedFileType() && !x.IsImage()))
+                {
+                    messages.Add(await BuildSupportedFilesMessageAsync(files, input.Message));
+                }
+                else if (files.Any(x => x.IsImage()))
+                {
+                    throw new PluginMisconfigurationException(
+                        "Mixed image and document file sets are not supported yet. " +
+                        "Please provide either only images or only supported document files.");
+                }
+                else
+                {
+                    throw new PluginMisconfigurationException(
+                        "Multiple files are supported only for images and OpenAI-supported document file types.");
+                }
             }
-            
             else
             {
-                var content = Encoding.UTF8.GetString(fileBytes);
-                using var contentStream = content.ToStream();
-                var loadResult = Transformation.Load(contentStream, input.File.Name, input.File.ContentType);
-                var text = content;
+                var file = files[0];
 
-                if (loadResult.Success)
+                if (file.IsImage())
                 {
-                    var targetContentResult = loadResult.Value.Target();
-                    if (!targetContentResult.Success)
-                        throw new PluginMisconfigurationException(targetContentResult.Error);
-                    var targetContent = targetContentResult.Value;
-                    text = targetContent.GetPlaintext();
-                    if (string.IsNullOrWhiteSpace(text))
-                    {
-                        var sourceContentResult = loadResult.Value.Source();
-                        if (!sourceContentResult.Success)
-                            throw new PluginMisconfigurationException(sourceContentResult.Error);
-                        var sourceContent = sourceContentResult.Value;
-                        text = sourceContent.GetPlaintext();
-                    }
+                    messages.Add(await BuildImageMessageAsync(files, input.Message));
                 }
+                else if (file.IsSupportedFileType())
+                {
+                    messages.Add(await BuildSupportedFilesMessageAsync(files, input.Message));
+                }
+                else
+                {
+                    var fileStream = await FileManagementClient.DownloadAsync(file);
+                    var fileBytes = await fileStream.GetByteData();
+                    var content = Encoding.UTF8.GetString(fileBytes);
+                    using var contentStream = content.ToStream();
+                    var loadResult = Transformation.Load(contentStream, file.Name, file.ContentType);
+                    var text = content;
 
-                messages.Add(new ChatMessageDto(MessageRoles.User, input.Message));
-                messages.Add(new ChatMessageDto(MessageRoles.User, $"File content:\r\n{text}"));
+                    if (loadResult.Success)
+                    {
+                        var targetContentResult = loadResult.Value.Target();
+                        if (!targetContentResult.Success)
+                            throw new PluginMisconfigurationException(targetContentResult.Error);
+                        var targetContent = targetContentResult.Value;
+                        text = targetContent.GetPlaintext();
+                        if (string.IsNullOrWhiteSpace(text))
+                        {
+                            var sourceContentResult = loadResult.Value.Source();
+                            if (!sourceContentResult.Success)
+                                throw new PluginMisconfigurationException(sourceContentResult.Error);
+                            var sourceContent = sourceContentResult.Value;
+                            text = sourceContent.GetPlaintext();
+                        }
+                    }
+
+                    messages.Add(new ChatMessageDto(MessageRoles.User, input.Message));
+                    messages.Add(new ChatMessageDto(MessageRoles.User, $"File content:\r\n{text}"));
+                }
             }
         }
         else
@@ -213,6 +226,59 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         }
 
         return messages;
+    }
+
+    private async Task<ChatImageMessageDto> BuildImageMessageAsync(IEnumerable<FileReference> files, string message)
+    {
+        var content = new List<ChatImageMessageContentDto>
+        {
+            new ChatImageMessageTextContentDto("text", message)
+        };
+
+        foreach (var file in files)
+        {
+            var fileStream = await FileManagementClient.DownloadAsync(file);
+            var fileBytes = await fileStream.GetByteData();
+            var contentType = GetRequiredContentType(file);
+
+            content.Add(new ChatImageMessageImageContentDto(
+                "image_url",
+                new ImageUrlDto(FileHelper.GenerateBase64String(contentType, fileBytes))));
+        }
+
+        return new ChatImageMessageDto(MessageRoles.User, content);
+    }
+
+    private async Task<ChatFileMessageDto> BuildSupportedFilesMessageAsync(IEnumerable<FileReference> files, string message)
+    {
+        var contentParts = new List<object>();
+
+        foreach (var file in files)
+        {
+            var fileStream = await FileManagementClient.DownloadAsync(file);
+            var fileBytes = await fileStream.GetByteData();
+            var contentType = GetRequiredContentType(file);
+
+            contentParts.Add(new ChatInputFileContentDto(
+                "input_file",
+                file.Name,
+                FileHelper.GenerateBase64String(contentType, fileBytes)));
+        }
+
+        contentParts.Add(new ChatInputTextContentDto("input_text", message));
+
+        return new ChatFileMessageDto(MessageRoles.User, contentParts);
+    }
+
+    private static string GetRequiredContentType(FileReference file)
+    {
+        if (!string.IsNullOrWhiteSpace(file.ContentType))
+        {
+            return file.ContentType;
+        }
+
+        throw new PluginMisconfigurationException(
+            $"Content type is required for chat file input '{file.Name}'.");
     }
 
     private void HandleInput(ChatRequest input)

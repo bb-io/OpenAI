@@ -5,6 +5,7 @@ using Apps.OpenAI.Models.Requests.Chat;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using System.Linq;
 using Tests.OpenAI.Base;
 
 namespace Tests.OpenAI;
@@ -21,11 +22,15 @@ public class ChatActionsTests : TestBaseWithContext
         var chatRequest = new ChatRequest
         {
             Message = "Hey! Please describe this file",
-            File = new FileReference { Name = "test.xlsx", ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
+            File = new[]
+            {
+                new FileReference { Name = "test.xlsx", ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
+            }
         };
         
         if (chatRequest.File is not null)
-            Assert.IsNotNull(chatRequest.File.ContentType, "Please specify the content type - it's required by OpenAI");
+            Assert.IsTrue(chatRequest.File.All(x => !string.IsNullOrWhiteSpace(x.ContentType)),
+                "Please specify the content type - it's required by OpenAI");
         
         var glossary = new GlossaryRequest();
 
@@ -66,10 +71,13 @@ public class ChatActionsTests : TestBaseWithContext
         var chatRequest = new ChatRequest
         {
             Message = "Answer to the audio file!",
-            File = new FileReference
+            File = new[]
             {
-                Name = "tts delorean.mp3",
-                ContentType = "audio/mp3"
+                new FileReference
+                {
+                    Name = "tts delorean.mp3",
+                    ContentType = "audio/mp3"
+                }
             }
         };
         var glossary = new GlossaryRequest();
@@ -152,10 +160,13 @@ public class ChatActionsTests : TestBaseWithContext
         var chatRequest = new ChatRequest
         {
             Message = "Answer to the audio file!",
-            File = new FileReference
+            File = new[]
             {
-                Name = "tts delorean.mp3",
-                ContentType = "audio/mp3"
+                new FileReference
+                {
+                    Name = "tts delorean.mp3",
+                    ContentType = "audio/mp3"
+                }
             }
         };
         var glossary = new GlossaryRequest();
@@ -245,10 +256,13 @@ public class ChatActionsTests : TestBaseWithContext
         {
             SystemPrompt = "You are very funny assistant",
             Message = "Please describe this image",
-            File = new FileReference
+            File = new[]
             {
-                Name = "tyrol-italy.jpg",
-                ContentType = "image/jpeg"
+                new FileReference
+                {
+                    Name = "tyrol-italy.jpg",
+                    ContentType = "image/jpeg"
+                }
             }
         };
         var glossary = new GlossaryRequest();
@@ -257,6 +271,48 @@ public class ChatActionsTests : TestBaseWithContext
         var result = await action.ChatWithSystemMessageRequest(modelIdentifier, input, glossary);
 
         // Assert
+        PrintResult(result);
+        Assert.IsNotNull(result.Message);
+    }
+
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]
+    public async Task ChatMessageRequest_OpenAiWithMultipleImages_ReturnsValidResponse(InvocationContext context)
+    {
+        var actions = new ChatActions(context, FileManagementClient);
+        var model = new TextChatModelIdentifier { ModelId = "gpt-5" };
+        var chatRequest = new ChatRequest
+        {
+            Message = "Compare these two images and describe the common visual elements.",
+            File = new[]
+            {
+                new FileReference { Name = "tyrol-italy.jpg", ContentType = "image/jpeg" },
+                new FileReference { Name = "tyrol-italy.jpg", ContentType = "image/jpeg" }
+            }
+        };
+
+        var result = await actions.ChatMessageRequest(model, chatRequest, new GlossaryRequest());
+
+        PrintResult(result);
+        Assert.IsNotNull(result.Message);
+    }
+
+    [TestMethod, ContextDataSource(ConnectionTypes.OpenAi)]
+    public async Task ChatMessageRequest_OpenAiWithMultipleSupportedFiles_ReturnsValidResponse(InvocationContext context)
+    {
+        var actions = new ChatActions(context, FileManagementClient);
+        var model = new TextChatModelIdentifier { ModelId = "gpt-5" };
+        var chatRequest = new ChatRequest
+        {
+            Message = "Summarize the key takeaways from these files together.",
+            File = new[]
+            {
+                new FileReference { Name = "test.xlsx", ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
+                new FileReference { Name = "test.pdf", ContentType = "application/pdf" }
+            }
+        };
+
+        var result = await actions.ChatMessageRequest(model, chatRequest, new GlossaryRequest());
+
         PrintResult(result);
         Assert.IsNotNull(result.Message);
     }
