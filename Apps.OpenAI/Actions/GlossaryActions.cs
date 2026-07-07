@@ -43,7 +43,7 @@ public class GlossaryActions(InvocationContext invocationContext, IFileManagemen
     {
         await using var inputFileStream = await fileManagementClient.DownloadAsync(extractInput.File);
 
-        var transformationLoad = Transformation.Load(inputFileStream, extractInput.Name!);
+        var transformationLoad = Transformation.Load(inputFileStream, extractInput.File.Name);
         if (!transformationLoad.Success)
             throw new PluginMisconfigurationException(transformationLoad.Error);
         

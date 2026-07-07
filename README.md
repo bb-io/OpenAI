@@ -122,6 +122,7 @@ When an action exposes **Output file handling** and you select `original`, Black
 ### Glossaries
 
 - **Extract glossary** Extracts glossary terms from text and outputs a glossary file. Advanced settings: **Name**: Name of the output glossary file.
+- **Extract glossary from XLIFF** Extracts glossary terms from XLIFF and outputs a glossary file.
 
 ### Audio
 

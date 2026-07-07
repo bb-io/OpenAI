@@ -163,6 +163,6 @@ public class ContentPromptBuilderService
             $"Extract words and phrases, instead of sentences. For each term, " +
             $"provide a terminology entry for the connected language codes: {string.Join(", ", langsList)}. " +
             $"Extract words and phrases, instead of sentences. " +
-            $"Return a JSON of the following structure: {{\"result\": [{{{string.Join(", ", langsList.Select(x => $"\"{x}\": \"\""))}}}].";
+            $"Return a JSON of the following structure: {{\"result\": [{{{string.Join(", ", langsList.Select(x => $"\"{x}\": \"\""))}}}]}}";
     }
 }
