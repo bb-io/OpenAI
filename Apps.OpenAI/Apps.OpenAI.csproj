@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
 	  <Product>OpenAI</Product>
 	  <Description>Creating safe artificial general intelligence that benefits all of humanity</Description>
-	  <Version>2.8.51</Version>
+	  <Version>2.8.52</Version>
 	  <AssemblyName>Apps.OpenAI</AssemblyName>
   </PropertyGroup>
 
@@ -22,7 +22,6 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="morelinq" Version="4.4.0" />
     <PackageReference Include="TiktokenSharp" Version="1.1.8" />
   </ItemGroup>
   <ItemGroup>
