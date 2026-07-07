@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" version="2.0" srcLang="en-US" trgLang="de-DE">
+  <file id="f1" original="brake-manual.txt">
+    <unit id="u1">
+      <segment state="final">
+        <source>Replace the <pc id="1">brake caliper</pc> before checking the brake fluid level.</source>
+        <target>Ersetzen Sie den <pc id="1">Bremssattel</pc>, bevor Sie den Bremsflüssigkeitsstand prüfen.</target>
+      </segment>
+    </unit>
+    <unit id="u2">
+      <segment state="reviewed">
+        <source>The TurboShift 3000 transmission requires synthetic gear oil.</source>
+        <target>Das TurboShift 3000 Getriebe benötigt synthetisches Getriebeöl.</target>
+      </segment>
+    </unit>
+    <unit id="u3">
+      <segment state="translated">
+        <source>Torque the wheel bolts to the specified value.</source>
+        <target>Ziehen Sie die Radschrauben mit dem angegebenen Drehmoment an.</target>
+      </segment>
+    </unit>
+    <unit id="u4">
+      <segment state="initial">
+        <source>This section has not been translated yet.</source>
+        <target></target>
+      </segment>
+    </unit>
+  </file>
+</xliff>

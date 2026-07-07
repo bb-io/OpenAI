@@ -5,6 +5,7 @@ using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Models.Requests.Glossary;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using Blackbird.Filters.Enums;
 using Tests.OpenAI.Base;
 
 namespace Tests.OpenAI;
@@ -20,7 +21,8 @@ public class GlossaryTests : TestBase
         var model = new TextChatModelIdentifier { ModelId = "gpt-5.1" };
         var extractInput = new ExtractGlossaryFromXliffRequest
         {
-            File = new FileReference { Name = "The Hobbit, or There and Back Again_en-US.html.xlf" },
+            File = new FileReference { Name = "glossary-test.xlf" },
+            SegmentStates = [SegmentState.Final.Serialize(), SegmentState.Translated.Serialize()]
         };
         var chatInput = new BaseChatRequest { };
 

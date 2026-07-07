@@ -19,6 +19,7 @@ using System.Net.Mime;
 using Apps.OpenAI.Models.Requests.Glossary;
 using Apps.OpenAI.Services;
 using Blackbird.Applications.Sdk.Common.Exceptions;
+using Blackbird.Filters.Enums;
 using Blackbird.Filters.Transformations;
 
 namespace Apps.OpenAI.Actions;
@@ -54,21 +55,40 @@ public class GlossaryActions(InvocationContext invocationContext, IFileManagemen
         if (string.IsNullOrEmpty(sourceLang) || string.IsNullOrEmpty(targetLang))
             throw new PluginMisconfigurationException("The XLIFF file must declare both a source and target language");
 
-        var content = string.Join("\n\n", transformation.GetUnits()
-            .Where(u => !u.IsInitial)
-            .Select(u =>
+        var allowedStates = ParseStates(extractInput.SegmentStates);
+        var pairs = transformation.GetUnits()
+            .Where(u => allowedStates is null || allowedStates.Contains(u.State))
+            .Select(u => new
             {
-                var src = u.GetSource().GetPlainText();
-                var tgt = u.GetTarget().GetPlainText();
-                return $"{sourceLang}: {src}\n{targetLang}: {tgt}";
+                Source = u.GetSource().GetPlainText(),
+                Target = u.GetTarget().GetPlainText(),
             })
-            .Where(x => !string.IsNullOrWhiteSpace(x)));
-        
+            .Where(x => !string.IsNullOrWhiteSpace(x.Source))
+            .Where(x => !string.IsNullOrWhiteSpace(x.Target));
+
+        var content = string.Join("\n\n", pairs.Select(x => $"{sourceLang}: {x.Source}\n{targetLang}: {x.Target}"));
+
         if (string.IsNullOrWhiteSpace(content))
-            throw new PluginMisconfigurationException("The XLIFF file has no translated segments to extract terminology from");
+            throw new PluginMisconfigurationException("The XLIFF file has no usable bilingual segments to extract terminology from");
         
         var languages = new[] { sourceLang, targetLang };
         return await BuildGlossary(modelIdentifier.ModelId, chatInput, content, languages, extractInput.Name);
+    }
+    
+    private static HashSet<SegmentState>? ParseStates(IEnumerable<string>? states)
+    {
+        var list = states?.ToList();
+        if (list is null || list.Count == 0)
+            return null;
+
+        var parsed = new HashSet<SegmentState>();
+        foreach (var s in list)
+        {
+            if (Enum.TryParse<SegmentState>(s, ignoreCase: true, out var state))
+                parsed.Add(state);
+        }
+
+        return parsed.Count > 0 ? parsed : null;
     }
     
     private async Task<GlossaryResponse> BuildGlossary(
