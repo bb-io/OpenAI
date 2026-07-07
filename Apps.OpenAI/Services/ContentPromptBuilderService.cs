@@ -1,3 +1,4 @@
+using System;
 using Apps.OpenAI.Utils;
 using Blackbird.Filters.Enums;
 using Blackbird.Filters.Transformations;
@@ -5,6 +6,7 @@ using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 
 namespace Apps.OpenAI.Services;
 
@@ -147,5 +149,20 @@ public class ContentPromptBuilderService
         prompt.AppendLine(jsonData);
 
         return prompt.ToString();
+    }
+
+    public static string BuildGlossaryPrompt(IEnumerable<string> languages)
+    {
+        var langsList = languages.ToList();
+        
+        if (langsList.Count == 0)
+            throw new PluginMisconfigurationException("No languages found");
+
+        return 
+            $"Extract and list all the subject matter terminologies and proper nouns from the text inputted by the user. " +
+            $"Extract words and phrases, instead of sentences. For each term, " +
+            $"provide a terminology entry for the connected language codes: {string.Join(", ", langsList)}. " +
+            $"Extract words and phrases, instead of sentences. " +
+            $"Return a JSON of the following structure: {{\"result\": [{{{string.Join(", ", langsList.Select(x => $"\"{x}\": \"\""))}}}].";
     }
 }
