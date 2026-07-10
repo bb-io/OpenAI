@@ -17,4 +17,7 @@ public class ExtractGlossaryFromXliffRequest
     [Display("Segment states", Description = "Only extract terminology from segments in these states")]
     [StaticDataSource(typeof(SegmentStateDataHandler))]
     public IEnumerable<string>? SegmentStates { get; set; }
+
+    [Display("Custom instructions", Description = "Replaces the default term-extraction instructions with your own")]
+    public string? CustomInstructions { get; set; }
 }

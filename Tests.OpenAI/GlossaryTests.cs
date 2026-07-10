@@ -22,7 +22,9 @@ public class GlossaryTests : TestBase
         var extractInput = new ExtractGlossaryFromXliffRequest
         {
             File = new FileReference { Name = "glossary-test.xlf" },
-            SegmentStates = [SegmentState.Final.Serialize(), SegmentState.Translated.Serialize()]
+            //SegmentStates = [SegmentState.Final.Serialize(), SegmentState.Translated.Serialize()],
+            CustomInstructions = "Do not include brand names like TurboShift 3000",
+            Name = "test"
         };
         var chatInput = new BaseChatRequest { };
 
