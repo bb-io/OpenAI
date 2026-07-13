@@ -72,7 +72,7 @@ public class GlossaryActions(InvocationContext invocationContext, IFileManagemen
             throw new PluginMisconfigurationException("The XLIFF file has no usable bilingual segments to extract terminology from");
         
         var languages = new[] { sourceLang, targetLang };
-        return await BuildGlossary(modelIdentifier.ModelId, chatInput, content, languages, extractInput.Name);
+        return await BuildGlossary(modelIdentifier.ModelId, chatInput, content, languages, extractInput.Name, extractInput.CustomInstructions);
     }
     
     private static HashSet<SegmentState>? ParseStates(IEnumerable<string>? states)
@@ -96,9 +96,10 @@ public class GlossaryActions(InvocationContext invocationContext, IFileManagemen
         BaseChatRequest chatInput,
         string content,
         IEnumerable<string> languages,
-        string? name)
+        string? name,
+        string? customInstructions = null)
     {
-        var systemPrompt = ContentPromptBuilderService.BuildGlossaryPrompt(languages);
+        string systemPrompt = ContentPromptBuilderService.BuildGlossaryPrompt(languages, customInstructions);
         var messages = new List<ChatMessageDto>
         {
             new(MessageRoles.System, systemPrompt),

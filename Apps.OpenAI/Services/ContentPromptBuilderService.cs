@@ -1,4 +1,3 @@
-using System;
 using Apps.OpenAI.Utils;
 using Blackbird.Filters.Enums;
 using Blackbird.Filters.Transformations;
@@ -151,18 +150,22 @@ public class ContentPromptBuilderService
         return prompt.ToString();
     }
 
-    public static string BuildGlossaryPrompt(IEnumerable<string> languages)
+    public static string BuildGlossaryPrompt(IEnumerable<string> languages, string customInstructions = null)
     {
         var langsList = languages.ToList();
-        
         if (langsList.Count == 0)
             throw new PluginMisconfigurationException("No languages found");
 
-        return 
-            $"Extract and list all the subject matter terminologies and proper nouns from the text inputted by the user. " +
-            $"Extract words and phrases, instead of sentences. For each term, " +
-            $"provide a terminology entry for the connected language codes: {string.Join(", ", langsList)}. " +
-            $"Extract words and phrases, instead of sentences. " +
-            $"Return a JSON of the following structure: {{\"result\": [{{{string.Join(", ", langsList.Select(x => $"\"{x}\": \"\""))}}}]}}";
+        string defaultInstructions =
+            "Extract and list all the subject matter terminologies and proper nouns from the text inputted by the user. " +
+            "Extract words and phrases, not full sentences.";
+        string instructions = string.IsNullOrWhiteSpace(customInstructions) ? defaultInstructions : customInstructions;
+
+        string contract =
+            $"For each term, provide an entry for these language codes: {string.Join(", ", langsList)}. " +
+            $"Return ONLY a JSON object of this exact structure: " +
+            $"{{\"result\": [{{{string.Join(", ", langsList.Select(x => $"\"{x}\": \"\""))}}}]}}";
+
+        return $"{instructions}\n\n{contract}";
     }
 }
