@@ -18,7 +18,7 @@ public class TranslationActionsTests : TestBaseWithContext
     public async Task Translate_html(InvocationContext context)
     {
         var actions = new TranslationActions(context, FileManagementClient);
-        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4.1-mini" };
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5.6-luna" };
         var translateRequest = new TranslateContentRequest
         {
             File = new FileReference { Name = "3 random sentences_en_uk_ua.xlf" },
@@ -40,7 +40,7 @@ public class TranslationActionsTests : TestBaseWithContext
     public async Task Translate_docx(InvocationContext context)
     {
         var actions = new TranslationActions(context, FileManagementClient);
-        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-4.1" };
+        var modelIdentifier = new TextChatModelIdentifier { ModelId = "gpt-5.6-terra" };
         var translateRequest = new TranslateContentRequest
         {
             File = new FileReference { Name = "simple_interop_test.docx" },
