@@ -26,18 +26,6 @@ public sealed class OpenAiModel(string? modelId)
         "whisper"
     ];
 
-    private static readonly string[] TopPUnsupportedPrefixes =
-    [
-        "gpt-5-chat-latest",
-        "gpt-5-pro",
-        "gpt-5-codex",
-        "gpt-5-mini",
-        "gpt-5-nano",
-        "gpt-5.3",
-        "gpt-5.4",
-        "gpt-5.5"
-    ];
-
     public string Id { get; } = modelId ?? string.Empty;
 
     public string NormalizedId { get; } = modelId?.Trim().ToLowerInvariant() ?? string.Empty;
@@ -103,14 +91,13 @@ public sealed class OpenAiModel(string? modelId)
 
         var normalizedReasoningEffort = reasoningEffort?.Trim().ToLowerInvariant();
 
-        if (TopPUnsupportedPrefixes.Any(prefix => NormalizedId.StartsWith(prefix)))
-            return false;
+        if (NormalizedId.StartsWith("gpt-5"))
+        {
+            if (NormalizedId.StartsWith("gpt-5.1") || NormalizedId.StartsWith("gpt-5.2"))
+                return normalizedReasoningEffort == "none";
 
-        if (NormalizedId.StartsWith("gpt-5.1") || NormalizedId.StartsWith("gpt-5.2"))
-            return normalizedReasoningEffort == "none";
-
-        if (NormalizedId == "gpt-5" || NormalizedId.StartsWith("gpt-5-"))
             return false;
+        }
 
         return true;
     }

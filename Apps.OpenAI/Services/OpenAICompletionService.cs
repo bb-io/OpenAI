@@ -30,9 +30,9 @@ public class OpenAICompletionService(OpenAiUniversalClient openAIClient) : IOpen
             { "input", messages },
         };
 
-        if (openAiModel.SupportsTopP(request?.ReasoningEffort))
+        if (request?.TopP != null && openAiModel.SupportsTopP(request.ReasoningEffort))
         {
-            jsonDictionary["top_p"] = request?.TopP ?? 1;
+            jsonDictionary["top_p"] = request.TopP.Value;
         }
 
         if (responseFormat != null)

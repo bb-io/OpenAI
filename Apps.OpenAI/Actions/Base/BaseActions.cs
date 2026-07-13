@@ -269,9 +269,9 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
             { "input", MapMessagesToResponsesInput(messages) }
         };
 
-        if (openAiModel.SupportsTopP(input?.ReasoningEffort))
+        if (input?.TopP != null && openAiModel.SupportsTopP(input.ReasoningEffort))
         {
-            body["top_p"] = input?.TopP ?? 1;
+            body["top_p"] = input.TopP.Value;
         }
 
         if (input?.Temperature != null)
