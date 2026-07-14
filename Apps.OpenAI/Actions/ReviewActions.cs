@@ -260,6 +260,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
             var parsed = JsonConvert.DeserializeObject<CodeReviewResponse>(response.Choices.First().Message.Content)
                 ?? throw new Exception("Parsed response was null");
 
+            parsed.FindingsJson = JsonConvert.SerializeObject(parsed.Findings);
             parsed.SystemPrompt = systemPrompt;
             parsed.UserPrompt = userPrompt;
             parsed.Usage = MapUsage(response.Usage);

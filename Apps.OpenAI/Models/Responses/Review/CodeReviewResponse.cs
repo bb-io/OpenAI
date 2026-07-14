@@ -12,6 +12,9 @@ public class CodeReviewResponse
     [Display("Findings")]
     public IEnumerable<CodeReviewFinding> Findings { get; set; } = [];
 
+    [Display("Findings JSON")]
+    public string FindingsJson { get; set; } = "[]";
+
     [Display("System prompt")]
     public string SystemPrompt { get; set; } = string.Empty;
 
