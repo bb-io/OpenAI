@@ -201,6 +201,76 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         };
     }
 
+    [Action("Review code changes", Description = "Reviews pull request code changes and returns structured inline review findings.")]
+    public async Task<CodeReviewResponse> ReviewCodeChanges(
+        [ActionParameter] TextChatModelIdentifier modelIdentifier,
+        [ActionParameter] CodeReviewRequest input)
+    {
+        var systemPrompt = """
+                           You are a senior software engineer performing code review on a GitHub pull request.
+                           Return only high-signal, actionable findings grounded in the provided changes and context.
+                           Only include a finding when you can confidently point to a specific changed file path and line number.
+                           Focus on correctness, reliability, security, performance, and maintainability risks.
+                           Do not include praise, generic advice, or low-value style nits.
+                           If there are no actionable findings, return an empty findings array and a brief summary.
+                           Every finding must use side RIGHT because comments will be posted on the changed side of the diff.
+                           Keep titles short. Keep bodies specific and explain the concrete risk.
+                           Suggestions should be concise and directly applicable.
+                           """;
+
+        if (!string.IsNullOrWhiteSpace(input.AdditionalInstructions))
+        {
+            systemPrompt = $"{systemPrompt}\nAdditional review instructions: {input.AdditionalInstructions}";
+        }
+
+        var userPrompt = $"""
+                          Pull request title:
+                          {input.PullRequestTitle ?? string.Empty}
+
+                          Pull request description:
+                          {input.PullRequestDescription ?? string.Empty}
+
+                          Code changes JSON:
+                          {input.CodeChangesJson}
+                          """;
+
+        if (!string.IsNullOrWhiteSpace(input.PreviousFindingsJson))
+        {
+            userPrompt += $"""
+
+                           Previous findings JSON:
+                           {input.PreviousFindingsJson}
+                           """;
+        }
+
+        var messages = new List<ChatMessageDto>
+        {
+            new(MessageRoles.System, systemPrompt),
+            new(MessageRoles.User, userPrompt)
+        };
+
+        var response = await ExecuteApiRequestAsync(
+            messages,
+            model: modelIdentifier.ModelId,
+            input: input,
+            responseFormat: ResponseFormats.GetCodeReviewResponseFormat());
+
+        try
+        {
+            var parsed = JsonConvert.DeserializeObject<CodeReviewResponse>(response.Choices.First().Message.Content)
+                ?? throw new Exception("Parsed response was null");
+
+            parsed.SystemPrompt = systemPrompt;
+            parsed.UserPrompt = userPrompt;
+            parsed.Usage = MapUsage(response.Usage);
+            return parsed;
+        }
+        catch (Exception ex)
+        {
+            throw new PluginApplicationException($"Could not parse the output from OpenAI: {ex.Message}");
+        }
+    }
+
     [BlueprintActionDefinition(BlueprintAction.ReviewFile)]
     [Action("Review", Description = "Reviews translated file content and outputs segment quality scores.")]
     public async Task<ReviewContentResponse> ReviewContent(
