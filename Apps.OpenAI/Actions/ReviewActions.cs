@@ -260,6 +260,11 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
             var parsed = JsonConvert.DeserializeObject<CodeReviewResponse>(response.Choices.First().Message.Content)
                 ?? throw new Exception("Parsed response was null");
 
+            foreach (var finding in parsed.Findings)
+            {
+                finding.Body = FormatGithubCommentBody(finding);
+            }
+
             parsed.FindingsJson = JsonConvert.SerializeObject(parsed.Findings);
             parsed.SystemPrompt = systemPrompt;
             parsed.UserPrompt = userPrompt;
@@ -270,6 +275,20 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         {
             throw new PluginApplicationException($"Could not parse the output from OpenAI: {ex.Message}");
         }
+    }
+
+    private static string FormatGithubCommentBody(CodeReviewFinding finding)
+    {
+        return $"""
+                **Severity:** {finding.Severity}
+                **Category:** {finding.Category}
+
+                **{finding.Title}**
+
+                {finding.Body}
+
+                **Recommendation:** {finding.Suggestion}
+                """;
     }
 
     [BlueprintActionDefinition(BlueprintAction.ReviewFile)]
