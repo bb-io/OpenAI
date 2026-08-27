@@ -434,6 +434,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
                 }
             }
 
+            unit.Provenance.Review.Tool = modelIdentifier.ModelId;
             unit.Quality.ProfileReference = "OpenAI review";
             unit.Quality.ScoreThreshold = threshold;
             unit.Quality.Score = unitCount > 0 ? (unitScore / unitCount) : 0f;
