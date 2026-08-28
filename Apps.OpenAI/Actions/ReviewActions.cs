@@ -16,6 +16,7 @@ using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Filters.Enums;
 using Blackbird.Filters.Extensions;
 using Blackbird.Filters.Transformations;
+using DocumentFormat.OpenXml.EMMA;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -438,6 +439,8 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
             unit.Quality.ProfileReference = "OpenAI review";
             unit.Quality.ScoreThreshold = threshold;
             unit.Quality.Score = unitCount > 0 ? (unitScore / unitCount) : 0f;
+            double tokens = result.Usage.TotalTokens / units.Count();
+            unit.AddUsage(modelIdentifier.ModelId, Math.Round(tokens, 0), UsageUnit.Tokens);
         }
         
         result.File = await OutputFileHandler.ToOutputFile(FileManagementClient, content, input.OutputFileHandling);
