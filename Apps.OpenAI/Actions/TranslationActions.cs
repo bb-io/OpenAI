@@ -28,6 +28,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Apps.OpenAI.Extensions;
 
 namespace Apps.OpenAI.Actions;
 
@@ -156,8 +157,13 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         }
 
         var units = content.GetUnits().ToList();
-        result.TotalSegmentsCount = units.SelectMany(x => x.Segments).Count();
-        result.TotalTranslatable = units.SelectMany(x => x.Segments).Count(x => x.IsTranslatable());
+        var segments = units.SelectMany(x => x.Segments).ToList();
+        result.TotalSegmentsCount = segments.Count;
+        result.TotalWordsCount = segments.Sum(segment => segment.Source.CountWords());
+
+        var translatableSegments = segments.Where(segment => segment.IsTranslatable()).ToList();
+        result.TotalTranslatable = translatableSegments.Count;
+        result.TotalWordsTranslatable = translatableSegments.Sum(segment => segment.Source.CountWords());
 
         var processedBatches = await units
             .Batch(batchSize, segment => segment.IsTranslatable())
@@ -166,7 +172,8 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         result.Usage = UsageDto.Sum(usages);
         result.SystemPrompt = systemprompt;
 
-        var updatedCount = 0;
+        int updatedCount = 0;
+        int updatedWordsCount = 0;
         foreach (var (unit, results) in processedBatches)
         {
             foreach (var (segment, translation) in results)
@@ -181,6 +188,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
                 {
                     updatedCount++;
                     segment.SetTarget(translation.TranslatedText);
+                    updatedWordsCount += segment.Source.CountWords();
                 }
 
                 segment.State = SegmentState.Translated;
@@ -193,6 +201,8 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         }
 
         result.TargetsUpdatedCount = updatedCount;
+        result.TotalWordsUpdated = updatedWordsCount;
+        
         result.File = await OutputFileHandler.ToOutputFile(FileManagementClient, content, input.OutputFileHandling);
 
         return result;

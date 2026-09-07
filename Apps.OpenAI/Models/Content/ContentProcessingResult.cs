@@ -11,12 +11,21 @@ public class ContentProcessingResult : ITranslateFileOutput
 
     [Display("Total segments")]
     public int TotalSegmentsCount { get; set; }
+    
+    [Display("Total words count")]
+    public int TotalWordsCount { get; set; }
 
     [Display("Translatable segments")]
     public int TotalTranslatable { get; set; }
 
+    [Display("Translatable words")]
+    public int TotalWordsTranslatable { get; set; }
+
     [Display("Targets updated")]
     public int TargetsUpdatedCount { get; set; }
+    
+    [Display("Total words updated")]
+    public int TotalWordsUpdated { get; set; }
 
     [Display("Processed batches")]
     public int ProcessedBatchesCount { get; set; }

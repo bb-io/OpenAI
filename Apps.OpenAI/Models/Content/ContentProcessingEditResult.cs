@@ -13,11 +13,20 @@ public class ContentProcessingEditResult
     [Display("Total segments")]
     public int TotalSegmentsCount { get; set; }
     
+    [Display("Total words count")]
+    public int TotalWordsCount { get; set; }
+    
     [Display("Total segments reviewed")]
     public int TotalSegmentsReviewed { get; set; }
     
+    [Display("Total words reviewed")]
+    public int TotalWordsReviewed { get; set; }
+    
     [Display("Total segments updated")]
     public int TotalSegmentsUpdated { get; set; }
+    
+    [Display("Total words updated")]
+    public int TotalWordsUpdated { get; set; }
     
     [Display("Total segments with errors")]
     public int TotalSegmentsWithErrors { get; set; }
