@@ -12,6 +12,10 @@ namespace Apps.OpenAI.Models.Requests.Review
     {
         public FileReference File { get; set; } = new();
 
+        [Display("Exclude segment states", Description = "States that will not be reviewed. When empty, existing Review eligibility is preserved. Selecting states replaces the default state restrictions; missing states count as Initial. Ignorable segments and empty targets are always skipped.")]
+        [StaticDataSource(typeof(SegmentStateDataHandler))]
+        public IEnumerable<string>? ExcludeSegmentStates { get; set; }
+
         [Display("Source language")]
         [StaticDataSource(typeof(LocaleDataSourceHandler))]
         public string? SourceLanguage { get; set; }

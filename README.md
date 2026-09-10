@@ -105,7 +105,7 @@ When an action exposes **Output file handling** and you select `original`, Black
 - **Get translation issues** Reviews translated text and outputs issue descriptions.
 - **Get MQM dimension values** Performs MQM analysis for translated text and outputs per-dimension scores with a proposed translation.
 - **Review text** Reviews translated text quality and outputs a quality score. Advanced settings: **top_k**: Only sample from the top K options for each subsequent token.
-- **Review** Reviews translated file content and outputs segment quality scores. Advanced settings: **Score threshold**: All segments above this score will automatically be finalized (0..1). **Stop sequences**: Sequences that will cause the model to stop generating completion text.
+- **Review** Reviews translated file content and outputs segment quality scores. Advanced settings: **Exclude segment states**: Select one or more states to skip. When omitted or empty, existing Review eligibility is preserved, including skipping Final segments. A nonempty selection replaces the default state restrictions, so Initial/empty and Final can be reviewed unless selected. Missing states count as Initial for exclusions. Ignorable segments and empty targets are always skipped. **Score threshold**: All segments above this score will automatically be finalized (0..1). **Stop sequences**: Sequences that will cause the model to stop generating completion text.
 
 ### Background
 
