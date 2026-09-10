@@ -299,6 +299,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         [ActionParameter] ReviewContentRequest input)
     {
         var result = new ReviewContentResponse();
+        var shouldReview = ReviewSegmentFilter.Create(input.ExcludeSegmentStates);
 
         var threshold = input.Threshold ?? 0.8;
         if (threshold < 0 || threshold > 1)
@@ -402,7 +403,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         }
 
         var units = await content.GetUnits()
-            .Batch(10, x => !x.IsIgnorbale && !x.IsInitial && x.State != SegmentState.Final)
+            .Batch(10, shouldReview)
             .Process(BatchProcess);
 
         foreach (var (unit, results) in units)
