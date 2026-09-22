@@ -168,7 +168,8 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         }
 
         var glossaryStream = await FileManagementClient.DownloadAsync(glossaryFile);
-        return await glossaryStream.ConvertFromTbx();
+        using var sanitizedStream = await ToSanitizedMemoryStreamAsync(glossaryStream);
+        return await sanitizedStream.ConvertFromTbx();
     }
     
     protected class GlossaryEntry
