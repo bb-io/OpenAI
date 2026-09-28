@@ -304,8 +304,8 @@ public class ImageActions(InvocationContext invocationContext, IFileManagementCl
         var coder = new PlaintextCoder();
         var transformation = new Transformation(sourceLanguage, null)
         {
-            OriginalName = image.Name,
-            OriginalMediaType = GetImageContentType(image),
+            OriginalName = $"{Path.GetFileNameWithoutExtension(image.Name)}.txt",
+            OriginalMediaType = "text/plain",
             BilingualFileName = outputName
         };
 
