@@ -2,6 +2,48 @@
 
 public static class ResponseFormats
 {
+    public static object GetImageLocalizationExtractionResponseFormat()
+    {
+        return new
+        {
+            type = "json_schema",
+            name = "ImageLocalizationContent",
+            strict = true,
+            schema = new
+            {
+                type = "object",
+                properties = new
+                {
+                    source_language = new
+                    {
+                        type = "string",
+                        description = "The BCP-47 language code detected in the image, or the source language supplied by the user."
+                    },
+                    segments = new
+                    {
+                        type = "array",
+                        items = new
+                        {
+                            type = "object",
+                            properties = new
+                            {
+                                text = new
+                                {
+                                    type = "string",
+                                    description = "One complete localizable text segment exactly as it appears in the image."
+                                }
+                            },
+                            required = new[] { "text" },
+                            additionalProperties = false
+                        }
+                    }
+                },
+                required = new[] { "source_language", "segments" },
+                additionalProperties = false
+            }
+        };
+    }
+
     public static object GetXliffResponseFormat()
     {
         return new
