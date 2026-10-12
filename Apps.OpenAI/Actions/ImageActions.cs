@@ -160,7 +160,6 @@ public class ImageActions(InvocationContext invocationContext, IFileManagementCl
         var (extraction, usage) = await ExtractImageLocalizationContent(
             prompt,
             modelIdentifier.ModelId,
-            input,
             transformation.OriginalMediaType,
             transformation.Original);
         var segments = extraction.Segments
@@ -321,7 +320,6 @@ public class ImageActions(InvocationContext invocationContext, IFileManagementCl
     private async Task<(ImageLocalizationExtractionDto Extraction, UsageDto Usage)> ExtractImageLocalizationContent(
         string prompt,
         string modelId,
-        ExtractLocalizableContentFromImageRequest input,
         string imageMediaType,
         string imageBase64)
     {
@@ -338,8 +336,7 @@ public class ImageActions(InvocationContext invocationContext, IFileManagementCl
         var response = await ExecuteApiRequestAsync(
             messages,
             modelId,
-            input,
-            ResponseFormats.GetImageLocalizationExtractionResponseFormat());
+            responseFormat: ResponseFormats.GetImageLocalizationExtractionResponseFormat());
 
         return (DeserializeExtraction(response.Choices.First().Message.Content), response.Usage);
     }

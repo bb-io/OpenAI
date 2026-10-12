@@ -1,12 +1,11 @@
 using Apps.OpenAI.DataSourceHandlers;
-using Apps.OpenAI.Models.Requests.Chat;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Files;
 
 namespace Apps.OpenAI.Models.Requests.Image;
 
-public class ExtractLocalizableContentFromImageRequest : BaseChatRequest
+public class ExtractLocalizableContentFromImageRequest
 {
     public FileReference Image { get; set; }
 
