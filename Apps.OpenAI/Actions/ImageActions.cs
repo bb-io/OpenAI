@@ -74,7 +74,12 @@ public class ImageActions(InvocationContext invocationContext, IFileManagementCl
         using var stream = new MemoryStream(bytes);
         var filename = (input.OutputImageName ?? "image") + ".png";
         var file = await FileManagementClient.UploadAsync(stream, "image/png", filename);
-        return new() { Image = file };
+        if (response.Usage != null)
+        {
+            response.Usage.ModelUsed = model;
+        }
+
+        return new() { Image = file, Usage = response.Usage };
     }
 
     [Action("Get localizable content from image", Description = "Extracts localizable text content from an image.")]
@@ -305,7 +310,12 @@ public class ImageActions(InvocationContext invocationContext, IFileManagementCl
         var outputName = BuildOutputName(input.OutputImageName, sourceContent.OriginalName, ".png");
         var outputFile = await FileManagementClient.UploadAsync(outputStream, "image/png", outputName);
 
-        return new() { Image = outputFile };
+        if (response.Usage != null)
+        {
+            response.Usage.ModelUsed = modelIdentifier.ModelId;
+        }
+
+        return new() { Image = outputFile, Usage = response.Usage };
     }
 
     private async Task<(ImageLocalizationExtractionDto Extraction, UsageDto Usage)> ExtractImageLocalizationContent(
