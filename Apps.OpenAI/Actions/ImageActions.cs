@@ -130,7 +130,7 @@ public class ImageActions(InvocationContext invocationContext, IFileManagementCl
                      "Return each complete text item as a separate segment in natural reading order. " +
                      "Preserve the exact source spelling, punctuation, capitalization, numbers, and meaningful line breaks. " +
                      "Do not translate, summarize, correct, merge unrelated text, or include descriptions of visual elements. " +
-                     "If the image contains no localizable text, return an empty segments array. " +
+                     "If the image contains no localizable text, return an empty segments array and use 'und' as the source language unless a source language was supplied. " +
                      sourceLanguageInstruction;
 
         Transformation transformation;
@@ -162,7 +162,7 @@ public class ImageActions(InvocationContext invocationContext, IFileManagementCl
             modelIdentifier.ModelId,
             transformation.OriginalMediaType,
             transformation.Original);
-        var segments = extraction.Segments
+        var segments = (extraction.Segments ?? [])
             .Select(x => x.Text?.Trim())
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Select(x => x!)
@@ -171,6 +171,11 @@ public class ImageActions(InvocationContext invocationContext, IFileManagementCl
         var sourceLanguage = !string.IsNullOrWhiteSpace(input.SourceLanguage)
             ? input.SourceLanguage!
             : extraction.SourceLanguage?.Trim();
+
+        if (segments.Count == 0 && string.IsNullOrWhiteSpace(sourceLanguage))
+        {
+            sourceLanguage = "und";
+        }
 
         if (segments.Count > 0 && string.IsNullOrWhiteSpace(sourceLanguage))
         {
@@ -338,11 +343,17 @@ public class ImageActions(InvocationContext invocationContext, IFileManagementCl
             modelId,
             responseFormat: ResponseFormats.GetImageLocalizationExtractionResponseFormat());
 
-        return (DeserializeExtraction(response.Choices.First().Message.Content), response.Usage);
+        var content = response.Choices.FirstOrDefault()?.Message.Content;
+        return (DeserializeExtraction(content), response.Usage);
     }
 
-    private static ImageLocalizationExtractionDto DeserializeExtraction(string content)
+    private static ImageLocalizationExtractionDto DeserializeExtraction(string? content)
     {
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            return new ImageLocalizationExtractionDto();
+        }
+
         try
         {
             return JsonConvert.DeserializeObject<ImageLocalizationExtractionDto>(content)
