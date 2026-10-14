@@ -51,5 +51,9 @@ namespace Apps.OpenAI.Models.Requests.Review
         public int? TopK { get; set; }
 
         public FileReference? Glossary { get; set; }
+
+        [Display("Document summary", Description = "Summarize the document with one extra request and use the summary as context. Default value: Auto, which summarizes only larger documents.")]
+        [StaticDataSource(typeof(DocumentSummaryDataSourceHandler))]
+        public string? DocumentSummary { get; set; }
     }
 }

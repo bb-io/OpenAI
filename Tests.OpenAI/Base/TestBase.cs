@@ -1,6 +1,8 @@
 ﻿using Newtonsoft.Json;
 using Apps.OpenAI.Constants;
+using Apps.OpenAI.Connections;
 using Microsoft.Extensions.Configuration;
+using Blackbird.Applications.Sdk.Common.Connections;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Authentication;
 
@@ -33,12 +35,16 @@ public class TestBase
         var config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
         CredentialGroups = config.GetSection("ConnectionDefinition")
             .GetChildren()
-            .Select(section =>
-                section.GetChildren()
-               .Select(child => new AuthenticationCredentialsProvider(child.Key, child.Value))
-            )
+            .Select(section => ToCredentials(section.GetChildren().ToDictionary(child => child.Key, child => child.Value ?? string.Empty)))
             .ToList();
     }
+
+    // Configs copied from the platform carry ConnectionPropertyGroup instead of Connection type,
+    // so they go through the app's ConnectionDefinition exactly as the platform does.
+    private static IEnumerable<AuthenticationCredentialsProvider> ToCredentials(Dictionary<string, string> values) =>
+        values.ContainsKey(nameof(ConnectionPropertyGroup))
+            ? new ConnectionDefinition().CreateAuthorizationCredentialsProviders(values)
+            : values.Select(value => new AuthenticationCredentialsProvider(value.Key, value.Value));
 
     private void InitializeInvocationContext()
     {

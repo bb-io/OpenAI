@@ -9,10 +9,14 @@ using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
 using Blackbird.Applications.Sdk.Utils.RestSharp;
 using Newtonsoft.Json;
+using Polly;
+using Polly.Retry;
 using RestSharp;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace Apps.OpenAI.Api;
@@ -20,6 +24,17 @@ namespace Apps.OpenAI.Api;
 public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider> credentials)
     : BlackBirdRestClient(CreateOptions(credentials))
 {
+    private const int RetryCount = 8;
+    private const int BaseBackoffSeconds = 1;
+    private const int MaxBackoffSeconds = 16;
+    private const int MaxRetryAfterSeconds = 60;
+    private const string InsufficientQuotaCode = "insufficient_quota";
+
+    private static readonly AsyncRetryPolicy<RestResponse> RateLimitRetryPolicy = Policy
+        .HandleResult<RestResponse>(IsRetryableRateLimit)
+        .WaitAndRetryAsync(RetryCount, (retryAttempt, result, _) => GetRetryDelay(retryAttempt, result.Result),
+            (_, _, _, _) => Task.CompletedTask);
+
     private readonly AuthHeaderDto _authHeader = new(credentials);
 
     public string ConnectionType => credentials.First(x => x.KeyName == CredNames.ConnectionType).Value;
@@ -61,12 +76,36 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
     {
         SetAuthHeader(request);
 
-        RestResponse restResponse = await ExecuteAsync(request);
+        RestResponse restResponse = await RateLimitRetryPolicy.ExecuteAsync(() => ExecuteAsync(request));
         if (!restResponse.IsSuccessStatusCode)
             throw ConfigureErrorException(restResponse);
 
         return restResponse;
     }
+
+    // A 429 with "insufficient_quota" means the account is out of credit, so it is not retried.
+    private static bool IsRetryableRateLimit(RestResponse response)
+        => response.StatusCode == HttpStatusCode.TooManyRequests
+           && response.Content?.Contains(InsufficientQuotaCode, StringComparison.OrdinalIgnoreCase) != true;
+
+    private static TimeSpan GetRetryDelay(int retryAttempt, RestResponse response)
+    {
+        var retryAfterMs = HeaderValue(response, "retry-after-ms");
+        if (double.TryParse(retryAfterMs, NumberStyles.Float, CultureInfo.InvariantCulture, out var milliseconds) && milliseconds > 0)
+            return TimeSpan.FromMilliseconds(Math.Min(milliseconds, MaxRetryAfterSeconds * 1000));
+
+        var retryAfter = HeaderValue(response, "Retry-After");
+        if (double.TryParse(retryAfter, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0)
+            return TimeSpan.FromSeconds(Math.Min(seconds, MaxRetryAfterSeconds));
+
+        var backoff = Math.Min(BaseBackoffSeconds * Math.Pow(2, retryAttempt - 1), MaxBackoffSeconds);
+        return TimeSpan.FromSeconds(backoff) + TimeSpan.FromMilliseconds(Random.Shared.Next(0, 500));
+    }
+
+    private static string? HeaderValue(RestResponse response, string name)
+        => response.Headers?
+            .FirstOrDefault(header => string.Equals(header.Name, name, StringComparison.OrdinalIgnoreCase))?
+            .Value?.ToString();
 
     public string GetModel(string defaultValue = null)
     {
