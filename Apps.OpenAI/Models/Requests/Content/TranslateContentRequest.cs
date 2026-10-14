@@ -20,4 +20,8 @@ public class TranslateContentRequest : ITranslateFileInput
 
     [Display("Output file handling", Description = "Determine the format of the output file. The default Blackbird behavior is to convert to XLIFF for future steps."), StaticDataSource(typeof(OpenAiProcessFileFormatHandler))]
     public string? OutputFileHandling { get; set; }
+
+    [Display("Document summary", Description = "Summarize the document with one extra request and use the summary as context. Default value: Auto, which summarizes only larger documents.")]
+    [StaticDataSource(typeof(DocumentSummaryDataSourceHandler))]
+    public string? DocumentSummary { get; set; }
 }

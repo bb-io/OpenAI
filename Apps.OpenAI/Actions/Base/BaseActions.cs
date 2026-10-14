@@ -1,4 +1,5 @@
-﻿using Apps.OpenAI.Api;
+﻿using Apps.OpenAI.Ai;
+using Apps.OpenAI.Api;
 using Apps.OpenAI.Api.Requests;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;
@@ -8,6 +9,14 @@ using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Models.Responses.Batch;
 using Apps.OpenAI.Utils;
+using Blackbird.Ai.Batching.Models;
+using Blackbird.Ai.Content.Models;
+using Blackbird.Ai.Files;
+using Blackbird.Ai.Files.Models;
+using Blackbird.Ai.Llm.Abstract;
+using Blackbird.Ai.Llm.Models;
+using Blackbird.Ai.Prompts.Models;
+using Blackbird.Ai.Text;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
@@ -248,6 +257,48 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
 
     protected Task<string> ResolveTextChatModelAsync(string? model)
         => UniversalClient.ResolveTextChatModelAsync(model);
+
+    protected virtual ILlmClient CreateLlmClient(string? model, OpenAiLlmSettings settings)
+        => new OpenAiLlmClient(UniversalClient, model, settings);
+
+    protected ContentStreamProcessor CreateContentProcessor(ILlmClient client, string? model, int? bucketSize = null)
+        => new(client, new EngineOptions
+        {
+            Logger = AiAdapters.Logger(InvocationContext),
+            LogTag = "[OpenAI]",
+            ProvenanceTool = model ?? "OpenAI",
+            Bucketing = BucketingOptions.FromInputs(bucketSize, null)
+        });
+
+    // Full traces keep the user prompt, which the text action responses report.
+    protected TextProcessor CreateTextProcessor(ILlmClient client, string? model)
+        => new(client, new EngineOptions
+        {
+            Logger = AiAdapters.Logger(InvocationContext),
+            LogTag = "[OpenAI]",
+            ProvenanceTool = model ?? "OpenAI",
+            TraceLevel = PromptTraceLevel.Full
+        });
+
+    protected static string LastUserPrompt(ContentResult content)
+        => content.Traces.LastOrDefault()?.UserPrompt ?? string.Empty;
+
+    protected async Task<Stream?> DownloadOptionalAsync(FileReference? file)
+        => file is null ? null : await FileManagementClient.DownloadAsync(file);
+
+    protected async Task<FileReference> UploadAsync(ContentStream file)
+    {
+        await using var content = file.Content;
+        return await FileManagementClient.UploadAsync(content, file.MediaType, file.FileName);
+    }
+
+    protected static UsageDto ToUsageDto(LlmUsage usage, ILlmClient client, string? requestedModel) => new()
+    {
+        ModelUsed = (client as OpenAiLlmClient)?.ModelUsed ?? requestedModel,
+        PromptTokens = usage.InputTokens,
+        CompletionTokens = usage.OutputTokens,
+        TotalTokens = usage.TotalTokens
+    };
 
     protected async Task<ChatCompletionDto> ExecuteApiRequestAsync(IEnumerable<object> messages, string? model, BaseChatRequest input = null, object responseFormat = null)
     {

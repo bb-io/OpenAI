@@ -10,6 +10,10 @@ public class LocalizeTextRequest : BaseChatRequest, ITranslateTextInput
 {
     public string Text { get; set; }
 
+    [Display("Source language", Description = "The language of the text. When empty, it is detected with one extra request.")]
+    [StaticDataSource(typeof(LocaleDataSourceHandler))]
+    public string? SourceLanguage { get; set; }
+
     [Display("Target language")]
     [StaticDataSource(typeof(LocaleDataSourceHandler))]
     public string TargetLanguage { get; set; }

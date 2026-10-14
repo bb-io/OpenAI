@@ -1,4 +1,5 @@
 ﻿using Apps.OpenAI.Actions.Base;
+using Apps.OpenAI.Ai;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Identifiers;
@@ -7,6 +8,9 @@ using Apps.OpenAI.Models.Requests.Review;
 using Apps.OpenAI.Models.Responses.Chat;
 using Apps.OpenAI.Models.Responses.Review;
 using Apps.OpenAI.Utils;
+using Blackbird.Ai.Files.Models;
+using Blackbird.Ai.Summary.Models;
+using Blackbird.Ai.Text.Models;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
@@ -140,65 +144,29 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         [ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] ReviewTextRequest input)
     {
-        var reviewData = new[]
+        // The request's Max tokens, Temperature, top_p and top_k were never sent, and still are not.
+        var client = CreateLlmClient(modelIdentifier.ModelId, new OpenAiLlmSettings());
+        var processor = CreateTextProcessor(client, modelIdentifier.ModelId);
+
+        await using var glossaryFile = await DownloadOptionalAsync(input.Glossary);
+
+        var result = await AiAdapters.Mapped(() => processor.ReviewAsync(new ReviewTextOptions
         {
-            new
-            {
-                translation_id = "1",
-                source_text = input.SourceText,
-                target_text = input.TargetText
-            }
-        };
-
-        var json = JsonConvert.SerializeObject(reviewData);
-
-        var systemPrompt = PromptBuilder.BuildReviewSystemPrompt();
-        var userPrompt = PromptBuilder.BuildReviewUserPrompt(
-            input.AdditionalInstructions,
-            input.SourceLanguage,
-            input.TargetLanguage,
-            json);
-
-        if (input.Glossary != null)
-        {
-            var glossaryPart = await GetGlossaryPromptPart(input.Glossary, input.SourceText, true);
-            if (!string.IsNullOrWhiteSpace(glossaryPart))
-                userPrompt += glossaryPart;
-        }
-
-        var messages = new List<ChatMessageDto>
-        {
-            new(MessageRoles.System, systemPrompt),
-            new(MessageRoles.User, userPrompt)
-        };
-
-        var response = await ExecuteApiRequestAsync(
-            messages,
-            model: modelIdentifier.ModelId,
-            input: null,
-            responseFormat: new { type = "json_object" });
-
-        var raw = response.Choices.First().Message.Content;
-
-        float score = 0f;
-        try
-        {
-            var parsed = JsonConvert.DeserializeObject<ReviewJsonResponse>(raw);
-            score = parsed?.Translations?.FirstOrDefault()?.QualityScore ?? 0f;
-        }
-        catch
-        {
-            score = 0f;
-        }
-
-        score = score < 0 ? 0 : (score > 1 ? 1 : score);
+            SourceText = input.SourceText,
+            TargetText = input.TargetText,
+            SourceLanguage = input.SourceLanguage,
+            TargetLanguage = input.TargetLanguage,
+            AdditionalInstructions = input.AdditionalInstructions,
+            GlossaryTbx = glossaryFile
+        }));
 
         return new ReviewTextResponse
         {
-            Score = score,
-            SystemPrompt = systemPrompt,
-            UserPrompt = userPrompt,
-            Usage = MapUsage(response.Usage)
+            // No usable score falls back to 0, as before, so the text is routed to a human.
+            Score = (float)(result.Score ?? 0),
+            SystemPrompt = result.Content.SystemPrompt ?? string.Empty,
+            UserPrompt = LastUserPrompt(result.Content),
+            Usage = ToUsageDto(result.Content.Usage, client, modelIdentifier.ModelId)
         };
     }
 
@@ -298,162 +266,54 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         [ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] ReviewContentRequest input)
     {
-        var result = new ReviewContentResponse();
+        // Inputs are validated before any download or model call.
         var shouldReview = ReviewSegmentFilter.Create(input.ExcludeSegmentStates);
 
         var threshold = input.Threshold ?? 0.8;
         if (threshold < 0 || threshold > 1)
             throw new PluginMisconfigurationException("Threshold must be in range 0..1.");
 
-        var stream = await FileManagementClient.DownloadAsync(input.File);
-        var loadResult = Transformation.Load(stream, input.File.Name, input.File.ContentType);
-        if (!loadResult.Success)
-            throw new PluginMisconfigurationException(loadResult.Error);
+        // The model is resolved lazily by the client, so a file with nothing to review never calls the API.
+        var client = CreateLlmClient(modelIdentifier.ModelId, new OpenAiLlmSettings());
+        var processor = CreateContentProcessor(client, modelIdentifier.ModelId);
 
-        var content = loadResult.Value;
+        await using var file = await FileManagementClient.DownloadAsync(input.File);
+        await using var glossaryFile = await DownloadOptionalAsync(input.Glossary);
 
-        content.SourceLanguage ??= input.SourceLanguage;
-        content.TargetLanguage ??= input.TargetLanguage;
-
-        if (string.IsNullOrWhiteSpace(content.SourceLanguage))
-            throw new PluginMisconfigurationException(
-                "The source language is not defined. Please assign the source language in this action.");
-
-        if (string.IsNullOrWhiteSpace(content.TargetLanguage))
-            throw new PluginMisconfigurationException(
-                "The target language is not defined. Please assign the target language in this action.");
-
-        var processedSegmentsCount = 0;
-        var finalizedSegmentsCount = 0;
-        var riskySegmentsCount = 0;
-        float totalScore = 0f;
-
-        async Task<IEnumerable<float?>> BatchProcess(IEnumerable<(Unit Unit, Segment Segment)> batch)
+        var result = await AiAdapters.Mapped(() => processor.ReviewAsync(new ReviewStreamOptions
         {
-            var scores = new List<float?>();
+            File = file,
+            FileName = input.File.Name,
+            MediaType = input.File.ContentType,
+            SourceLanguage = input.SourceLanguage,
+            TargetLanguage = input.TargetLanguage,
+            OutputFileHandling = input.OutputFileHandling,
+            GlossaryTbx = glossaryFile,
+            AdditionalInstructions = input.AdditionalInstructions,
+            SegmentStates = AllSegmentStates,
+            SegmentFilter = shouldReview,
+            ProcessLockedSegments = true,
+            Threshold = threshold,
+            LowScoreThreshold = threshold,
+            StateAboveThreshold = SegmentState.Final,
+            Summary = SummaryOptions.For(input.DocumentSummary)
+        }));
 
-            foreach (var (_, segment) in batch)
-            {
-                if (string.IsNullOrWhiteSpace(segment.GetTarget()))
-                {
-                    scores.Add(null);
-                    continue;
-                }
+        var review = result.Content.Review!;
 
-                var reviewData = new[]
-                {
-                new
-                {
-                    translation_id = segment.Id,
-                    source_text = segment.GetSource(),
-                    target_text = segment.GetTarget()
-                }
-            };
-
-                var json = JsonConvert.SerializeObject(reviewData);
-
-                var systemPrompt = PromptBuilder.BuildReviewSystemPrompt();
-                var userPrompt = PromptBuilder.BuildReviewUserPrompt(
-                    input.AdditionalInstructions,
-                    content.SourceLanguage,
-                    content.TargetLanguage!,
-                    json);
-
-                if (input.Glossary != null)
-                {
-                    var glossaryPart = await GetGlossaryPromptPart(input.Glossary, segment.GetSource(), true);
-                    if (!string.IsNullOrWhiteSpace(glossaryPart))
-                        userPrompt += glossaryPart;
-                }
-
-                var messages = new List<ChatMessageDto>
-            {
-                new(MessageRoles.System, systemPrompt),
-                new(MessageRoles.User, userPrompt)
-            };
-
-                var response = await ExecuteApiRequestAsync(
-                    messages,
-                    model: modelIdentifier.ModelId,
-                    input: null,
-                    responseFormat: new { type = "json_object" });
-
-                result.Usage += MapUsage(response.Usage);
-
-                var raw = response.Choices.First().Message.Content;
-
-                float score;
-                try
-                {
-                    var parsed = JsonConvert.DeserializeObject<ReviewJsonResponse>(raw);
-                    score = parsed?.Translations?.FirstOrDefault()?.QualityScore ?? 0f;
-                }
-                catch
-                {
-                    score = 0f;
-                }
-
-                if (score < 0f) score = 0f;
-                if (score > 1f) score = 1f;
-
-                scores.Add(score);
-            }
-
-            return scores;
-        }
-
-        var units = await content.GetUnits()
-            .Batch(10, shouldReview)
-            .Process(BatchProcess);
-
-        foreach (var (unit, results) in units)
+        return new ReviewContentResponse
         {
-            float unitScore = 0f;
-            var unitCount = 0;
-
-            foreach (var (segment, score) in results)
-            {
-                if (score == null) continue;
-
-                processedSegmentsCount++;
-                totalScore += score.Value;
-                unitScore += score.Value;
-                unitCount++;
-
-                segment.TargetAttributes.RemoveAll(attr => attr.Name == "extradata");
-                segment.TargetAttributes.Add(new XAttribute(
-                    "extradata",
-                    score.Value.ToString(CultureInfo.InvariantCulture)));
-
-                if (score.Value >= threshold)
-                {
-                    segment.State = SegmentState.Final;
-                    finalizedSegmentsCount++;
-                }
-                else
-                {
-                    riskySegmentsCount++;
-                }
-            }
-
-            unit.Provenance.Review.Tool = modelIdentifier.ModelId;
-            unit.Quality.ProfileReference = "OpenAI review";
-            unit.Quality.ScoreThreshold = threshold;
-            unit.Quality.Score = unitCount > 0 ? (unitScore / unitCount) : 0f;
-            double tokens = result.Usage.TotalTokens / units.Count();
-            unit.AddUsage(modelIdentifier.ModelId, Math.Round(tokens, 0), UsageUnit.Tokens);
-        }
-        
-        result.File = await OutputFileHandler.ToOutputFile(FileManagementClient, content, input.OutputFileHandling);
-        result.TotalSegmentsProcessed = processedSegmentsCount;
-        result.TotalSegmentsFinalized = finalizedSegmentsCount;
-        result.TotalSegmentsUnderThreshhold = riskySegmentsCount;
-        result.AverageMetric = processedSegmentsCount > 0 ? (totalScore / processedSegmentsCount) : 0f;
-        result.PercentageSegmentsUnderThreshhold =
-            processedSegmentsCount > 0 ? ((float)riskySegmentsCount / processedSegmentsCount) : 0f;
-
-        return result;
+            File = await UploadAsync(result.File),
+            TotalSegmentsProcessed = review.ScoredSegments,
+            TotalSegmentsFinalized = review.Finalized,
+            TotalSegmentsUnderThreshhold = review.UnderThreshold,
+            AverageMetric = (float)review.AverageScore,
+            PercentageSegmentsUnderThreshhold = (float)(review.PercentageUnderThreshold / 100),
+            Usage = ToUsageDto(result.Content.Usage, client, modelIdentifier.ModelId)
+        };
     }
+
+    private static readonly IReadOnlySet<SegmentState> AllSegmentStates = Enum.GetValues<SegmentState>().ToHashSet();
 
     static UsageDto MapUsage(object usageObj)
     {
