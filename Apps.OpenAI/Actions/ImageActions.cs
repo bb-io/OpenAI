@@ -7,7 +7,6 @@ using Apps.OpenAI.Actions.Base;
 using Apps.OpenAI.Api.Requests;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;
-using Apps.OpenAI.Extensions;
 using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Models.Requests.Image;
@@ -16,12 +15,9 @@ using Apps.OpenAI.Models.Responses.Image;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
-using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using Blackbird.Filters.Bilingual.Xliff1;
-using Blackbird.Filters.Coders;
 using Blackbird.Filters.Constants;
 using Blackbird.Filters.Transformations;
 using Newtonsoft.Json;
@@ -78,7 +74,12 @@ public class ImageActions(InvocationContext invocationContext, IFileManagementCl
         using var stream = new MemoryStream(bytes);
         var filename = (input.OutputImageName ?? "image") + ".png";
         var file = await FileManagementClient.UploadAsync(stream, "image/png", filename);
-        return new() { Image = file };
+        if (response.Usage != null)
+        {
+            response.Usage.ModelUsed = model;
+        }
+
+        return new() { Image = file, Usage = response.Usage };
     }
 
     [Action("Get localizable content from image", Description = "Extracts localizable text content from an image.")]
@@ -120,7 +121,6 @@ public class ImageActions(InvocationContext invocationContext, IFileManagementCl
         [ActionParameter] ExtractLocalizableContentFromImageRequest input)
     {
         ThrowForAzure("image");
-        ValidateImage(input.Image, allowGif: true);
 
         var sourceLanguageInstruction = string.IsNullOrWhiteSpace(input.SourceLanguage)
             ? "Detect the language of the extracted text and return its BCP-47 language code."
@@ -130,79 +130,85 @@ public class ImageActions(InvocationContext invocationContext, IFileManagementCl
                      "Return each complete text item as a separate segment in natural reading order. " +
                      "Preserve the exact source spelling, punctuation, capitalization, numbers, and meaningful line breaks. " +
                      "Do not translate, summarize, correct, merge unrelated text, or include descriptions of visual elements. " +
-                     "If the image contains no localizable text, return an empty segments array. " +
+                     "If the image contains no localizable text, return an empty segments array and use 'und' as the source language unless a source language was supplied. " +
                      sourceLanguageInstruction;
 
-        var fileStream = await FileManagementClient.DownloadAsync(input.Image);
-        var fileBytes = await fileStream.GetByteData();
-        var contentType = GetImageContentType(input.Image);
-        var messages = new List<ChatImageMessageDto>
+        Transformation transformation;
+        await using (var imageStream = await FileManagementClient.DownloadAsync(input.Image))
         {
-            new(MessageRoles.User,
-            [
-                new ChatImageMessageTextContentDto("text", prompt),
-                new ChatImageMessageImageContentDto("image_url", new ImageUrlDto(
-                    $"data:{contentType};base64,{Convert.ToBase64String(fileBytes)}"))
-            ])
-        };
+            var imageLoadResult = Transformation.Load(
+                imageStream,
+                input.Image.Name,
+                input.Image.ContentType);
 
-        var response = await ExecuteApiRequestAsync(
-            messages,
+            if (!imageLoadResult.Success)
+            {
+                throw new PluginMisconfigurationException(
+                    $"The original image could not be embedded in the XLIFF file: {imageLoadResult.Error}");
+            }
+
+            transformation = imageLoadResult.Value!;
+        }
+
+        if (string.IsNullOrWhiteSpace(transformation.Original) ||
+            string.IsNullOrWhiteSpace(transformation.OriginalMediaType))
+        {
+            throw new PluginMisconfigurationException(
+                "The original image could not be embedded in the XLIFF file.");
+        }
+
+        var (extraction, usage) = await ExtractImageLocalizationContent(
+            prompt,
             modelIdentifier.ModelId,
-            input,
-            ResponseFormats.GetImageLocalizationExtractionResponseFormat());
-
-        var extraction = DeserializeExtraction(response.Choices.First().Message.Content);
-        var segments = extraction.Segments
+            transformation.OriginalMediaType,
+            transformation.Original);
+        var segments = (extraction.Segments ?? [])
             .Select(x => x.Text?.Trim())
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Select(x => x!)
             .ToList();
 
-        if (segments.Count == 0)
-        {
-            throw new PluginMisconfigurationException("No localizable text was detected in the supplied image.");
-        }
-
         var sourceLanguage = !string.IsNullOrWhiteSpace(input.SourceLanguage)
             ? input.SourceLanguage!
             : extraction.SourceLanguage?.Trim();
 
-        if (string.IsNullOrWhiteSpace(sourceLanguage))
+        if (segments.Count == 0 && string.IsNullOrWhiteSpace(sourceLanguage))
+        {
+            sourceLanguage = "und";
+        }
+
+        if (segments.Count > 0 && string.IsNullOrWhiteSpace(sourceLanguage))
         {
             throw new PluginApplicationException("The model extracted text but did not return its source language.");
         }
 
         var outputName = BuildOutputName(input.OutputFileName, input.Image.Name, ".xlf");
-        var transformation = CreateImageTextTransformation(
-            segments,
-            sourceLanguage,
-            input.Image,
-            outputName);
+        transformation.SourceLanguage = string.IsNullOrWhiteSpace(sourceLanguage) ? null : sourceLanguage;
+        transformation.BilingualFileName = outputName;
 
-        var isXliff1 = string.Equals(input.OutputFileFormat, "xliff1", StringComparison.OrdinalIgnoreCase);
-        using var outputStream = isXliff1
-            ? new MemoryStream(System.Text.Encoding.UTF8.GetBytes(Xliff1Serializer.Serialize(transformation)))
-            : transformation.ToStream();
-        var mediaType = isXliff1 ? MediaTypes.Xliff1 : MediaTypes.Xliff2;
-        var file = await FileManagementClient.UploadAsync(outputStream, mediaType, outputName);
+        foreach (var text in segments)
+        {
+            transformation.AddTranslationUnit(text);
+        }
+
+        using var outputStream = transformation.ToStream();
+        var file = await FileManagementClient.UploadAsync(outputStream, MediaTypes.Xliff2, outputName);
 
         return new()
         {
             File = file,
             SourceLanguage = sourceLanguage,
             SegmentsCount = segments.Count,
-            Usage = response.Usage
+            Usage = usage
         };
     }
 
-    [Action("Generate localized image variant", Description = "Replaces text in an original image using translations from an XLIFF file.")]
+    [Action("Generate localized image variant", Description = "Generates a localized image using the original image and translations embedded in an XLIFF file.")]
     public async Task<ImageResponse> GenerateLocalizedImageVariant(
         [ActionParameter] ImageEditingModelIdentifier modelIdentifier,
         [ActionParameter] GenerateLocalizedImageVariantRequest input)
     {
         ThrowForAzure("image");
-        ValidateImage(input.Image, allowGif: false);
 
         var localizedExtension = Path.GetExtension(input.LocalizedFile.Name);
         if (!string.Equals(localizedExtension, ".xlf", StringComparison.OrdinalIgnoreCase) &&
@@ -212,19 +218,24 @@ public class ImageActions(InvocationContext invocationContext, IFileManagementCl
                 "The localized file must be an XLIFF file with an .xlf or .xliff extension.");
         }
 
-        var localizedFileStream = await FileManagementClient.DownloadAsync(input.LocalizedFile);
-        var loadResult = Transformation.Load(
-            localizedFileStream,
-            input.LocalizedFile.Name,
-            input.LocalizedFile.ContentType);
-
-        if (!loadResult.Success)
+        Transformation transformation;
+        await using (var localizedFileStream = await FileManagementClient.DownloadAsync(input.LocalizedFile))
         {
-            throw new PluginMisconfigurationException(
-                $"The localized file could not be read: {loadResult.Error}");
+            var loadResult = Transformation.Load(
+                localizedFileStream,
+                input.LocalizedFile.Name,
+                input.LocalizedFile.ContentType);
+
+            if (!loadResult.Success)
+            {
+                throw new PluginMisconfigurationException(
+                    $"The localized file could not be read: {loadResult.Error}");
+            }
+
+            transformation = loadResult.Value!;
         }
 
-        var replacements = loadResult.Value.GetUnits()
+        var replacements = transformation.GetUnits()
             .SelectMany(unit => unit.Segments)
             .Select((segment, index) => new
             {
@@ -241,14 +252,39 @@ public class ImageActions(InvocationContext invocationContext, IFileManagementCl
                 "The localized XLIFF file does not contain any segments with both source and target text.");
         }
 
+        var sourceResult = transformation.Source();
+        if (!sourceResult.Success)
+        {
+            throw new PluginMisconfigurationException(
+                $"The original image could not be restored from the localized XLIFF file: {sourceResult.Error}");
+        }
+
+        var sourceContent = sourceResult.Value!;
+
+        Stream RestoreEmbeddedImage()
+        {
+            try
+            {
+                return sourceContent.ToStream();
+            }
+            catch (Exception ex)
+            {
+                throw new PluginMisconfigurationException(
+                    $"The original image embedded in the localized XLIFF file could not be restored: {ex.Message}");
+            }
+        }
+
         var replacementsJson = JsonConvert.SerializeObject(replacements, Formatting.Indented);
+        var languageContext = BuildLanguageContext(
+            transformation.SourceLanguage,
+            transformation.TargetLanguage);
         var prompt = "Edit the supplied original image by replacing its visible source-language text according to " +
                      "the exact source-to-target mappings below. Use every target string exactly as supplied; do not " +
                      "translate, paraphrase, correct, omit, duplicate, or invent text. Match replacements by source " +
                      "text and reading order. Preserve all non-text content, layout, geometry, colors, icons, imagery, " +
                      "lighting, and visual style. Remove the original source-language text. Adjust font size or line " +
                      "breaks only when necessary to fit the original text region. Do not add explanations, labels, " +
-                     "watermarks, or any text not present in the mappings.\n\n" +
+                     $"watermarks, or any text not present in the mappings.{languageContext}\n\n" +
                      $"Text mappings:\n{replacementsJson}";
 
         if (!string.IsNullOrWhiteSpace(input.AdditionalInstructions))
@@ -256,12 +292,12 @@ public class ImageActions(InvocationContext invocationContext, IFileManagementCl
             prompt += $"\n\nAdditional instructions:\n{input.AdditionalInstructions.Trim()}";
         }
 
-        var imageStream = await FileManagementClient.DownloadAsync(input.Image);
-        var imageBytes = await imageStream.GetByteData();
-        var contentType = GetImageContentType(input.Image);
-
         var request = new OpenAIRequest("/images/edits", Method.Post);
-        request.AddFile("image[]", imageBytes, input.Image.Name, contentType);
+        request.AddFile(
+            "image[]",
+            RestoreEmbeddedImage,
+            sourceContent.OriginalName,
+            sourceContent.OriginalMediaType);
         request.AddParameter("model", modelIdentifier.ModelId);
         request.AddParameter("prompt", prompt);
         request.AddParameter("output_format", "png");
@@ -275,14 +311,49 @@ public class ImageActions(InvocationContext invocationContext, IFileManagementCl
 
         var outputBytes = Convert.FromBase64String(imageData.Base64);
         using var outputStream = new MemoryStream(outputBytes);
-        var outputName = BuildOutputName(input.OutputImageName, input.Image.Name, ".png");
+        var outputName = BuildOutputName(input.OutputImageName, sourceContent.OriginalName, ".png");
         var outputFile = await FileManagementClient.UploadAsync(outputStream, "image/png", outputName);
 
-        return new() { Image = outputFile };
+        if (response.Usage != null)
+        {
+            response.Usage.ModelUsed = modelIdentifier.ModelId;
+        }
+
+        return new() { Image = outputFile, Usage = response.Usage };
     }
 
-    private static ImageLocalizationExtractionDto DeserializeExtraction(string content)
+    private async Task<(ImageLocalizationExtractionDto Extraction, UsageDto Usage)> ExtractImageLocalizationContent(
+        string prompt,
+        string modelId,
+        string imageMediaType,
+        string imageBase64)
     {
+        var messages = new List<ChatImageMessageDto>
+        {
+            new(MessageRoles.User,
+            [
+                new ChatImageMessageTextContentDto("text", prompt),
+                new ChatImageMessageImageContentDto("image_url", new ImageUrlDto(
+                    $"data:{imageMediaType};base64,{imageBase64}"))
+            ])
+        };
+
+        var response = await ExecuteApiRequestAsync(
+            messages,
+            modelId,
+            responseFormat: ResponseFormats.GetImageLocalizationExtractionResponseFormat());
+
+        var content = response.Choices.FirstOrDefault()?.Message.Content;
+        return (DeserializeExtraction(content), response.Usage);
+    }
+
+    private static ImageLocalizationExtractionDto DeserializeExtraction(string? content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            return new ImageLocalizationExtractionDto();
+        }
+
         try
         {
             return JsonConvert.DeserializeObject<ImageLocalizationExtractionDto>(content)
@@ -295,70 +366,23 @@ public class ImageActions(InvocationContext invocationContext, IFileManagementCl
         }
     }
 
-    private static Transformation CreateImageTextTransformation(
-        IEnumerable<string> texts,
-        string sourceLanguage,
-        FileReference image,
-        string outputName)
+
+
+    private static string BuildLanguageContext(string? sourceLanguage, string? targetLanguage)
     {
-        var coder = new PlaintextCoder();
-        var transformation = new Transformation(sourceLanguage, null)
+        if (string.IsNullOrWhiteSpace(sourceLanguage) && string.IsNullOrWhiteSpace(targetLanguage))
         {
-            OriginalName = $"{Path.GetFileNameWithoutExtension(image.Name)}.txt",
-            OriginalMediaType = "text/plain",
-            BilingualFileName = outputName
-        };
-
-        foreach (var (text, index) in texts.Select((text, index) => (text, index)))
-        {
-            transformation.Children.Add(new Unit(coder)
-            {
-                Segments =
-                [
-                    new Segment(coder)
-                    {
-                        Source = coder.DeserializeSegment(text),
-                        Order = index + 1
-                    }
-                ]
-            });
+            return string.Empty;
         }
 
-        return transformation;
-    }
-
-    private static void ValidateImage(FileReference image, bool allowGif)
-    {
-        if (!image.IsImage())
+        if (!string.IsNullOrWhiteSpace(sourceLanguage) && !string.IsNullOrWhiteSpace(targetLanguage))
         {
-            throw new PluginMisconfigurationException(
-                $"The supplied file '{image.Name}' is not a supported image. Use PNG, JPEG, WEBP, or GIF.");
+            return $" The source language is '{sourceLanguage}' and the target language is '{targetLanguage}'.";
         }
 
-        if (!allowGif && (string.Equals(image.ContentType, "image/gif", StringComparison.OrdinalIgnoreCase) ||
-                          string.Equals(Path.GetExtension(image.Name), ".gif", StringComparison.OrdinalIgnoreCase)))
-        {
-            throw new PluginMisconfigurationException(
-                "GIF files are not supported for localized image generation. Use PNG, JPEG, or WEBP.");
-        }
-    }
-
-    private static string GetImageContentType(FileReference image)
-    {
-        if (!string.IsNullOrWhiteSpace(image.ContentType))
-        {
-            return image.ContentType;
-        }
-
-        return Path.GetExtension(image.Name).ToLowerInvariant() switch
-        {
-            ".png" => "image/png",
-            ".jpg" or ".jpeg" => "image/jpeg",
-            ".webp" => "image/webp",
-            ".gif" => "image/gif",
-            _ => throw new PluginMisconfigurationException(
-                $"Content type is required for image input '{image.Name}'.")
-        };
+        return !string.IsNullOrWhiteSpace(sourceLanguage)
+            ? $" The source language is '{sourceLanguage}'."
+            : $" The target language is '{targetLanguage}'.";
     }
 
     private static string BuildOutputName(string? requestedName, string inputName, string extension)

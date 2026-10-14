@@ -5,10 +5,7 @@ namespace Apps.OpenAI.Models.Requests.Image;
 
 public class GenerateLocalizedImageVariantRequest
 {
-    [Display("Original image")]
-    public FileReference Image { get; set; }
-
-    [Display("Localized XLIFF file", Description = "A translated XLIFF file containing source and target segments.")]
+    [Display("Localized XLIFF file", Description = "A translated XLIFF file containing the original image and source and target segments.")]
     public FileReference LocalizedFile { get; set; }
 
     [Display("Additional instructions")]

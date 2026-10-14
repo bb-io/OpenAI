@@ -2,4 +2,7 @@
 
 namespace Apps.OpenAI.Dtos;
 
-public record DataDto<T>(IEnumerable<T> Data);
+public record DataDto<T>(IEnumerable<T> Data)
+{
+    public UsageDto? Usage { get; init; }
+}

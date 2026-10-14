@@ -134,8 +134,8 @@ When an action exposes **Output file handling** and you select `original`, Black
 
 - **Generate image** Generates an image from a prompt. Advanced settings: **Output image name**: The name of the output image without the extension. **Size**: Image size. **Quality (only for dall-e-3)**: Image quality. **Style (only for dall-e-3)**: Image style.
 - **Get localizable content from image** Extracts localizable text content from an image.
-- **Extract localizable content from image** Extracts localizable text from an image and creates an XLIFF 1.2 or interoperable XLIFF 2.2 file. If the source language is not provided, it is detected from the image.
-- **Generate localized image variant** Replaces visible source text in an original image using source-to-target mappings from a translated XLIFF file.
+- **Extract localizable content from image** Extracts localizable text from an image and creates an interoperable XLIFF 2.2 file with the original image embedded in its skeleton. If the source language is not provided, it is detected from the image.
+- **Generate localized image variant** Restores the original image embedded in a translated XLIFF file and replaces its visible source text using the file's source-to-target mappings.
 
 ### Text analysis
 

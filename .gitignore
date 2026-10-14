@@ -361,3 +361,4 @@ healthchecksdb
 /Tests.OpenAI/appsettings.json
 /Tests.OpenAI/Output
 /Tests.OpenAI/appsettings.json
+/Tests.OpenAI/Input/test-image.png

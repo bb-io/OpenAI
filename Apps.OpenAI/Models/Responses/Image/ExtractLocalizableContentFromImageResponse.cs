@@ -10,7 +10,7 @@ public class ExtractLocalizableContentFromImageResponse
     public FileReference File { get; set; }
 
     [Display("Source language")]
-    public string SourceLanguage { get; set; }
+    public string? SourceLanguage { get; set; }
 
     [Display("Extracted segments count")]
     public int SegmentsCount { get; set; }
