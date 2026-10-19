@@ -84,15 +84,15 @@ When an action exposes **Output file handling** and you select `original`, Black
 ### Translation
 
 - **Translate** Translates file content from a CMS or file storage and outputs localized content for compatible actions. Advanced settings: **Source language**: Override the source language if it is not already set in the file. **Output file handling**: Determine the format of the output file. The default Blackbird behavior is to convert to XLIFF for future steps. **Additional instructions**: Additional instructions to guide the translation. **Bucket size**: Maximum number of source texts to translate at once (default 250, also capped by the model's output limit). **Document summary**: Summarize the document with one extra request and use the summary as context (Auto by default, which summarizes only larger documents). If some segments can't be translated, the action still completes, leaves them untouched and logs a warning.
-- **Translate in background** Starts background translation for a file and outputs a batch ID to download results later.
+- **Translate in background** Starts background translation of a file through the OpenAI Batch API and outputs a batch ID and a transformation file to download the result later with **Download background file**. It takes the same inputs as **Translate** and builds the same prompts, glossary context and buckets; only the delivery is asynchronous, at batch pricing. When there is nothing to translate, no batch is created and the batch ID is empty.
 - **Translate text** Outputs localized text for the provided input text. Advanced settings: **Source language**: The language of the text. When empty, it is detected with one extra request, so set it when you translate many texts in a loop.
 
 ### Editing
 
 - **Edit** Edits translated file content and outputs reviewed content. Advanced settings: **Target language**: Override the target language if it is not already set in the file. **Filter glossary terms**: Filter glossary terms to those present in the content. **Modified by**: Add modified-by metadata to updated units. **Process only segments with this state**: Only segments with this state will be processed. **Max tokens**: The maximum number of tokens to generate in the completion. **Document summary**: Summarize the document with one extra request and use the summary as context (Auto by default, which summarizes only larger documents). If some segments can't be edited, the action still completes, leaves them untouched, logs a warning and lists them in **Error details**.
-- **Edit in background** Starts background editing for translated content and outputs a batch ID to download results later.
+- **Edit in background** Starts background editing of translated content through the OpenAI Batch API and outputs a batch ID and a transformation file to download the result later with **Download background file**. It takes the same inputs as **Edit**.
 - **Edit text** Reviews translated text and outputs an edited version. Advanced settings: **Target audience**: Specify the target audience. **Additional prompt**: Additional prompt to guide editing.
-- **Apply prompt to bilingual content (experimental)** Applies a prompt to each translation unit and outputs updated target text, with optional batching.
+- **Apply prompt to bilingual content (experimental)** Applies your prompt (**System prompt**) to every Initial and Translated segment and outputs the file with updated targets; processed segments are marked Reviewed. The model sees each segment's source and current target and returns only the new target, so sources never change. Glossary, file notes and terms are added as context. Advanced settings: **Process only segments with this state**, **Filter glossary terms**, **Max tokens**, **Bucket size** (default 250, also capped by the model's output limit), **Document summary** (off unless set). Segments the model returns nothing usable for are left untouched and logged as warnings.
 
 ### Reporting
 
@@ -109,7 +109,7 @@ When an action exposes **Output file handling** and you select `original`, Black
 
 ### Background
 
-- **Download background file** Downloads content processed in the background after the job is complete.
+- **Download background file** Applies the results of a finished **Translate in background** or **Edit in background** job to its transformation file and outputs the file. **Batch ID** is optional, because the transformation file records its batch; **Output file handling** defaults to the choice made when the job was started. Results of an expired or cancelled batch are applied as far as they go. Segments the batch returned nothing usable for are left unchanged, counted in **Unresolved segments** and logged as warnings; they are not retried. Transformation files created by earlier versions of the app still need the batch ID.
 - **Get background result** Gets MQM report results from a background batch process.
 
 ### Repurposing
@@ -181,7 +181,7 @@ Check downloadable workflow prototypes featuring this app that you can import to
 
 ### Limitations
 
-- The maximum number of translation units in the file is `50 000` because a single batch may include up to 50,000 requests
+- A single batch may include up to 50,000 requests and a 200 MB input file. Each request carries one bucket of segments, so a file rarely comes close.
 
 ### Reasoning effort
 
@@ -228,7 +228,7 @@ We recommend using the `On background job finished` event trigger as it is more 
 
 ### Background
 
-- **On background job finished** Triggered when a batch job reaches a terminal state (completed, failed, or cancelled).
+- **On background job finished** Triggered once when a batch job reaches a terminal state (completed, failed, expired or cancelled).
 
 ## Example
 

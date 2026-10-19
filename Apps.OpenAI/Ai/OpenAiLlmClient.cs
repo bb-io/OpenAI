@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Apps.OpenAI.Api;
 using Apps.OpenAI.Constants;
+using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models;
 using Blackbird.Ai.Llm.Abstract;
 using Blackbird.Ai.Llm.Models;
@@ -40,18 +41,15 @@ public sealed class OpenAiLlmClient(OpenAiUniversalClient client, string? model,
         cancellationToken.ThrowIfCancellationRequested();
 
         var resolvedModel = await _resolvedModel.Value;
-        var completion = await client.ExecuteApiRequestAsync(Body(request, resolvedModel));
-        var choice = completion.Choices.First();
+        var completion = await client.ExecuteApiRequestAsync(Body(request, resolvedModel, settings));
 
         RecordModelUsed(string.IsNullOrWhiteSpace(completion.Usage.ModelUsed) ? resolvedModel : completion.Usage.ModelUsed);
 
-        return new LlmResponse(
-            choice.Message.Content ?? string.Empty,
-            new LlmUsage(completion.Usage.PromptTokens, completion.Usage.CompletionTokens),
-            choice.FinishReason == TruncatedFinishReason ? FinishReason.Truncated : FinishReason.Stop);
+        return ToLlmResponse(completion);
     }
 
-    private Dictionary<string, object> Body(LlmRequest request, string resolvedModel)
+    // Shared with OpenAiBatchLlmClient, so a batch line carries exactly the body a direct call sends.
+    internal static Dictionary<string, object> Body(LlmRequest request, string resolvedModel, OpenAiLlmSettings settings)
     {
         var body = new Dictionary<string, object>
         {
@@ -103,6 +101,16 @@ public sealed class OpenAiLlmClient(OpenAiUniversalClient client, string? model,
         return body;
     }
 
+    internal static LlmResponse ToLlmResponse(ChatCompletionDto completion)
+    {
+        var choice = completion.Choices.First();
+
+        return new LlmResponse(
+            choice.Message.Content ?? string.Empty,
+            new LlmUsage(completion.Usage.PromptTokens, completion.Usage.CompletionTokens),
+            choice.FinishReason == TruncatedFinishReason ? FinishReason.Truncated : FinishReason.Stop);
+    }
+
     private void RecordModelUsed(string reported)
     {
         lock (_gate)
@@ -111,7 +119,7 @@ public sealed class OpenAiLlmClient(OpenAiUniversalClient client, string? model,
         }
     }
 
-    private static LlmCapabilities CapabilitiesFor(string? model, int? requestedMaxOutputTokens)
+    internal static LlmCapabilities CapabilitiesFor(string? model, int? requestedMaxOutputTokens)
     {
         var (contextTokens, maxOutputTokens) = LimitsFor(new OpenAiModel(model));
 

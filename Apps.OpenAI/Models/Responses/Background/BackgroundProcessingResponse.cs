@@ -1,3 +1,4 @@
+using Apps.OpenAI.Dtos;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Files;
 
@@ -19,4 +20,18 @@ public class BackgroundProcessingResponse
     
     [Display("Transformation file")]
     public FileReference TransformationFile { get; set; }
+
+    [Display("Total segments")]
+    public int TotalSegmentsCount { get; set; }
+
+    [Display("Segments to process")]
+    public int SegmentsToProcessCount { get; set; }
+
+    [Display("Requests in batch")]
+    public int RequestsCount { get; set; }
+
+    [Display("System prompt")]
+    public string SystemPrompt { get; set; } = string.Empty;
+
+    public UsageDto Usage { get; set; } = new();
 }

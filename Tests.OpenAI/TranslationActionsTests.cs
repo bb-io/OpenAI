@@ -160,14 +160,18 @@ public class TranslationActionsTests : TestBaseWithContext
     {
         var actions = new TranslationActions(context, FileManagementClient);
             
-        var translateRequest = new StartBackgroundProcessRequest
+        var translateRequest = new TranslateContentRequest
         {
-            ModelId = "gpt-4.1",
             File = new FileReference { Name = "contentful12.xliff" },
             TargetLanguage = "fr"
         };
             
-        var response = await actions.TranslateInBackground(translateRequest);
+        var response = await actions.TranslateInBackground(
+            new TextChatModelIdentifier { ModelId = "gpt-4.1" },
+            translateRequest,
+            null,
+            new GlossaryRequest(),
+            new ReasoningEffortRequest());
             
         Assert.IsNotNull(response);
         Assert.IsNotNull(response.BatchId);

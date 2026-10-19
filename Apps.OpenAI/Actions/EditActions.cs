@@ -4,8 +4,10 @@ using Apps.OpenAI.Models.Content;
 using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Models.Requests.Content;
+using Blackbird.Ai.Content.Models;
 using Blackbird.Ai.Diagnostics.Models;
 using Blackbird.Ai.Files.Models;
+using Blackbird.Ai.Llm.Abstract;
 using Blackbird.Ai.Summary.Models;
 using Blackbird.Ai.Text.Models;
 using Blackbird.Applications.Sdk.Common;
@@ -14,6 +16,7 @@ using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -59,157 +62,36 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         await using var file = await FileManagementClient.DownloadAsync(input.File);
         await using var glossaryFile = await DownloadOptionalAsync(glossary.Glossary);
 
-        var result = await AiAdapters.Mapped(() => processor.EditAsync(new EditStreamOptions
-        {
-            File = file,
-            FileName = input.File.Name,
-            MediaType = input.File.ContentType,
-            SourceLanguage = input.SourceLanguage,
-            TargetLanguage = input.TargetLanguage,
-            OutputFileHandling = input.OutputFileHandling,
-            GlossaryTbx = glossaryFile,
-            FilterGlossary = input.FilterGlossary ?? true,
-            AdditionalInstructions = prompt,
-            ModifiedBy = input.ModifiedBy,
-            SegmentStates = SegmentStateSets.Parse(input.ProcessOnlySegmentState, SegmentStateSets.Edit),
-            ProcessLockedSegments = ProcessLockedSegments ?? false,
-            TransformTarget = candidate => EscapeInlineTagBrackets(candidate.ProposedTarget),
-            Summary = SummaryOptions.For(input.DocumentSummary)
-        }));
+        var result = await AiAdapters.Mapped(() =>
+            processor.EditAsync(EditOptions(input, file, glossaryFile, prompt, ProcessLockedSegments)));
 
-        var content = result.Content;
-
-        return new ContentProcessingEditResult
-        {
-            File = await UploadAsync(result.File),
-            Usage = ToUsageDto(content.Usage, client, effectiveModel),
-            TotalSegmentsCount = content.TotalSegments,
-            TotalWordsCount = content.TotalWords,
-            TotalSegmentsReviewed = content.ProcessableSegments,
-            TotalWordsReviewed = content.ProcessableWords,
-            TotalSegmentsUpdated = content.UpdatedSegments,
-            TotalWordsUpdated = content.UpdatedWords,
-            TotalSegmentsWithErrors = content.Issues
-                .Where(issue => issue.Kind == IssueKind.SegmentWriteFailed)
-                .Sum(issue => issue.SegmentIds.Count),
-            ProcessedBatchesCount = content.BucketsProcessed,
-            SystemPrompt = content.SystemPrompt ?? string.Empty,
-            ErrorDetails = content.Warnings.ToList()
-        };
+        return await ToEditResultAsync(result, client, effectiveModel);
     }
 
-    [Action("Edit in background", 
-        Description = "Starts background editing for translated content and outputs a batch ID to download results later.")]
-    public async Task<BackgroundProcessingResponse> EditInBackground(
-        [ActionParameter] StartBackgroundProcessRequest processRequest)
+    [Action("Edit in background",
+        Description = "Starts background editing of translated content and outputs a batch ID and a transformation file to download the result later.")]
+    public async Task<BackgroundProcessingResponse> EditInBackground([ActionParameter] TextChatModelIdentifier modelIdentifier,
+        [ActionParameter] EditContentRequest input,
+        [ActionParameter, Display("Additional instructions", Description = "Specify additional instructions to be applied to the translation. For example, 'Cater to an older audience.'")] string? prompt,
+        [ActionParameter] GlossaryRequest glossary,
+        [ActionParameter] ReasoningEffortRequest reasoningEffortRequest,
+        [ActionParameter, Display("Bucket size", Description = "Specify the maximum number of source texts to be edited in one request of the batch. Default value: 250. Buckets are also sized to fit the model's output limit. (See our documentation for an explanation)")] int? bucketSize = null,
+        [ActionParameter, Display("Process locked segments")] bool? ProcessLockedSegments = null)
     {
-        var effectiveModel = await ResolveTextChatModelAsync(processRequest.ModelId);
-        var stream = await fileManagementClient.DownloadAsync(processRequest.File);
-        var loadResult = Transformation.Load(stream, processRequest.File.Name, processRequest.File.ContentType);
-        if (!loadResult.Success)
-            throw new PluginMisconfigurationException(loadResult.Error);
+        var effectiveModel = await ResolveTextChatModelAsync(modelIdentifier.ModelId);
+        var settings = new OpenAiLlmSettings(reasoningEffortRequest.ReasoningEffort, input.MaxTokens);
+        var client = CreateLlmClient(effectiveModel, settings);
+        var processor = CreateBackgroundProcessor(CreateBatchClient(effectiveModel, settings), client, effectiveModel, bucketSize);
 
-        var content = loadResult.Value;
+        await using var file = await FileManagementClient.DownloadAsync(input.File);
+        await using var glossaryFile = await DownloadOptionalAsync(glossary.Glossary);
 
-        var units = content.GetUnits();
-        var segments = units.SelectMany(x => x.Segments).GetSegmentsForEditing().ToList();
+        var started = await AiAdapters.Mapped(() =>
+            processor.StartEditAsync(EditOptions(input, file, glossaryFile, prompt, ProcessLockedSegments)));
 
-        Glossary blackbirdGlossary = await ProcessGlossaryFromFile(processRequest.Glossary);
-        Dictionary<string, List<GlossaryEntry>> glossaryLookup = null;
-        if (blackbirdGlossary != null)
-        {
-            glossaryLookup = CreateGlossaryLookup(blackbirdGlossary);
-        }
-
-        string systemPromptBase = 
-            "You are receiving source texts that were translated into target texts. " +
-            "Review the target texts and respond with edits of the target texts as necessary. " +
-            "If no edits required, respond with the original target texts. " +
-            "Return the edits in the specified JSON format." +
-            "The JSON must strictly follow this structure: " +
-            "{ \"reports\": [ { \"segment_id\": \"(string matching custom_id)\", \"mqm_report\": \"(the edited text)\" } ] }";
-                          
-        if (processRequest.AdditionalInstructions != null)
-        {
-            systemPromptBase += $" Additional instructions: {processRequest.AdditionalInstructions}.";
-        }
-        
-        if (glossaryLookup != null)
-        {
-            systemPromptBase += " Use the provided glossary to ensure accurate translations of specific terms.";
-        }
-
-        var batchRequests = new List<object>();
-        var bucketSize = processRequest.GetBucketingSize();
-        var segmentList = segments.ToList();
-        
-        // Create buckets by splitting segments into chunks
-        var segmentBuckets = new List<List<Segment>>();
-        for (int i = 0; i < segmentList.Count; i += bucketSize)
-        {
-            var bucket = segmentList.Skip(i).Take(bucketSize).ToList();
-            segmentBuckets.Add(bucket);
-        }
-        
-        foreach (var (bucket, bucketIndex) in segmentBuckets.Select((bucket, index) => (bucket, index)))
-        {
-            var userPrompt = "Review and edit the following texts:\n\n";
-            
-            foreach (var (segment, segmentIndex) in bucket.Select((seg, idx) => (seg, idx)))
-            {
-                var globalIndex = bucketIndex * bucketSize + segmentIndex;
-                var sourceText = segment.GetSource();
-                var targetText = segment.GetTarget();
-                
-                userPrompt += $"ID: {globalIndex}\nSource text: {sourceText}\nTarget text: {targetText}\n\n";
-            }
-            
-            if (glossaryLookup != null)
-            {
-                var combinedText = string.Join(" ", bucket.Select(s => s.GetSource()));
-                var glossaryPromptPart = GetOptimizedGlossaryPromptPart(glossaryLookup, combinedText);
-                if (!string.IsNullOrEmpty(glossaryPromptPart))
-                {
-                    userPrompt += $"\nGlossary terms:\n{glossaryPromptPart}";
-                }
-            }
-
-            var chatInput = new BaseChatRequest
-            {
-                MaximumTokens = processRequest.MaximumTokens,
-                Temperature = 0.3f
-            };
-
-            var messages = new object[]
-            {
-                new { role = MessageRoles.System, content = systemPromptBase },
-                new { role = MessageRoles.User, content = userPrompt }
-            };
-
-            var bodyDict = await GenerateResponseBodyAsync(messages, effectiveModel, chatInput);
-            var batchRequest = new
-            {
-                custom_id = bucketIndex.ToString(),
-                method = "POST",
-                url = "/v1/responses",
-                body = bodyDict
-            };
-
-            batchRequests.Add(batchRequest);
-        }
-
-        var batchResponse = await CreateBatchAsync(batchRequests);
-        content.MetaData.Add(new Metadata("background-type", "edit") { Category = [Meta.Categories.Blackbird]});
-        return new BackgroundProcessingResponse
-        {
-            BatchId = batchResponse.Id,
-            Status = batchResponse.Status,
-            CreatedAt = batchResponse.CreatedAt,
-            ExpectedCompletionTime = batchResponse.ExpectedCompletionTime,
-            TransformationFile = await FileManagementClient.UploadAsync(content.ToStream(), MediaTypes.Xliff2, content.BilingualFileName)
-        };
+        return await ToBackgroundResponseAsync(started, client, effectiveModel);
     }
-    
+
     [BlueprintActionDefinition(BlueprintAction.EditText)]
     [Action("Edit text", Description = "Reviews translated text and outputs an edited version.")]
     public async Task<EditResponse> PostEditRequest([ActionParameter] TextChatModelIdentifier modelIdentifier,
@@ -243,6 +125,45 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         };
     }
 
+    [Action("Apply prompt to bilingual content (experimental)",
+        Description = "Applies a prompt to each translation unit and outputs updated target text, with optional batching.")]
+    public async Task<ContentProcessingEditResult> Prompt(
+        [ActionParameter] TextChatModelIdentifier modelIdentifier,
+        [ActionParameter] EditContentRequest input,
+        [ActionParameter, Display("System prompt", Description = "The instruction applied to every selected segment. The model sees each segment's source and current target and returns the new target.")] string systemPrompt,
+        [ActionParameter] GlossaryRequest glossary,
+        [ActionParameter] ReasoningEffortRequest reasoningEffortRequest,
+        [ActionParameter, Display("Bucket size", Description = "Specify the maximum number of segments sent in one request. Default value: 250. Buckets are also sized to fit the model's output limit. (See our documentation for an explanation)")] int? bucketSize = null)
+    {
+        var effectiveModel = await ResolveTextChatModelAsync(modelIdentifier.ModelId);
+        var client = CreateLlmClient(effectiveModel, new OpenAiLlmSettings(reasoningEffortRequest.ReasoningEffort, input.MaxTokens));
+        var processor = CreateContentProcessor(client, effectiveModel, bucketSize);
+
+        await using var file = await FileManagementClient.DownloadAsync(input.File);
+        await using var glossaryFile = await DownloadOptionalAsync(glossary.Glossary);
+
+        var result = await AiAdapters.Mapped(() => processor.ApplyPromptAsync(new ApplyPromptStreamOptions
+        {
+            File = file,
+            FileName = input.File.Name,
+            MediaType = input.File.ContentType,
+            SourceLanguage = input.SourceLanguage,
+            TargetLanguage = input.TargetLanguage,
+            OutputFileHandling = input.OutputFileHandling,
+            GlossaryTbx = glossaryFile,
+            FilterGlossary = input.FilterGlossary ?? true,
+            Prompt = systemPrompt,
+            SegmentStates = SegmentStateSets.Parse(input.ProcessOnlySegmentState, SegmentStateSets.ApplyPrompt),
+            StateAfterWrite = SegmentState.Reviewed,
+            Summary = input.DocumentSummary is null ? SummaryOptions.Never : SummaryOptions.For(input.DocumentSummary)
+        }));
+
+        return await ToEditResultAsync(result, client, effectiveModel);
+    }
+
+    // Background downloads apply edits with the same post-processing as the synchronous Edit action.
+    internal static string? EditTransform(TargetCandidate candidate) => EscapeInlineTagBrackets(candidate.ProposedTarget);
+
     private static string? EditInstructions(PostEditRequest input)
     {
         var instructions = new[]
@@ -256,180 +177,50 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         return instructions.Count == 0 ? null : string.Join(" ", instructions);
     }
 
-    [Action("Apply prompt to bilingual content (experimental)",
-        Description = "Applies a prompt to each translation unit and outputs updated target text, with optional batching.")]
-    public async Task<ContentProcessingEditResult> Prompt(
-        [ActionParameter] TextChatModelIdentifier modelIdentifier,
-        [ActionParameter] EditContentRequest input,
-        [ActionParameter, Display("System prompt")] string systemPrompt,
-        [ActionParameter] GlossaryRequest glossary,
-        [ActionParameter] ReasoningEffortRequest reasoningEffortRequest,
-        [ActionParameter, Display("Bucket size", Description = "Specify the number of source texts to be edited at once. Default value: 1500. (See our documentation for an explanation)")] int? bucketSize = 1500)
+    private static EditStreamOptions EditOptions(
+        EditContentRequest input,
+        Stream file,
+        Stream? glossaryFile,
+        string? prompt,
+        bool? processLockedSegments) => new()
     {
-        var effectiveModel = await ResolveTextChatModelAsync(modelIdentifier.ModelId);
-        var result = new ContentProcessingEditResult();
+        File = file,
+        FileName = input.File.Name,
+        MediaType = input.File.ContentType,
+        SourceLanguage = input.SourceLanguage,
+        TargetLanguage = input.TargetLanguage,
+        OutputFileHandling = input.OutputFileHandling,
+        GlossaryTbx = glossaryFile,
+        FilterGlossary = input.FilterGlossary ?? true,
+        AdditionalInstructions = prompt,
+        ModifiedBy = input.ModifiedBy,
+        SegmentStates = SegmentStateSets.Parse(input.ProcessOnlySegmentState, SegmentStateSets.Edit),
+        ProcessLockedSegments = processLockedSegments ?? false,
+        TransformTarget = EditTransform,
+        Summary = SummaryOptions.For(input.DocumentSummary)
+    };
 
-        var neverFail = false;
-        var batchSize = bucketSize ?? 1500;
-
-        var inputFileStream = await fileManagementClient.DownloadAsync(input.File);
-        var loadResult = Transformation.Load(inputFileStream, input.File.Name, input.File.ContentType);
-        if (!loadResult.Success)
-            throw new PluginMisconfigurationException(loadResult.Error);
-
-        var content = loadResult.Value;
-
-        var batchProcessingService = new BatchProcessingService(UniversalClient, FileManagementClient);
-        var batchOptions = new BatchProcessingOptions(
-            effectiveModel,
-            content.SourceLanguage,
-            content.TargetLanguage,
-            Prompt: string.Empty,
-            systemPrompt,
-            OverwritePrompts: true,
-            glossary.Glossary,
-            FilterGlossary: true,
-            MaxRetryAttempts: 3,
-            MaxTokens: null,
-            reasoningEffortRequest.ReasoningEffort,
-            content.Notes,
-            content.GetTerms().ToList());
-
-        var errors = new List<string>();
-        var usages = new List<UsageDto>();
-        int batchCounter = 0;
-
-        var systemprompt = string.Empty;
-
-        async Task<IEnumerable<TranslationEntity>> BatchTranslate(IEnumerable<(Unit Unit, Segment Segment)> batch)
-        {
-            var batchList = batch.ToList();
-            var idSegments = batchList.Select((x, i) => new { Id = i + 1, Value = x }).ToDictionary(x => x.Id.ToString(), x => x.Value.Segment);
-            batchCounter++;
-
-            var translationLookup = new Dictionary<string, TranslationEntity>();
-            try
-            {
-                var batchResult = await batchProcessingService.ProcessBatchAsync(idSegments, batchOptions, postEdit: true);
-
-                systemprompt = batchResult.SystemPrompt;
-
-                var duplicates = batchResult.UpdatedTranslations.GroupBy(x => x.TranslationId)
-                    .Where(g => g.Count() > 1)
-                    .Select(g => new { TranslationId = g.Key, Count = g.Count() })
-                    .ToList();
-
-                errors.AddRange(duplicates.Select(duplicate => $"Duplicate translation ID found: {duplicate.TranslationId} appears {duplicate.Count} times"));
-                errors.AddRange(batchResult.ErrorMessages);
-                usages.Add(batchResult.Usage);
-
-                if (batchResult.IsSuccess)
-                {
-                    foreach (var translation in batchResult.UpdatedTranslations)
-                    {
-                        translationLookup.TryAdd(translation.TranslationId, translation);
-                    }
-                }
-
-                if (!batchResult.IsSuccess && !neverFail)
-                {
-                    throw new PluginApplicationException(
-                        $"Failed to process batch {batchCounter} (size: {batchSize}). Errors: {string.Join(", ", batchResult.ErrorMessages)}");
-                }
-            }
-            catch (Exception ex) when (neverFail)
-            {
-                errors.Add($"Error in batch {batchCounter} (size: {batchSize}): {ex.Message}");
-            }
-
-            // Ensure exactly one result per (Unit, Segment) in the batch
-            var allResults = new List<TranslationEntity>();
-            for (int i = 0; i < batchList.Count; i++)
-            {
-                var id = (i + 1).ToString();
-                if (translationLookup.TryGetValue(id, out var translation))
-                {
-                    allResults.Add(translation);
-                }
-                else
-                {
-                    allResults.Add(new TranslationEntity
-                    {
-                        TranslationId = id,
-                        TranslatedText = batchList[i].Segment.GetTarget()
-                    });
-                }
-            }
-
-            return allResults;
-        }
-
-        var allUnits = content.GetUnits().ToList();
-        var allSegments = allUnits.SelectMany(x => x.Segments).ToList();
-        result.TotalSegmentsCount = allSegments.Count;
-        result.TotalWordsCount = allSegments.Sum(segment => segment.Source.CountWords());
-        
-        var statesToProcess = GetProcessingStates(input.ProcessOnlySegmentState, SegmentState.Initial, SegmentState.Translated);
-        var segmentsToReview = allSegments
-            .Where(segment => segment.ShouldBeProcessed(statesToProcess))
-            .ToList();
-
-        result.TotalSegmentsReviewed = segmentsToReview.Count;
-        result.TotalWordsReviewed = segmentsToReview.Sum(segment => segment.Source.CountWords());
-
-        var processedBatches = await allUnits
-            .Batch(batchSize, segment => segment.ShouldBeProcessed(statesToProcess))
-            .Process(BatchTranslate);
-        result.ProcessedBatchesCount = batchCounter;
-        result.Usage = UsageDto.Sum(usages);
-        result.SystemPrompt = systemprompt;
-
-        int updatedSegmentsCount = 0;
-        int updatedWordsCount = 0;
-
-        foreach (var (unit, results) in processedBatches)
-        {
-            foreach (var (segment, translation) in results)
-            {
-                if (segment.GetTarget() != translation.TranslatedText)
-                {
-                    updatedSegmentsCount++;
-                    segment.SetTarget(translation.TranslatedText);
-                    updatedWordsCount += segment.Source.CountWords();
-                }
-                segment.State = SegmentState.Reviewed;
-            }
-
-            var model = effectiveModel;
-            unit.Provenance.Review.Tool = model;
-            double tokens = result.Usage.TotalTokens / processedBatches.Count();
-            unit.AddUsage(model, Math.Round(tokens, 0), UsageUnit.Tokens);
-        }
-
-        result.TotalSegmentsUpdated = updatedSegmentsCount;
-        result.TotalWordsUpdated = updatedWordsCount;
-        
-        result.File = await OutputFileHandler.ToOutputFile(FileManagementClient, content, input.OutputFileHandling);
-
-        return result;
-    }
-
-    private static HashSet<SegmentState> GetProcessingStates(IEnumerable<string>? states, params SegmentState[] defaultStates)
+    private async Task<ContentProcessingEditResult> ToEditResultAsync(ContentStreamResult result, ILlmClient client, string? model)
     {
-        var parsedStates = states?
-            .Select(state => Enum.TryParse<SegmentState>(state, true, out var parsedState)
-                ? parsedState
-                : (SegmentState?)null)
-            .Where(state => state.HasValue)
-            .Select(state => state!.Value)
-            .ToHashSet();
+        var content = result.Content;
 
-        if (parsedStates is { Count: > 0 })
+        return new ContentProcessingEditResult
         {
-            return parsedStates;
-        }
-
-        return defaultStates.ToHashSet();
+            File = await UploadAsync(result.File),
+            Usage = ToUsageDto(content.Usage, client, model),
+            TotalSegmentsCount = content.TotalSegments,
+            TotalWordsCount = content.TotalWords,
+            TotalSegmentsReviewed = content.ProcessableSegments,
+            TotalWordsReviewed = content.ProcessableWords,
+            TotalSegmentsUpdated = content.UpdatedSegments,
+            TotalWordsUpdated = content.UpdatedWords,
+            TotalSegmentsWithErrors = content.Issues
+                .Where(issue => issue.Kind == IssueKind.SegmentWriteFailed)
+                .Sum(issue => issue.SegmentIds.Count),
+            ProcessedBatchesCount = content.BucketsProcessed,
+            SystemPrompt = content.SystemPrompt ?? string.Empty,
+            ErrorDetails = content.Warnings.ToList()
+        };
     }
 
     private static string EscapeInlineTagBrackets(string text)
