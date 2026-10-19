@@ -75,16 +75,19 @@ public class EditTests : TestBaseWithContext
             ContentType = "application/vnd.oasis.xliff+xml" 
         };
 
-        var editRequest = new StartBackgroundProcessRequest
+        var editRequest = new EditContentRequest
         {
-            ModelId = "gpt-5-mini",
             File = file,
-            TargetLanguage = "fr",
-            //MaximumTokens = 4096
+            TargetLanguage = "fr"
         };
 
         // Act
-        var response = await actions.EditInBackground(editRequest);
+        var response = await actions.EditInBackground(
+            new TextChatModelIdentifier { ModelId = "gpt-5-mini" },
+            editRequest,
+            null,
+            new GlossaryRequest(),
+            new ReasoningEffortRequest());
 
         // Assert          
         Assert.IsNotNull(response);
@@ -103,7 +106,7 @@ public class EditTests : TestBaseWithContext
             ContentType = "application/x-xliff+xml" 
         };
 
-        var editRequest = new StartBackgroundProcessRequest
+        var editRequest = new EditContentRequest
         {
             File = file,
             TargetLanguage = "fr"
@@ -111,7 +114,12 @@ public class EditTests : TestBaseWithContext
 
         // Act
         var ex = await Assert.ThrowsExactlyAsync<PluginMisconfigurationException>(async () =>
-            await actions.EditInBackground(editRequest)
+            await actions.EditInBackground(
+                new TextChatModelIdentifier(),
+                editRequest,
+                null,
+                new GlossaryRequest(),
+                new ReasoningEffortRequest())
         );
 
         // Assert          

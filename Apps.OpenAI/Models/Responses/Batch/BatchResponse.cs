@@ -25,6 +25,9 @@ public class BatchResponse
 
     [Display("Completion window"), JsonProperty("completion_window")]
     public string CompletionWindow { get; set; } = string.Empty;
+
+    [Display("Request counts"), JsonProperty("request_counts")]
+    public BatchRequestCountsDto RequestCounts { get; set; } = new();
     
     [JsonProperty("created_at")]
     public string CreatedAt { get; set; }
@@ -35,6 +38,18 @@ public class BatchResponse
     [DefinitionIgnore]
     [JsonProperty("error_file_id")]
     public string ErrorFileId { get; set; } = string.Empty;
+}
+
+public class BatchRequestCountsDto
+{
+    [Display("Total requests"), JsonProperty("total")]
+    public int Total { get; set; }
+
+    [Display("Completed requests"), JsonProperty("completed")]
+    public int Completed { get; set; }
+
+    [Display("Failed requests"), JsonProperty("failed")]
+    public int Failed { get; set; }
 }
 
 public class BatchPaginationResponse

@@ -56,18 +56,7 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         await using var file = await FileManagementClient.DownloadAsync(input.File);
         await using var glossaryFile = await DownloadOptionalAsync(glossary.Glossary);
 
-        var result = await AiAdapters.Mapped(() => processor.TranslateAsync(new TranslateStreamOptions
-        {
-            File = file,
-            FileName = input.File.Name,
-            MediaType = input.File.ContentType,
-            SourceLanguage = input.SourceLanguage,
-            TargetLanguage = input.TargetLanguage,
-            OutputFileHandling = input.OutputFileHandling,
-            GlossaryTbx = glossaryFile,
-            AdditionalInstructions = prompt,
-            Summary = SummaryOptions.For(input.DocumentSummary)
-        }));
+        var result = await AiAdapters.Mapped(() => processor.TranslateAsync(TranslateOptions(input, file, glossaryFile, prompt)));
 
         var content = result.Content;
 
@@ -86,145 +75,40 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         };
     }
 
-    [Action("Translate in background", Description = "Starts background translation for a file and outputs a batch ID to download results later.")]
-    public async Task<BackgroundProcessingResponse> TranslateInBackground([ActionParameter] StartBackgroundProcessRequest startBackgroundProcessRequest)
+    [Action("Translate in background", Description = "Starts background translation of a file and outputs a batch ID and a transformation file to download the result later.")]
+    public async Task<BackgroundProcessingResponse> TranslateInBackground([ActionParameter] TextChatModelIdentifier modelIdentifier,
+        [ActionParameter] TranslateContentRequest input,
+        [ActionParameter, Display("Additional instructions", Description = "Specify additional instructions to be applied to the translation. For example, 'Cater to an older audience.'")] string? prompt,
+        [ActionParameter] GlossaryRequest glossary,
+        [ActionParameter] ReasoningEffortRequest reasoningEffortRequest,
+        [ActionParameter, Display("Bucket size", Description = "Specify the maximum number of source texts to be translated in one request of the batch. Default value: 250. Buckets are also sized to fit the model's output limit. (See our documentation for an explanation)")] int? bucketSize = null)
     {
-        var effectiveModel = await ResolveTextChatModelAsync(startBackgroundProcessRequest.ModelId);
-        await using var downloadedStream = await FileManagementClient.DownloadAsync(startBackgroundProcessRequest.File);
-        // await using var stream = downloadedStream;
-        await using var stream = new MemoryStream();
-        await downloadedStream.CopyToAsync(stream);
-        stream.Position = 0;
-        var loadResult = Transformation.Load(stream, startBackgroundProcessRequest.File.Name, startBackgroundProcessRequest.File.ContentType);
-        if (!loadResult.Success)
-            throw new PluginMisconfigurationException(loadResult.Error);
+        var effectiveModel = await ResolveTextChatModelAsync(modelIdentifier.ModelId);
+        var settings = new OpenAiLlmSettings(reasoningEffortRequest.ReasoningEffort);
+        var client = CreateLlmClient(effectiveModel, settings);
+        var processor = CreateBackgroundProcessor(CreateBatchClient(effectiveModel, settings), client, effectiveModel, bucketSize);
 
-        var content = loadResult.Value;
+        await using var file = await FileManagementClient.DownloadAsync(input.File);
+        await using var glossaryFile = await DownloadOptionalAsync(glossary.Glossary);
 
-        content.SourceLanguage ??= startBackgroundProcessRequest.SourceLanguage;
-        content.TargetLanguage ??= startBackgroundProcessRequest.TargetLanguage;
+        var started = await AiAdapters.Mapped(() =>
+            processor.StartTranslateAsync(TranslateOptions(input, file, glossaryFile, prompt)));
 
-        if (content.TargetLanguage == null)
-            throw new PluginMisconfigurationException("The target language is not defined yet. Please assign the target language in this action.");
-
-        if (content.SourceLanguage == null)
-        {
-            var sourceContentResult = content.Source();
-            if (!sourceContentResult.Success)
-                throw new PluginMisconfigurationException(sourceContentResult.Error);
-            var sourceContent = sourceContentResult.Value;
-            content.SourceLanguage = await IdentifySourceLanguage(effectiveModel, sourceContent.GetPlaintext());
-        }
-
-        var units = content.GetUnits();
-        var segments = units.SelectMany(x => x.Segments);
-        segments = segments.GetSegmentsForTranslation().ToList();
-
-        var batchRequests = new List<object>();
-
-        Glossary? blackbirdGlossary = await ProcessGlossaryFromFile(startBackgroundProcessRequest.Glossary);
-        Dictionary<string, List<GlossaryEntry>>? glossaryLookup = null;
-        if (blackbirdGlossary != null)
-        {
-            glossaryLookup = CreateGlossaryLookup(blackbirdGlossary);
-        }
-
-        var systemPromptBase = $"Translate the following texts from {content.SourceLanguage} to {content.TargetLanguage}. " +
-                            "Preserve the original format, tags, and structure. Return the translations in the specified JSON format.";
-
-        if (startBackgroundProcessRequest.AdditionalInstructions != null)
-        {
-            systemPromptBase += $" Additional instructions: {startBackgroundProcessRequest.AdditionalInstructions}.";
-        }
-
-        if (glossaryLookup != null)
-        {
-            systemPromptBase += " Use the provided glossary to ensure accurate translations of specific terms.";
-        }
-
-        var bucketSize = startBackgroundProcessRequest.GetBucketingSize();
-        var segmentList = segments.ToList();
-
-        // Create buckets by splitting segments into chunks
-        var segmentBuckets = new List<List<Segment>>();
-        for (int i = 0; i < segmentList.Count; i += bucketSize)
-        {
-            var bucket = segmentList.Skip(i).Take(bucketSize).ToList();
-            segmentBuckets.Add(bucket);
-        }
-
-        foreach (var (bucket, bucketIndex) in segmentBuckets.Select((bucket, index) => (bucket, index)))
-        {
-            var segmentTexts = new List<string>();
-            var segmentIds = new List<string>();
-
-            foreach (var (segment, segmentIndex) in bucket.Select((seg, idx) => (seg, idx)))
-            {
-                var globalIndex = bucketIndex * bucketSize + segmentIndex;
-                var sourceText = segment.GetSource();
-                segmentTexts.Add(sourceText);
-                segmentIds.Add(globalIndex.ToString());
-            }
-
-            var userPrompt = "Translate the following texts:\n\n";
-            for (int i = 0; i < segmentTexts.Count; i++)
-            {
-                userPrompt += $"ID: {segmentIds[i]}\nText: {segmentTexts[i]}\n\n";
-            }
-
-            if (glossaryLookup != null)
-            {
-                var combinedText = string.Join(" ", segmentTexts);
-                var glossaryPromptPart = GetOptimizedGlossaryPromptPart(glossaryLookup, combinedText);
-                if (!string.IsNullOrEmpty(glossaryPromptPart))
-                {
-                    userPrompt += $"\nGlossary terms:\n{glossaryPromptPart}";
-                }
-            }
-
-            var batchRequest = new
-            {
-                custom_id = bucketIndex.ToString(),
-                method = "POST",
-                url = "/v1/responses",
-                body = new
-                {
-                    model = effectiveModel,
-                    store = false,
-                    input = new object[]
-                    {
-                        new
-                        {
-                            role = "system",
-                            content = systemPromptBase
-                        },
-                        new
-                        {
-                            role = "user",
-                            content = userPrompt
-                        }
-                    },
-                    text = new
-                    {
-                        format = ResponseFormats.GetXliffResponseFormat()
-                    }
-                }
-            };
-
-            batchRequests.Add(batchRequest);
-        }
-
-        var batchResponse = await CreateBatchAsync(batchRequests);
-        content.MetaData.Set([Meta.Categories.Blackbird], "background-type", "translate");
-        return new BackgroundProcessingResponse
-        {
-            BatchId = batchResponse.Id,
-            Status = batchResponse.Status,
-            CreatedAt = batchResponse.CreatedAt,
-            ExpectedCompletionTime = batchResponse.ExpectedCompletionTime,
-            TransformationFile = await FileManagementClient.UploadAsync(content.ToStream(), MediaTypes.Xliff2, content.BilingualFileName)
-        };
+        return await ToBackgroundResponseAsync(started, client, effectiveModel);
     }
+
+    private static TranslateStreamOptions TranslateOptions(TranslateContentRequest input, Stream file, Stream? glossaryFile, string? prompt) => new()
+    {
+        File = file,
+        FileName = input.File.Name,
+        MediaType = input.File.ContentType,
+        SourceLanguage = input.SourceLanguage,
+        TargetLanguage = input.TargetLanguage,
+        OutputFileHandling = input.OutputFileHandling,
+        GlossaryTbx = glossaryFile,
+        AdditionalInstructions = prompt,
+        Summary = SummaryOptions.For(input.DocumentSummary)
+    };
 
     [BlueprintActionDefinition(BlueprintAction.TranslateText)]
     [Action("Translate text", Description = "Outputs localized text for the provided input text.")]

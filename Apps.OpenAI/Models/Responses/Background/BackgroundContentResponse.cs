@@ -18,6 +18,9 @@ public class BackgroundContentResponse
     [Display("Updated segments")]
     public int UpdatedSegmentsCount { get; set; }
 
+    [Display("Unresolved segments", Description = "Segments the batch returned no usable result for. They were left unchanged; the reasons are in the logs.")]
+    public int UnresolvedSegmentsCount { get; set; }
+
     [Display("Batch status")]
     public string BatchStatus { get; set; }
 }

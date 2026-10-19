@@ -4,15 +4,19 @@
     <TargetFramework>net8.0</TargetFramework>
 	  <Product>OpenAI</Product>
 	  <Description>Creating safe artificial general intelligence that benefits all of humanity</Description>
-	  <Version>2.8.66</Version>
+	  <Version>2.9.0</Version>
 	  <AssemblyName>Apps.OpenAI</AssemblyName>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Tests.OpenAI" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Blackbird.Applications.SDK.Blueprints" Version="1.0.2" />
     <PackageReference Include="Blackbird.Applications.SDK.Extensions.FileManagement" Version="1.1.0" />
     <PackageReference Include="Blackbird.Applications.Sdk.Utils" Version="1.0.26" />
-    <PackageReference Include="Blackbird.Ai" Version="1.0.1" />
+    <PackageReference Include="Blackbird.Ai" Version="1.1.0" />
     <PackageReference Include="Blackbird.Xliff.Utils" Version="1.1.14" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Features" Version="5.0.17" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.10" />

@@ -1,4 +1,5 @@
 ﻿using Apps.OpenAI.Actions.Base;
+using Apps.OpenAI.Ai;
 using Apps.OpenAI.Api.Requests;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Entities;
@@ -8,6 +9,10 @@ using Apps.OpenAI.Models.Responses.Batch;
 using Apps.OpenAI.Models.Responses.Batch.Error;
 using Apps.OpenAI.Models.Responses.Review;
 using Apps.OpenAI.Utils;
+using Blackbird.Ai.Background;
+using Blackbird.Ai.Background.Models;
+using Blackbird.Ai.Llm.Models;
+using Blackbird.Ai.Prompts.Models;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
@@ -33,14 +38,52 @@ namespace Apps.OpenAI.Actions;
 public class BackgroundActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : BaseActions(invocationContext, fileManagementClient)
 {
-    [Action("Download background file", 
+    [Action("Download background file",
         Description = "Downloads content processed in the background after the job is complete.")]
     public async Task<BackgroundContentResponse> DownloadContentFromBackground([ActionParameter] BackgroundDownloadRequest request)
     {
-        var batchRequests = await GetBatchRequestsAsync(request.BatchId);
-        var batchResponse = await GetBatchStatusAsync(request.BatchId);
-        
-        var originalFileStream = await fileManagementClient.DownloadAsync(request.TransformationFile);
+        await using var file = await DownloadToMemoryAsync(request.TransformationFile);
+        var job = BackgroundJobFile.TryRead(file, request.TransformationFile.Name, request.TransformationFile.ContentType);
+        file.Position = 0;
+
+        if (job is null)
+        {
+            return await DownloadLegacyContentAsync(request, file);
+        }
+
+        var batchClient = CreateBatchClient(null, new OpenAiLlmSettings());
+        var result = await AiAdapters.Mapped(() => CreateBackgroundProcessor(batchClient).CompleteAsync(new CompleteBackgroundOptions
+        {
+            File = file,
+            FileName = request.TransformationFile.Name,
+            MediaType = request.TransformationFile.ContentType,
+            JobId = request.BatchId,
+            OutputFileHandling = request.OutputFileHandling,
+            TransformTarget = job.Operation == ContentOperation.Edit ? EditActions.EditTransform : null
+        }));
+
+        var content = result.Content;
+
+        return new BackgroundContentResponse
+        {
+            File = await UploadAsync(result.File),
+            Usage = ToUsageDto(content.Usage, (batchClient as OpenAiBatchLlmClient)?.ModelUsed),
+            TotalSegmentsCount = content.TotalSegments,
+            ProcessedSegmentsCount = content.ProcessableSegments - content.UnresolvedSegments,
+            UpdatedSegmentsCount = content.UpdatedSegments,
+            UnresolvedSegmentsCount = content.UnresolvedSegments,
+            BatchStatus = (result.Job?.State ?? BatchJobState.Completed).ToString().ToLowerInvariant()
+        };
+    }
+
+    // Transformation files created before the background actions moved to Blackbird.Ai carry no job
+    // information; they keep working until their batches are gone.
+    private async Task<BackgroundContentResponse> DownloadLegacyContentAsync(BackgroundDownloadRequest request, Stream originalFileStream)
+    {
+        var batchId = RequireBatchId(request);
+        var batchRequests = await GetBatchRequestsAsync(batchId);
+        var batchResponse = await GetBatchStatusAsync(batchId);
+
         var loadResult = Transformation.Load(originalFileStream, request.TransformationFile.Name, request.TransformationFile.ContentType);
         if (!loadResult.Success)
             throw new PluginMisconfigurationException(loadResult.Error);
@@ -186,8 +229,9 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
     public async Task<MqmBackgroundResponse> GetMqmReportFromBackground(
         [ActionParameter] BackgroundDownloadRequest request)
     {
-        var batchRequests = await GetBatchRequestsAsync(request.BatchId);
-        var batchResponse = await GetBatchStatusAsync(request.BatchId);
+        var batchId = RequireBatchId(request);
+        var batchRequests = await GetBatchRequestsAsync(batchId);
+        var batchResponse = await GetBatchStatusAsync(batchId);
 
         var stream = await fileManagementClient.DownloadAsync(request.TransformationFile);
         var loadResult = Transformation.Load(stream, request.TransformationFile.Name, request.TransformationFile.ContentType);
@@ -295,6 +339,20 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
     }
     
     #region Helper Methods
+
+    private static string RequireBatchId(BackgroundDownloadRequest request)
+        => string.IsNullOrWhiteSpace(request.BatchId)
+            ? throw new PluginMisconfigurationException("Batch ID is required for this transformation file. Pass the batch ID returned by the background action.")
+            : request.BatchId.Trim();
+
+    private async Task<MemoryStream> DownloadToMemoryAsync(FileReference file)
+    {
+        await using var downloaded = await FileManagementClient.DownloadAsync(file);
+        var buffer = new MemoryStream();
+        await downloaded.CopyToAsync(buffer);
+        buffer.Position = 0;
+        return buffer;
+    }
     
     private async Task<List<BatchRequestDto>> GetBatchRequestsAsync(string batchId)
     {
@@ -333,11 +391,8 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
         return batchRequests;
     }
     
-    private async Task<BatchResponse> GetBatchStatusAsync(string batchId)
-    {
-        var getBatchRequest = new OpenAIRequest($"/batches/{batchId}", Method.Get);
-        return await UniversalClient.ExecuteWithErrorHandling<BatchResponse>(getBatchRequest);
-    }
+    private Task<BatchResponse> GetBatchStatusAsync(string batchId)
+        => UniversalClient.GetBatchAsync(batchId);
 
     #endregion
 }

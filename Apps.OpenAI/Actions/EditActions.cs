@@ -4,6 +4,7 @@ using Apps.OpenAI.Models.Content;
 using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Models.Requests.Content;
+using Blackbird.Ai.Content.Models;
 using Blackbird.Ai.Diagnostics.Models;
 using Blackbird.Ai.Files.Models;
 using Blackbird.Ai.Summary.Models;
@@ -14,6 +15,7 @@ using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -59,23 +61,8 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         await using var file = await FileManagementClient.DownloadAsync(input.File);
         await using var glossaryFile = await DownloadOptionalAsync(glossary.Glossary);
 
-        var result = await AiAdapters.Mapped(() => processor.EditAsync(new EditStreamOptions
-        {
-            File = file,
-            FileName = input.File.Name,
-            MediaType = input.File.ContentType,
-            SourceLanguage = input.SourceLanguage,
-            TargetLanguage = input.TargetLanguage,
-            OutputFileHandling = input.OutputFileHandling,
-            GlossaryTbx = glossaryFile,
-            FilterGlossary = input.FilterGlossary ?? true,
-            AdditionalInstructions = prompt,
-            ModifiedBy = input.ModifiedBy,
-            SegmentStates = SegmentStateSets.Parse(input.ProcessOnlySegmentState, SegmentStateSets.Edit),
-            ProcessLockedSegments = ProcessLockedSegments ?? false,
-            TransformTarget = candidate => EscapeInlineTagBrackets(candidate.ProposedTarget),
-            Summary = SummaryOptions.For(input.DocumentSummary)
-        }));
+        var result = await AiAdapters.Mapped(() =>
+            processor.EditAsync(EditOptions(input, file, glossaryFile, prompt, ProcessLockedSegments)));
 
         var content = result.Content;
 
@@ -98,118 +85,56 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         };
     }
 
-    [Action("Edit in background", 
-        Description = "Starts background editing for translated content and outputs a batch ID to download results later.")]
-    public async Task<BackgroundProcessingResponse> EditInBackground(
-        [ActionParameter] StartBackgroundProcessRequest processRequest)
+    [Action("Edit in background",
+        Description = "Starts background editing of translated content and outputs a batch ID and a transformation file to download the result later.")]
+    public async Task<BackgroundProcessingResponse> EditInBackground([ActionParameter] TextChatModelIdentifier modelIdentifier,
+        [ActionParameter] EditContentRequest input,
+        [ActionParameter, Display("Additional instructions", Description = "Specify additional instructions to be applied to the translation. For example, 'Cater to an older audience.'")] string? prompt,
+        [ActionParameter] GlossaryRequest glossary,
+        [ActionParameter] ReasoningEffortRequest reasoningEffortRequest,
+        [ActionParameter, Display("Bucket size", Description = "Specify the maximum number of source texts to be edited in one request of the batch. Default value: 250. Buckets are also sized to fit the model's output limit. (See our documentation for an explanation)")] int? bucketSize = null,
+        [ActionParameter, Display("Process locked segments")] bool? ProcessLockedSegments = null)
     {
-        var effectiveModel = await ResolveTextChatModelAsync(processRequest.ModelId);
-        var stream = await fileManagementClient.DownloadAsync(processRequest.File);
-        var loadResult = Transformation.Load(stream, processRequest.File.Name, processRequest.File.ContentType);
-        if (!loadResult.Success)
-            throw new PluginMisconfigurationException(loadResult.Error);
+        var effectiveModel = await ResolveTextChatModelAsync(modelIdentifier.ModelId);
+        var settings = new OpenAiLlmSettings(reasoningEffortRequest.ReasoningEffort, input.MaxTokens);
+        var client = CreateLlmClient(effectiveModel, settings);
+        var processor = CreateBackgroundProcessor(CreateBatchClient(effectiveModel, settings), client, effectiveModel, bucketSize);
 
-        var content = loadResult.Value;
+        await using var file = await FileManagementClient.DownloadAsync(input.File);
+        await using var glossaryFile = await DownloadOptionalAsync(glossary.Glossary);
 
-        var units = content.GetUnits();
-        var segments = units.SelectMany(x => x.Segments).GetSegmentsForEditing().ToList();
+        var started = await AiAdapters.Mapped(() =>
+            processor.StartEditAsync(EditOptions(input, file, glossaryFile, prompt, ProcessLockedSegments)));
 
-        Glossary blackbirdGlossary = await ProcessGlossaryFromFile(processRequest.Glossary);
-        Dictionary<string, List<GlossaryEntry>> glossaryLookup = null;
-        if (blackbirdGlossary != null)
-        {
-            glossaryLookup = CreateGlossaryLookup(blackbirdGlossary);
-        }
-
-        string systemPromptBase = 
-            "You are receiving source texts that were translated into target texts. " +
-            "Review the target texts and respond with edits of the target texts as necessary. " +
-            "If no edits required, respond with the original target texts. " +
-            "Return the edits in the specified JSON format." +
-            "The JSON must strictly follow this structure: " +
-            "{ \"reports\": [ { \"segment_id\": \"(string matching custom_id)\", \"mqm_report\": \"(the edited text)\" } ] }";
-                          
-        if (processRequest.AdditionalInstructions != null)
-        {
-            systemPromptBase += $" Additional instructions: {processRequest.AdditionalInstructions}.";
-        }
-        
-        if (glossaryLookup != null)
-        {
-            systemPromptBase += " Use the provided glossary to ensure accurate translations of specific terms.";
-        }
-
-        var batchRequests = new List<object>();
-        var bucketSize = processRequest.GetBucketingSize();
-        var segmentList = segments.ToList();
-        
-        // Create buckets by splitting segments into chunks
-        var segmentBuckets = new List<List<Segment>>();
-        for (int i = 0; i < segmentList.Count; i += bucketSize)
-        {
-            var bucket = segmentList.Skip(i).Take(bucketSize).ToList();
-            segmentBuckets.Add(bucket);
-        }
-        
-        foreach (var (bucket, bucketIndex) in segmentBuckets.Select((bucket, index) => (bucket, index)))
-        {
-            var userPrompt = "Review and edit the following texts:\n\n";
-            
-            foreach (var (segment, segmentIndex) in bucket.Select((seg, idx) => (seg, idx)))
-            {
-                var globalIndex = bucketIndex * bucketSize + segmentIndex;
-                var sourceText = segment.GetSource();
-                var targetText = segment.GetTarget();
-                
-                userPrompt += $"ID: {globalIndex}\nSource text: {sourceText}\nTarget text: {targetText}\n\n";
-            }
-            
-            if (glossaryLookup != null)
-            {
-                var combinedText = string.Join(" ", bucket.Select(s => s.GetSource()));
-                var glossaryPromptPart = GetOptimizedGlossaryPromptPart(glossaryLookup, combinedText);
-                if (!string.IsNullOrEmpty(glossaryPromptPart))
-                {
-                    userPrompt += $"\nGlossary terms:\n{glossaryPromptPart}";
-                }
-            }
-
-            var chatInput = new BaseChatRequest
-            {
-                MaximumTokens = processRequest.MaximumTokens,
-                Temperature = 0.3f
-            };
-
-            var messages = new object[]
-            {
-                new { role = MessageRoles.System, content = systemPromptBase },
-                new { role = MessageRoles.User, content = userPrompt }
-            };
-
-            var bodyDict = await GenerateResponseBodyAsync(messages, effectiveModel, chatInput);
-            var batchRequest = new
-            {
-                custom_id = bucketIndex.ToString(),
-                method = "POST",
-                url = "/v1/responses",
-                body = bodyDict
-            };
-
-            batchRequests.Add(batchRequest);
-        }
-
-        var batchResponse = await CreateBatchAsync(batchRequests);
-        content.MetaData.Add(new Metadata("background-type", "edit") { Category = [Meta.Categories.Blackbird]});
-        return new BackgroundProcessingResponse
-        {
-            BatchId = batchResponse.Id,
-            Status = batchResponse.Status,
-            CreatedAt = batchResponse.CreatedAt,
-            ExpectedCompletionTime = batchResponse.ExpectedCompletionTime,
-            TransformationFile = await FileManagementClient.UploadAsync(content.ToStream(), MediaTypes.Xliff2, content.BilingualFileName)
-        };
+        return await ToBackgroundResponseAsync(started, client, effectiveModel);
     }
-    
+
+    private static EditStreamOptions EditOptions(
+        EditContentRequest input,
+        Stream file,
+        Stream? glossaryFile,
+        string? prompt,
+        bool? processLockedSegments) => new()
+    {
+        File = file,
+        FileName = input.File.Name,
+        MediaType = input.File.ContentType,
+        SourceLanguage = input.SourceLanguage,
+        TargetLanguage = input.TargetLanguage,
+        OutputFileHandling = input.OutputFileHandling,
+        GlossaryTbx = glossaryFile,
+        FilterGlossary = input.FilterGlossary ?? true,
+        AdditionalInstructions = prompt,
+        ModifiedBy = input.ModifiedBy,
+        SegmentStates = SegmentStateSets.Parse(input.ProcessOnlySegmentState, SegmentStateSets.Edit),
+        ProcessLockedSegments = processLockedSegments ?? false,
+        TransformTarget = EditTransform,
+        Summary = SummaryOptions.For(input.DocumentSummary)
+    };
+
+    // Background downloads apply edits with the same post-processing as the synchronous Edit action.
+    internal static string? EditTransform(TargetCandidate candidate) => EscapeInlineTagBrackets(candidate.ProposedTarget);
+
     [BlueprintActionDefinition(BlueprintAction.EditText)]
     [Action("Edit text", Description = "Reviews translated text and outputs an edited version.")]
     public async Task<EditResponse> PostEditRequest([ActionParameter] TextChatModelIdentifier modelIdentifier,

@@ -2,10 +2,12 @@ using Apps.OpenAI.Api.Requests;
 using Apps.OpenAI.Constants;
 using Apps.OpenAI.DataSourceHandlers.ModelDataSourceHandlers;
 using Apps.OpenAI.Dtos;
+using Apps.OpenAI.Models.Responses.Batch;
 using Apps.OpenAI.Utils;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Connections;
 using Blackbird.Applications.Sdk.Common.Exceptions;
+using Blackbird.Applications.Sdk.Utils.Extensions.Http;
 using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
 using Blackbird.Applications.Sdk.Utils.RestSharp;
 using Newtonsoft.Json;
@@ -17,6 +19,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Apps.OpenAI.Api;
@@ -64,6 +67,34 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
         var response = await ExecuteWithErrorHandling<OpenAiResponseDto>(request);
         return MapToChatCompletionDto(response);
     }
+
+    public async Task<BatchResponse> CreateBatchAsync(IEnumerable<object> requests)
+    {
+        var jsonl = string.Join("\n", requests.Select(request => JsonConvert.SerializeObject(request)));
+
+        var uploadFileRequest = new OpenAIRequest("/files", Method.Post)
+            .AddFile("file", Encoding.UTF8.GetBytes(jsonl), $"{Guid.NewGuid()}.jsonl", "application/jsonl")
+            .AddParameter("purpose", "batch");
+        var file = await ExecuteWithErrorHandling<FileDto>(uploadFileRequest);
+
+        var createBatchRequest = new OpenAIRequest("/batches", Method.Post)
+            .WithJsonBody(new
+            {
+                input_file_id = file.Id,
+                endpoint = "/v1/responses",
+                completion_window = "24h",
+            });
+
+        return await ExecuteWithErrorHandling<BatchResponse>(createBatchRequest);
+    }
+
+    public Task<BatchResponse> GetBatchAsync(string batchId)
+        => ExecuteWithErrorHandling<BatchResponse>(new OpenAIRequest($"/batches/{batchId}", Method.Get));
+
+    public async Task<string> GetFileContentAsync(string fileId)
+        => (await ExecuteWithErrorHandling(new OpenAIRequest($"/files/{fileId}/content", Method.Get))).Content ?? string.Empty;
+
+    internal static ChatCompletionDto ToChatCompletion(OpenAiResponseDto response) => MapToChatCompletionDto(response);
 
     public override async Task<T> ExecuteWithErrorHandling<T>(RestRequest request)
     {
