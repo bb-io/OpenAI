@@ -76,6 +76,119 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
         };
     }
 
+    [Action("Get background result", Description = "Gets MQM report results from a background batch process.")]
+    public async Task<MqmBackgroundResponse> GetMqmReportFromBackground(
+        [ActionParameter] BackgroundDownloadRequest request)
+    {
+        var batchId = RequireBatchId(request);
+        var batchRequests = await GetBatchRequestsAsync(batchId);
+        var batchResponse = await GetBatchStatusAsync(batchId);
+
+        var stream = await fileManagementClient.DownloadAsync(request.TransformationFile);
+        var loadResult = Transformation.Load(stream, request.TransformationFile.Name, request.TransformationFile.ContentType);
+        if (!loadResult.Success)
+            throw new PluginMisconfigurationException(loadResult.Error);
+
+        var content = loadResult.Value;
+        var units = content.GetUnits();
+        var segments = units.SelectMany(x => x.Segments).Where(x => !x.IsIgnorbale && x.State == SegmentState.Translated).ToList();
+        
+        var usage = new UsageDto();
+        var combinedReport = new StringBuilder();
+        var segmentReports = new List<SegmentMqmReport>();
+
+        foreach (var batchRequest in batchRequests)
+        {
+            var bucketIndex = int.TryParse(batchRequest.CustomId, out var idx)
+                ? idx
+                : throw new PluginApplicationException(
+                    $"Invalid CustomId '{batchRequest.CustomId}' in batch request. Expected an integer value.");
+
+            var responseContent = batchRequest.Response.Body.GetResponseContent();
+            if (string.IsNullOrWhiteSpace(responseContent))
+                throw new PluginApplicationException($"Empty response content in batch request {bucketIndex}.");
+
+            try
+            {
+                var cleaned = responseContent.Trim().Trim('`').Trim();
+
+                MqmReportResponse mqmResponse;
+
+                if (cleaned.StartsWith("{") || cleaned.StartsWith("["))
+                {
+                    mqmResponse = JsonConvert.DeserializeObject<MqmReportResponse>(cleaned)
+                        ?? throw new PluginApplicationException($"Invalid JSON MQM report format in batch {bucketIndex}.");
+
+                    if (mqmResponse == null || mqmResponse.Reports == null)
+                        mqmResponse = new MqmReportResponse();
+                }
+                else
+                {
+                    mqmResponse = new MqmReportResponse
+                    {
+                        Reports =
+                        {
+                            new MqmReportEntity
+                            {
+                                SegmentId = bucketIndex.ToString(),
+                                MqmReport = cleaned
+                            }
+                        }
+                    };
+                }
+
+                foreach (var report in mqmResponse.Reports)
+                {
+                    var segmentIndex = int.TryParse(report.SegmentId, out var segIdx)
+                        ? segIdx
+                        : throw new PluginApplicationException(
+                            $"Invalid segment_id '{report.SegmentId}' in batch response. Expected an integer value.");
+
+                    var segment = segments.Count > segmentIndex ? segments[segmentIndex] : null;
+                    if (segment == null)
+                    {
+                        throw new PluginApplicationException($"Segment with index {segmentIndex} not found in the content file.");
+                    }
+
+                    var sourceText = segment.GetSource();
+                    var targetText = segment.GetTarget();
+                    var mqmReport = report.MqmReport;
+
+                    combinedReport.AppendLine($"Source: {sourceText}");
+                    combinedReport.AppendLine($"Translation: {targetText}");
+                    combinedReport.AppendLine("MQM Report:");
+                    combinedReport.AppendLine(mqmReport);
+                    combinedReport.AppendLine(new string('-', 50));
+                    combinedReport.AppendLine();
+
+                    segmentReports.Add(new SegmentMqmReport
+                    {
+                        SourceText = sourceText,
+                        TargetText = targetText,
+                        MqmReport = mqmReport
+                    });
+                }
+            }
+            catch (JsonException ex)
+            {
+                throw new PluginApplicationException(
+                    $"Failed to parse MQM report in batch {bucketIndex}: {ex.Message}. Response content: {responseContent}");
+            }
+
+            usage += batchRequest.Response.Body.GetUsage();
+        }
+
+        return new MqmBackgroundResponse
+        {
+            CombinedReport = combinedReport.ToString(),
+            SegmentReports = segmentReports,
+            Usage = usage,
+            ProcessedSegments = segmentReports.Count,
+            TotalSegments = segments.Count,
+            BatchStatus = batchResponse.Status
+        };
+    }
+
     // Transformation files created before the background actions moved to Blackbird.Ai carry no job
     // information; they keep working until their batches are gone.
     private async Task<BackgroundContentResponse> DownloadLegacyContentAsync(BackgroundDownloadRequest request, Stream originalFileStream)
@@ -224,120 +337,7 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
             BatchStatus = batchResponse.Status
         };
     }
-    
-    [Action("Get background result", Description = "Gets MQM report results from a background batch process.")]
-    public async Task<MqmBackgroundResponse> GetMqmReportFromBackground(
-        [ActionParameter] BackgroundDownloadRequest request)
-    {
-        var batchId = RequireBatchId(request);
-        var batchRequests = await GetBatchRequestsAsync(batchId);
-        var batchResponse = await GetBatchStatusAsync(batchId);
 
-        var stream = await fileManagementClient.DownloadAsync(request.TransformationFile);
-        var loadResult = Transformation.Load(stream, request.TransformationFile.Name, request.TransformationFile.ContentType);
-        if (!loadResult.Success)
-            throw new PluginMisconfigurationException(loadResult.Error);
-
-        var content = loadResult.Value;
-        var units = content.GetUnits();
-        var segments = units.SelectMany(x => x.Segments).Where(x => !x.IsIgnorbale && x.State == SegmentState.Translated).ToList();
-        
-        var usage = new UsageDto();
-        var combinedReport = new StringBuilder();
-        var segmentReports = new List<SegmentMqmReport>();
-
-        foreach (var batchRequest in batchRequests)
-        {
-            var bucketIndex = int.TryParse(batchRequest.CustomId, out var idx)
-                ? idx
-                : throw new PluginApplicationException(
-                    $"Invalid CustomId '{batchRequest.CustomId}' in batch request. Expected an integer value.");
-
-            var responseContent = batchRequest.Response.Body.GetResponseContent();
-            if (string.IsNullOrWhiteSpace(responseContent))
-                throw new PluginApplicationException($"Empty response content in batch request {bucketIndex}.");
-
-            try
-            {
-                var cleaned = responseContent.Trim().Trim('`').Trim();
-
-                MqmReportResponse mqmResponse;
-
-                if (cleaned.StartsWith("{") || cleaned.StartsWith("["))
-                {
-                    mqmResponse = JsonConvert.DeserializeObject<MqmReportResponse>(cleaned)
-                        ?? throw new PluginApplicationException($"Invalid JSON MQM report format in batch {bucketIndex}.");
-
-                    if (mqmResponse == null || mqmResponse.Reports == null)
-                        mqmResponse = new MqmReportResponse();
-                }
-                else
-                {
-                    mqmResponse = new MqmReportResponse
-                    {
-                        Reports =
-                        {
-                            new MqmReportEntity
-                            {
-                                SegmentId = bucketIndex.ToString(),
-                                MqmReport = cleaned
-                            }
-                        }
-                    };
-                }
-
-                foreach (var report in mqmResponse.Reports)
-                {
-                    var segmentIndex = int.TryParse(report.SegmentId, out var segIdx)
-                        ? segIdx
-                        : throw new PluginApplicationException(
-                            $"Invalid segment_id '{report.SegmentId}' in batch response. Expected an integer value.");
-
-                    var segment = segments.Count > segmentIndex ? segments[segmentIndex] : null;
-                    if (segment == null)
-                    {
-                        throw new PluginApplicationException($"Segment with index {segmentIndex} not found in the content file.");
-                    }
-
-                    var sourceText = segment.GetSource();
-                    var targetText = segment.GetTarget();
-                    var mqmReport = report.MqmReport;
-
-                    combinedReport.AppendLine($"Source: {sourceText}");
-                    combinedReport.AppendLine($"Translation: {targetText}");
-                    combinedReport.AppendLine("MQM Report:");
-                    combinedReport.AppendLine(mqmReport);
-                    combinedReport.AppendLine(new string('-', 50));
-                    combinedReport.AppendLine();
-
-                    segmentReports.Add(new SegmentMqmReport
-                    {
-                        SourceText = sourceText,
-                        TargetText = targetText,
-                        MqmReport = mqmReport
-                    });
-                }
-            }
-            catch (JsonException ex)
-            {
-                throw new PluginApplicationException(
-                    $"Failed to parse MQM report in batch {bucketIndex}: {ex.Message}. Response content: {responseContent}");
-            }
-
-            usage += batchRequest.Response.Body.GetUsage();
-        }
-
-        return new MqmBackgroundResponse
-        {
-            CombinedReport = combinedReport.ToString(),
-            SegmentReports = segmentReports,
-            Usage = usage,
-            ProcessedSegments = segmentReports.Count,
-            TotalSegments = segments.Count,
-            BatchStatus = batchResponse.Status
-        };
-    }
-    
     #region Helper Methods
 
     private static string RequireBatchId(BackgroundDownloadRequest request)
@@ -353,7 +353,7 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
         buffer.Position = 0;
         return buffer;
     }
-    
+
     private async Task<List<BatchRequestDto>> GetBatchRequestsAsync(string batchId)
     {
         var batch = await GetBatchStatusAsync(batchId);
@@ -390,7 +390,7 @@ public class BackgroundActions(InvocationContext invocationContext, IFileManagem
 
         return batchRequests;
     }
-    
+
     private Task<BatchResponse> GetBatchStatusAsync(string batchId)
         => UniversalClient.GetBatchAsync(batchId);
 

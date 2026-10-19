@@ -97,19 +97,6 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         return await ToBackgroundResponseAsync(started, client, effectiveModel);
     }
 
-    private static TranslateStreamOptions TranslateOptions(TranslateContentRequest input, Stream file, Stream? glossaryFile, string? prompt) => new()
-    {
-        File = file,
-        FileName = input.File.Name,
-        MediaType = input.File.ContentType,
-        SourceLanguage = input.SourceLanguage,
-        TargetLanguage = input.TargetLanguage,
-        OutputFileHandling = input.OutputFileHandling,
-        GlossaryTbx = glossaryFile,
-        AdditionalInstructions = prompt,
-        Summary = SummaryOptions.For(input.DocumentSummary)
-    };
-
     [BlueprintActionDefinition(BlueprintAction.TranslateText)]
     [Action("Translate text", Description = "Outputs localized text for the provided input text.")]
     public async Task<TranslateTextResponse> LocalizeText([ActionParameter] TextChatModelIdentifier modelIdentifier,
@@ -141,5 +128,18 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
             Usage = ToUsageDto(result.Content.Usage, client, modelIdentifier.ModelId)
         };
     }
+
+    private static TranslateStreamOptions TranslateOptions(TranslateContentRequest input, Stream file, Stream? glossaryFile, string? prompt) => new()
+    {
+        File = file,
+        FileName = input.File.Name,
+        MediaType = input.File.ContentType,
+        SourceLanguage = input.SourceLanguage,
+        TargetLanguage = input.TargetLanguage,
+        OutputFileHandling = input.OutputFileHandling,
+        GlossaryTbx = glossaryFile,
+        AdditionalInstructions = prompt,
+        Summary = SummaryOptions.For(input.DocumentSummary)
+    };
 
 }

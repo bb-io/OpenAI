@@ -92,32 +92,6 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         return await ToBackgroundResponseAsync(started, client, effectiveModel);
     }
 
-    private static EditStreamOptions EditOptions(
-        EditContentRequest input,
-        Stream file,
-        Stream? glossaryFile,
-        string? prompt,
-        bool? processLockedSegments) => new()
-    {
-        File = file,
-        FileName = input.File.Name,
-        MediaType = input.File.ContentType,
-        SourceLanguage = input.SourceLanguage,
-        TargetLanguage = input.TargetLanguage,
-        OutputFileHandling = input.OutputFileHandling,
-        GlossaryTbx = glossaryFile,
-        FilterGlossary = input.FilterGlossary ?? true,
-        AdditionalInstructions = prompt,
-        ModifiedBy = input.ModifiedBy,
-        SegmentStates = SegmentStateSets.Parse(input.ProcessOnlySegmentState, SegmentStateSets.Edit),
-        ProcessLockedSegments = processLockedSegments ?? false,
-        TransformTarget = EditTransform,
-        Summary = SummaryOptions.For(input.DocumentSummary)
-    };
-
-    // Background downloads apply edits with the same post-processing as the synchronous Edit action.
-    internal static string? EditTransform(TargetCandidate candidate) => EscapeInlineTagBrackets(candidate.ProposedTarget);
-
     [BlueprintActionDefinition(BlueprintAction.EditText)]
     [Action("Edit text", Description = "Reviews translated text and outputs an edited version.")]
     public async Task<EditResponse> PostEditRequest([ActionParameter] TextChatModelIdentifier modelIdentifier,
@@ -149,19 +123,6 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             EditedText = result.Text,
             Usage = ToUsageDto(result.Content.Usage, client, modelIdentifier.ModelId)
         };
-    }
-
-    private static string? EditInstructions(PostEditRequest input)
-    {
-        var instructions = new[]
-            {
-                string.IsNullOrWhiteSpace(input.TargetAudience) ? null : $"The target audience is {input.TargetAudience}.",
-                input.AdditionalPrompt
-            }
-            .Where(instruction => !string.IsNullOrWhiteSpace(instruction))
-            .ToList();
-
-        return instructions.Count == 0 ? null : string.Join(" ", instructions);
     }
 
     [Action("Apply prompt to bilingual content (experimental)",
@@ -199,6 +160,45 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
         return await ToEditResultAsync(result, client, effectiveModel);
     }
+
+    // Background downloads apply edits with the same post-processing as the synchronous Edit action.
+    internal static string? EditTransform(TargetCandidate candidate) => EscapeInlineTagBrackets(candidate.ProposedTarget);
+
+    private static string? EditInstructions(PostEditRequest input)
+    {
+        var instructions = new[]
+            {
+                string.IsNullOrWhiteSpace(input.TargetAudience) ? null : $"The target audience is {input.TargetAudience}.",
+                input.AdditionalPrompt
+            }
+            .Where(instruction => !string.IsNullOrWhiteSpace(instruction))
+            .ToList();
+
+        return instructions.Count == 0 ? null : string.Join(" ", instructions);
+    }
+
+    private static EditStreamOptions EditOptions(
+        EditContentRequest input,
+        Stream file,
+        Stream? glossaryFile,
+        string? prompt,
+        bool? processLockedSegments) => new()
+    {
+        File = file,
+        FileName = input.File.Name,
+        MediaType = input.File.ContentType,
+        SourceLanguage = input.SourceLanguage,
+        TargetLanguage = input.TargetLanguage,
+        OutputFileHandling = input.OutputFileHandling,
+        GlossaryTbx = glossaryFile,
+        FilterGlossary = input.FilterGlossary ?? true,
+        AdditionalInstructions = prompt,
+        ModifiedBy = input.ModifiedBy,
+        SegmentStates = SegmentStateSets.Parse(input.ProcessOnlySegmentState, SegmentStateSets.Edit),
+        ProcessLockedSegments = processLockedSegments ?? false,
+        TransformTarget = EditTransform,
+        Summary = SummaryOptions.For(input.DocumentSummary)
+    };
 
     private async Task<ContentProcessingEditResult> ToEditResultAsync(ContentStreamResult result, ILlmClient client, string? model)
     {

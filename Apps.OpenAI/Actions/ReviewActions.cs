@@ -35,6 +35,8 @@ namespace Apps.OpenAI.Actions;
 public class ReviewActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : BaseActions(invocationContext, fileManagementClient)
 {
+    private static readonly IReadOnlySet<SegmentState> AllSegmentStates = Enum.GetValues<SegmentState>().ToHashSet();
+
     [Action("Get translation issues", Description = "Reviews translated text and outputs issue descriptions.")]
     public async Task<ChatResponse> GetTranslationIssues(
         [ActionParameter] TextChatModelIdentifier modelIdentifier,
@@ -246,20 +248,6 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         }
     }
 
-    private static string FormatGithubCommentBody(CodeReviewFinding finding)
-    {
-        return $"""
-                **Severity:** {finding.Severity}
-                **Category:** {finding.Category}
-
-                **{finding.Title}**
-
-                {finding.Body}
-
-                **Recommendation:** {finding.Suggestion}
-                """;
-    }
-
     [BlueprintActionDefinition(BlueprintAction.ReviewFile)]
     [Action("Review", Description = "Reviews translated file content and outputs segment quality scores.")]
     public async Task<ReviewContentResponse> ReviewContent(
@@ -313,7 +301,19 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         };
     }
 
-    private static readonly IReadOnlySet<SegmentState> AllSegmentStates = Enum.GetValues<SegmentState>().ToHashSet();
+    private static string FormatGithubCommentBody(CodeReviewFinding finding)
+    {
+        return $"""
+                **Severity:** {finding.Severity}
+                **Category:** {finding.Category}
+
+                **{finding.Title}**
+
+                {finding.Body}
+
+                **Recommendation:** {finding.Suggestion}
+                """;
+    }
 
     static UsageDto MapUsage(object usageObj)
     {

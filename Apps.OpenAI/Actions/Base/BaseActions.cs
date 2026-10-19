@@ -47,6 +47,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
     : OpenAIInvocable(invocationContext)
 {
     protected readonly OpenAiUniversalClient UniversalClient = new OpenAiUniversalClient(invocationContext.AuthenticationCredentialsProviders);
+
     protected readonly IFileManagementClient FileManagementClient = fileManagementClient;
 
     protected string? GetGlossaryPromptPart(Glossary blackbirdGlossary, string sourceContent, bool filter)
@@ -76,7 +77,7 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
 
         return entriesIncluded ? glossaryPromptPart.ToString() : null;
     }
-    
+
     protected async Task<string> GetGlossaryPromptPart(FileReference glossary, string sourceContent, bool filter)
     {
         if(!glossary.Name.EndsWith(".tbx", StringComparison.OrdinalIgnoreCase))
@@ -91,29 +92,6 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         var blackbirdGlossary = await sanitizedStream.ConvertFromTbx();
         
         return GetGlossaryPromptPart(blackbirdGlossary, sourceContent, filter);
-    }
-
-    private static async Task<MemoryStream> ToSanitizedMemoryStreamAsync(Stream input)
-    {
-        var memoryStream = new MemoryStream();
-        await input.CopyToAsync(memoryStream);
-        memoryStream.Position = 0;
-
-        if (memoryStream.Length >= 3)
-        {
-            var bom = new byte[3];
-            var read = await memoryStream.ReadAsync(bom, 0, 3);
-            if (read == 3 && bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF)
-            {
-                var cleaned = new MemoryStream();
-                await memoryStream.CopyToAsync(cleaned);
-                cleaned.Position = 0;
-                return cleaned;
-            }
-            memoryStream.Position = 0;
-        }
-
-        return memoryStream;
     }
 
     protected async Task<XliffDocument> DownloadXliffDocumentAsync(FileReference file)
@@ -163,14 +141,6 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         string? model = null,
         int? bucketSize = null)
         => new(batchClient, client, ContentEngineOptions(model, bucketSize));
-
-    private EngineOptions ContentEngineOptions(string? model, int? bucketSize) => new()
-    {
-        Logger = AiAdapters.Logger(InvocationContext),
-        LogTag = "[OpenAI]",
-        ProvenanceTool = model ?? "OpenAI",
-        Bucketing = BucketingOptions.FromInputs(bucketSize, null)
-    };
 
     // Full traces keep the user prompt, which the text action responses report.
     protected TextProcessor CreateTextProcessor(ILlmClient client, string? model)
@@ -284,6 +254,78 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
             $"{rawAzureUrl}/openai/deployments/{azureDeploymentName}{endpoint}?api-version=2024-02-01",
             method);
     }
+
+    protected async Task<string> IdentifySourceLanguage(string? modelId, string content)
+    {
+        var systemPrompt = "You are a linguist. Identify the language of the following text. Your response should be in the BCP 47 (language) or (language-country). You respond with the language only, not other text is required.";
+
+        var snippet = content.Length > 200 ? content[..Math.Min(content.Length, 300)] : content;
+        var userPrompt = snippet + ". The BCP 47 language code: ";
+
+        var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
+        var response = await ExecuteApiRequestAsync(messages, modelId);
+
+        return response.Choices.First().Message.Content;
+    }
+
+    protected Task<BatchResponse> CreateBatchAsync(List<object> requests)
+        => UniversalClient.CreateBatchAsync(requests);
+
+    protected async Task<BackgroundProcessingResponse> ToBackgroundResponseAsync(BackgroundStart started, ILlmClient client, string? model)
+    {
+        var content = started.Content;
+
+        return new BackgroundProcessingResponse
+        {
+            // With nothing to process no batch is created; the download then returns the file unchanged.
+            BatchId = started.Job?.Id ?? string.Empty,
+            Status = (started.Job?.State ?? BatchJobState.Completed).ToString().ToLowerInvariant(),
+            CreatedAt = started.Job?.CreatedAt?.ToUnixTimeSeconds().ToString(),
+            TransformationFile = await UploadAsync(started.WorkFile),
+            TotalSegmentsCount = content.TotalSegments,
+            SegmentsToProcessCount = content.ProcessableSegments,
+            RequestsCount = started.Requests,
+            SystemPrompt = content.SystemPrompt ?? string.Empty,
+            Usage = ToUsageDto(content.Usage, client, model)
+        };
+    }
+
+    protected void ThrowForAzure(string actionType)
+    {
+        if (UniversalClient.ConnectionType == ConnectionTypes.AzureOpenAi)
+            throw new PluginMisconfigurationException($"Azure OpenAI does not support {actionType} actions. Please use OpenAI for such tasks");
+    }
+
+    private static async Task<MemoryStream> ToSanitizedMemoryStreamAsync(Stream input)
+    {
+        var memoryStream = new MemoryStream();
+        await input.CopyToAsync(memoryStream);
+        memoryStream.Position = 0;
+
+        if (memoryStream.Length >= 3)
+        {
+            var bom = new byte[3];
+            var read = await memoryStream.ReadAsync(bom, 0, 3);
+            if (read == 3 && bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF)
+            {
+                var cleaned = new MemoryStream();
+                await memoryStream.CopyToAsync(cleaned);
+                cleaned.Position = 0;
+                return cleaned;
+            }
+            memoryStream.Position = 0;
+        }
+
+        return memoryStream;
+    }
+
+    private EngineOptions ContentEngineOptions(string? model, int? bucketSize) => new()
+    {
+        Logger = AiAdapters.Logger(InvocationContext),
+        LogTag = "[OpenAI]",
+        ProvenanceTool = model ?? "OpenAI",
+        Bucketing = BucketingOptions.FromInputs(bucketSize, null)
+    };
 
     private static IEnumerable<object> MapMessagesToResponsesInput(IEnumerable<object> messages)
     {
@@ -433,46 +475,5 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         {
             throw new PluginMisconfigurationException("Web search domain filtering supports up to 100 allowed domains.");
         }
-    }
-
-    protected async Task<string> IdentifySourceLanguage(string? modelId, string content)
-    {
-        var systemPrompt = "You are a linguist. Identify the language of the following text. Your response should be in the BCP 47 (language) or (language-country). You respond with the language only, not other text is required.";
-
-        var snippet = content.Length > 200 ? content[..Math.Min(content.Length, 300)] : content;
-        var userPrompt = snippet + ". The BCP 47 language code: ";
-
-        var messages = new List<ChatMessageDto> { new(MessageRoles.System, systemPrompt), new(MessageRoles.User, userPrompt) };
-        var response = await ExecuteApiRequestAsync(messages, modelId);
-
-        return response.Choices.First().Message.Content;
-    }
-    
-    protected Task<BatchResponse> CreateBatchAsync(List<object> requests)
-        => UniversalClient.CreateBatchAsync(requests);
-
-    protected async Task<BackgroundProcessingResponse> ToBackgroundResponseAsync(BackgroundStart started, ILlmClient client, string? model)
-    {
-        var content = started.Content;
-
-        return new BackgroundProcessingResponse
-        {
-            // With nothing to process no batch is created; the download then returns the file unchanged.
-            BatchId = started.Job?.Id ?? string.Empty,
-            Status = (started.Job?.State ?? BatchJobState.Completed).ToString().ToLowerInvariant(),
-            CreatedAt = started.Job?.CreatedAt?.ToUnixTimeSeconds().ToString(),
-            TransformationFile = await UploadAsync(started.WorkFile),
-            TotalSegmentsCount = content.TotalSegments,
-            SegmentsToProcessCount = content.ProcessableSegments,
-            RequestsCount = started.Requests,
-            SystemPrompt = content.SystemPrompt ?? string.Empty,
-            Usage = ToUsageDto(content.Usage, client, model)
-        };
-    }
-
-    protected void ThrowForAzure(string actionType)
-    {
-        if (UniversalClient.ConnectionType == ConnectionTypes.AzureOpenAi)
-            throw new PluginMisconfigurationException($"Azure OpenAI does not support {actionType} actions. Please use OpenAI for such tasks");
     }
 }
