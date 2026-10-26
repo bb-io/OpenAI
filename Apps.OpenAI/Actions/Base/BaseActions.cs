@@ -5,7 +5,6 @@ using Apps.OpenAI.Constants;
 using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Invocables;
 using Apps.OpenAI.Models;
-using Apps.OpenAI.Models.Identifiers;
 using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Models.Responses.Batch;
 using Apps.OpenAI.Utils;
@@ -25,11 +24,7 @@ using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Converters;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
-using Blackbird.Applications.Sdk.Utils.Extensions.Http;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using Blackbird.Xliff.Utils;
-using Blackbird.Xliff.Utils.Extensions;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RestSharp;
 using System;
@@ -39,7 +34,6 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Xml;
 
 namespace Apps.OpenAI.Actions.Base;
 
@@ -92,34 +86,6 @@ public abstract class BaseActions(InvocationContext invocationContext, IFileMana
         var blackbirdGlossary = await sanitizedStream.ConvertFromTbx();
         
         return GetGlossaryPromptPart(blackbirdGlossary, sourceContent, filter);
-    }
-
-    protected async Task<XliffDocument> DownloadXliffDocumentAsync(FileReference file)
-    {
-        var fileStream = await FileManagementClient.DownloadAsync(file);
-        var xliffMemoryStream = new MemoryStream();
-        await fileStream.CopyToAsync(xliffMemoryStream);
-        xliffMemoryStream.Position = 0;
-
-        XliffDocument xliffDocument;
-        try
-        {
-            xliffDocument = xliffMemoryStream.ToXliffDocument();
-        }
-        catch(InvalidOperationException ex) when (ex.Message.Contains("Unsupported XLIFF version"))
-        {
-            throw new PluginMisconfigurationException("Unsupported XLIFF version. This action supports XLIFF 1.2, 2.1 and 2.2 versions only");
-        }
-        catch (XmlException ex)
-        {
-            throw new PluginMisconfigurationException("Incorrect XLIFF file structure. Check if the file complies with the XLIFF structure");
-        }
-        if (xliffDocument.TranslationUnits.Count == 0)
-        {
-            throw new PluginMisconfigurationException("The XLIFF file does not contain any translation units. Please check your input file");
-        }
-
-        return xliffDocument;
     }
 
     protected Task<string> ResolveTextChatModelAsync(string? model)

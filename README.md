@@ -44,6 +44,18 @@ Navigate to apps and search for OpenAI and click _Add Connection_. This applicat
 
 ![connection](image/README/openai.png)
 
+### OpenAI (US region)
+
+**Note**: Use this connection type if your OpenAI project has **US data residency** enabled. 
+Requests are sent to `https://us.api.openai.com/v1` instead of the global endpoint.
+
+1. Select `OpenAI` connection type.
+2. Fill in your `API key` obtained earlier.
+3. Click _Connect_.
+4. Verify that connection was added successfully.
+
+![connection](image/README/openai-us.png)
+
 If you choose `OpenAI (embedded model)` connection type, please specify the model you want to use.
 
 ![connection](image/README/openai-embed.png)

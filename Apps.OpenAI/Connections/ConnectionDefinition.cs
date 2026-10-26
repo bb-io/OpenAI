@@ -23,6 +23,16 @@ public class ConnectionDefinition : IConnectionDefinition
         },
         new()
         {
+            DisplayName = "OpenAI (US region)",
+            Name = ConnectionTypes.OpenAiUs,
+            AuthenticationType = ConnectionAuthenticationType.Undefined,
+            ConnectionProperties = new List<ConnectionProperty>
+            {
+                new(CredNames.ApiKey) { Sensitive = true, DisplayName = "API key" }
+            }
+        },
+        new()
+        {
             DisplayName = "Azure OpenAI",
             Name = ConnectionTypes.AzureOpenAi,
             AuthenticationType = ConnectionAuthenticationType.Undefined,

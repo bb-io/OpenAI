@@ -17,7 +17,6 @@
     <PackageReference Include="Blackbird.Applications.SDK.Extensions.FileManagement" Version="1.1.0" />
     <PackageReference Include="Blackbird.Applications.Sdk.Utils" Version="1.0.26" />
     <PackageReference Include="Blackbird.Ai" Version="1.1.1" />
-    <PackageReference Include="Blackbird.Xliff.Utils" Version="1.1.14" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Features" Version="5.0.17" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.10" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.10" />

@@ -11,6 +11,10 @@
       "API key": ""
     },
     {
+      "Connection type": "OpenAiUs",
+      "API key": ""
+    },
+    {
       "Connection type": "OpenAiConnectionEmbedded",
       "API key": "",
       "Model": "gpt-4.1-nano-2025-04-14"

@@ -147,7 +147,7 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
                 ?? credentials.FirstOrDefault(x => x.KeyName == CredNames.Model)?.Value
                 ?? throw new PluginMisconfigurationException("Model must be provided in the input or connection"),
 
-            ConnectionTypes.OpenAi =>
+            ConnectionTypes.OpenAi or ConnectionTypes.OpenAiUs =>
                 defaultValue
                 ?? throw new PluginMisconfigurationException("Model must be provided in the input"),
 
@@ -172,7 +172,7 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
         {
             ConnectionTypes.OpenAiEmbedded => GetModel(),
             ConnectionTypes.AzureOpenAi => GetModel(),
-            ConnectionTypes.OpenAi => await ResolveLatestGeneralTextModelAsync(),
+            ConnectionTypes.OpenAi or ConnectionTypes.OpenAiUs => await ResolveLatestGeneralTextModelAsync(),
             _ => throw new PluginApplicationException($"Unsupported connection type: {ConnectionType}")
         };
     }
@@ -256,6 +256,7 @@ public class OpenAiUniversalClient(IEnumerable<AuthenticationCredentialsProvider
         {
             ConnectionTypes.AzureOpenAi => $"{credentials.Get(CredNames.Url).Value}/openai/v1",
             ConnectionTypes.OpenAi => "https://api.openai.com/v1",
+            ConnectionTypes.OpenAiUs => "https://us.api.openai.com/v1",
             ConnectionTypes.OpenAiEmbedded => "https://api.openai.com/v1",
             _ => throw new Exception($"Connection type is not supported: {connectionType}")
         };

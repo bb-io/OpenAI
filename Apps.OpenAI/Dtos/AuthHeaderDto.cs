@@ -27,8 +27,8 @@ public class AuthHeaderDto
         return connectionType switch
         {
             ConnectionTypes.AzureOpenAi => ("api-key", credentials.Get(CredNames.ApiKey).Value),
-            ConnectionTypes.OpenAi => ("Authorization", $"Bearer {credentials.Get(CredNames.ApiKey).Value}"),
-            ConnectionTypes.OpenAiEmbedded => ("Authorization", $"Bearer {credentials.Get(CredNames.ApiKey).Value}"),
+            ConnectionTypes.OpenAi or ConnectionTypes.OpenAiUs or ConnectionTypes.OpenAiEmbedded
+                => ("Authorization", $"Bearer {credentials.Get(CredNames.ApiKey).Value}"),
             _ => throw new Exception($"Unsupported connection type: {connectionType}")
         };
     }
