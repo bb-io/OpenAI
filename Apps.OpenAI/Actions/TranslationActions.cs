@@ -1,18 +1,11 @@
 ﻿using Apps.OpenAI.Actions.Base;
 using Apps.OpenAI.Ai;
-using Apps.OpenAI.Constants;
-using Apps.OpenAI.Dtos;
 using Apps.OpenAI.Models.Content;
-using Apps.OpenAI.Models.Entities;
 using Apps.OpenAI.Models.Identifiers;
-using Apps.OpenAI.Models.PostEdit;
-using Apps.OpenAI.Models.Requests.Background;
 using Apps.OpenAI.Models.Requests.Chat;
 using Apps.OpenAI.Models.Requests.Content;
 using Apps.OpenAI.Models.Responses.Background;
 using Apps.OpenAI.Models.Responses.Chat;
-using Apps.OpenAI.Services;
-using Apps.OpenAI.Utils;
 using Blackbird.Ai.Files.Models;
 using Blackbird.Ai.Summary.Models;
 using Blackbird.Ai.Text.Models;
@@ -20,19 +13,11 @@ using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
-using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
 using Blackbird.Applications.SDK.Blueprints;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using Blackbird.Filters.Constants;
-using Blackbird.Filters.Enums;
-using Blackbird.Filters.Extensions;
-using Blackbird.Filters.Transformations;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
-using Apps.OpenAI.Extensions;
 
 namespace Apps.OpenAI.Actions;
 
