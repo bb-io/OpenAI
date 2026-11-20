@@ -27,7 +27,7 @@ public class ShortenActions(InvocationContext invocationContext, IFileManagement
     {
         ThrowIfInvalid(input.MaximumLength, input.Retries);
 
-        var model = await ResolveTextChatModelAsync(modelIdentifier.ModelId);
+        var model = modelIdentifier.ModelId;
         var client = CreateLlmClient(model, new());
         var processor = CreateContentProcessor(client, model, input.BucketSize);
 

@@ -51,6 +51,27 @@ public class ShortenActionsOfflineTests
     }
 
     [TestMethod]
+    public async Task ShortenContent_TargetAlreadyFits_CompletesWithoutResolvingModel()
+    {
+        var file = _files.Add("fits.xlf", TestXliff.Translated("en", "de", ("Brief", "Kurz")));
+        var context = new InvocationContext
+        {
+            AuthenticationCredentialsProviders =
+            [
+                new AuthenticationCredentialsProvider(CredNames.ConnectionType, ConnectionTypes.OpenAiEmbedded),
+                new AuthenticationCredentialsProvider(CredNames.ApiKey, "unused")
+            ]
+        };
+
+        var result = await new ShortenActions(context, _files).ShortenContent(
+            new TextChatModelIdentifier(), new ShortenContentRequest { File = file, MaximumLength = 4 });
+
+        Assert.AreEqual(1, result.UnitsWithLimit);
+        Assert.AreEqual(0, result.UnitsOverLimit);
+        Assert.AreEqual(0, result.Usage.TotalTokens);
+    }
+
+    [TestMethod]
     public async Task ShortenText_FirstAnswerTooLong_ReturnsRetriedAnswerAndUsage()
     {
         var client = new ScriptedClient("Still too long", "Brief");
