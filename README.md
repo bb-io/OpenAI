@@ -106,6 +106,11 @@ When an action exposes **Output file handling** and you select `original`, Black
 - **Edit text** Reviews translated text and outputs an edited version. Advanced settings: **Target audience**: Specify the target audience. **Additional prompt**: Additional prompt to guide editing.
 - **Apply prompt to bilingual content (experimental)** Applies your prompt (**System prompt**) to every Initial and Translated segment and outputs the file with updated targets; processed segments are marked Reviewed. The model sees each segment's source and current target and returns only the new target, so sources never change. Glossary, file notes and terms are added as context. Advanced settings: **Process only segments with this state**, **Filter glossary terms**, **Max tokens**, **Bucket size** (default 250, also capped by the model's output limit), **Document summary** (off unless set). Segments the model returns nothing usable for are left untouched and logged as warnings.
 
+### Shortening
+
+- **Shorten content** Shortens translated file content to fit each unit's size restriction. Set **Maximum length** to supply a character limit for units without a restriction. Outputs the processed file, unit counts, and token usage. Units without a limit or that still exceed their limit after retries stay unchanged.
+- **Shorten text** Shortens text to the required **Maximum length** in characters. The action fails if the text still exceeds that limit after retries.
+
 ### Reporting
 
 - **Create MQM report** Performs MQM analysis for translated text and outputs a report.
