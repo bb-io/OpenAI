@@ -93,6 +93,19 @@ When an action exposes **Output file handling** and you select `original`, Black
 - **Chat** Outputs a response to a chat message. Advanced settings: **Model**: Select the model to use for OpenAI connections (ignored for Azure OpenAI). **System prompt**: Optional system instruction to guide the response. **Texts**: Texts that will be added to the user prompt along with the message. **File**: Optional file to include (text, image, or audio). **Maximum tokens**: Maximum number of tokens to generate. **Temperature**: Controls randomness in the output. **top_p**: Use nucleus sampling. **Presence penalty**: Penalize new tokens based on whether they appear in the text so far. **Frequency penalty**: Penalize new tokens based on frequency in the text so far. **Reasoning effort**: Controls how much reasoning effort the model applies. **Glossary**: Glossary file to enforce term usage.
 - **Chat with system prompt** Outputs a response to a chat message with a required system prompt. Advanced settings: **Image**: Optional image to include with the message.
 
+#### Reasoning effort and sampling parameters
+
+The **Reasoning effort** setting controls reasoning for supported models. Previous documentation stated that an omitted value sends `medium`; verify this against the deployed app and selected model rather than assuming the same behavior for every model. **Verbosity**, where supported, controls the length/detail of model output.
+
+**Temperature** and **top_p** are model-dependent. For GPT-6 family models, OpenAI requires these parameters to be omitted when reasoning effort is not `none`. This compatibility must be handled when the app serializes requests; a blank UI control does not necessarily mean the parameter is omitted. Until verified, avoid configuring custom sampling values for reasoning models. See [OpenAI model guidance](https://developers.openai.com/api/docs/guides/latest-model).
+
+#### Web search (Chat actions)
+
+Optional web search is available in **Chat** and **Chat with system prompt**. When enabled, responses can include **Citations** (URLs cited) and **Sources** (URLs consulted). Optional inputs: **Web search context size** (`low`, `medium`, `high`), **Allow live web access** (when disabled, indexed/cached content only), **Allowed domains** (up to 100), and **User location** (city, ISO-2 country, region, IANA timezone).
+
+Previously documented limitations: no web search for `gpt-4.1-nano`, or for `gpt-5` with `minimal` reasoning effort; this app does not support web search for Azure OpenAI chat connections. Support also depends on the selected model and account. Verify compatibility before enabling in production.
+
+
 ### Translation
 
 - **Translate** Translates file content from a CMS or file storage and outputs localized content for compatible actions. Advanced settings: **Source language**: Override the source language if it is not already set in the file. **Output file handling**: Determine the format of the output file. The default Blackbird behavior is to convert to XLIFF for future steps. **Additional instructions**: Additional instructions to guide the translation. **Bucket size**: Maximum number of source texts to translate at once (default 250, also capped by the model's output limit). **Document summary**: Summarize the document with one extra request and use the summary as context (Auto by default, which summarizes only larger documents). **Include segment notes**: Send the notes of each segment, for example the message context (msgctxt) of PO files, to the model as context (off by default). If some segments can't be translated, the action still completes, leaves them untouched and logs a warning.
@@ -145,11 +158,11 @@ When an action exposes **Output file handling** and you select `original`, Black
 
 - **Create English translation** Translates speech from an audio or video file into English text.
 - **Create transcription** Transcribes speech from an audio or video file and outputs text. Advanced settings: **Language (ISO 639-1)**: Language of the audio. **Timestamp granularities**: Return timestamps at the specified granularity (only supported with whisper-1). **Prompt**: Text to guide the model's style or continue a previous audio segment.
-- **Create speech** Generates speech audio from input text. Advanced settings: **Output audio name**: The name of the output audio file without the extension. **Response format**: Output audio format. **Speed**: Speech speed multiplier.
+- **Create speech** Generates speech audio from input text. Advanced settings: **Output audio name**: The name of the output audio file without the extension. **Response format**: Output audio format. **Speed**: Speech speed multiplier. See **Audio: upcoming migrations** before designing new workflows.
 
 ### Images
 
-- **Generate image** Generates an image from a prompt. Advanced settings: **Output image name**: The name of the output image without the extension. **Size**: Image size. **Quality (only for dall-e-3)**: Image quality. **Style (only for dall-e-3)**: Image style.
+- **Generate image** Generates an image from a prompt. Advanced settings: **Model ID**: Select an available image generation model. **Output image name**: File name without extension. **Size**: Requested dimensions. **Quality (only for dall-e-3)** and **Style (only for dall-e-3)** are legacy DALL·E controls, not general GPT Image settings. See **Images: model compatibility** below.
 - **Get localizable content from image** Extracts localizable text content from an image.
 - **Extract localizable content from image** Extracts localizable text from an image and creates an interoperable XLIFF 2.2 file with the original image embedded in its skeleton. If the source language is not provided, it is detected from the image.
 - **Generate localized image variant** Restores the original image embedded in a translated XLIFF file and replaces its visible source text using the file's source-to-target mappings.
@@ -165,81 +178,51 @@ Files can contain a lot of segments. Each action takes your segments and sends t
 
 ### Temperatures
 
-OpenAI allows you to set the temperature value for and Action you perform in Blackbird. You can customize this value (between 0.0 and 2.0) but we've also added handy labels that are available in the Blackbird UI:
+For models that support custom temperature, the Blackbird UI provides values between 0.0 and 2.0 and these presets. Temperature is **not supported by every model or reasoning mode**; see **Reasoning effort and sampling parameters** above:
 
 - 0.2 Governed: Maximum predictability.
 - 0.6 Balanced: A controlled blend of accuracy and flexibility.
-- 1.0 Expressive: Accuracy is preserved, structure is looser (default).
+- 1.0 Expressive: Accuracy is preserved, structure is looser (UI default when applicable).
 - 1.2 Exploratory: Encourages alternative phrasings and ideas while remaining context-aware.
 - 1.6 Experimental: Prioritizes creativity over predictability.
 
-### Models
+### Models and model selection
 
-For more in-depth information about most actions consult the [OpenAI API reference](https://platform.openai.com/docs/api-reference) or [Azure OpenAI API reference](https://learn.microsoft.com/en-us/azure/ai-foundry/openai/latest).
+For standard OpenAI connections, the **Model** input in text-based actions is optional; the app documentation describes selecting a compatible model when this is blank. For **OpenAI (embedded model)** connections, the connection model applies unless overridden in the action. For **Azure OpenAI**, the configured deployment is used. The exact default model selected by a blank text-model input must be verified against the deployed app.
 
-Different actions support various models that are appropriate for the given task (e.g. gpt-4 model for **Chat** action). Action groups and the corresponding models recommended for them are shown in the table below.
+Available models and permitted request parameters change. Consult the [OpenAI model catalog](https://developers.openai.com/api/docs/models), [API deprecations](https://developers.openai.com/api/docs/deprecations), and [Azure OpenAI documentation](https://learn.microsoft.com/en-us/azure/ai-foundry/openai/latest). Explicitly selected model IDs and embedded-model connections do **not** automatically migrate when OpenAI retires a model. Inventory affected Birds and connections; regression-test replacement models for chat, translation, editing, review, and background operations.
 
-| Action group |                                                                                                                          Latest models                                                                                                                           |      Default model (when _Model ID_ input parameter is unspecified)      |                                                                                                                                                                                                                        Deprecated models                                                                                                                                                                                                                         |
-| :----------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-|     Chat     | gpt-4o, gpt-o1, gpt-o1 mini,  gpt-4-turbo-preview and dated model releases, gpt-4 and dated model releases, gpt-4-vision-preview, gpt-4-32k and dated model releases, gpt-3.5-turbo and dated model releases, gpt-3.5-turbo-16k and dated model releases, fine-tuned versions of gpt-3.5-turbo | gpt-4-turbo-preview; gpt-4-vision-preview for **Chat with image** action |                                                                                                                                                                                    gpt-3.5-turbo-0613, gpt-3.5-turbo-16k-0613, gpt-3.5-turbo-0301, gpt-4-0314, gpt-4-32k-0314                                                                                                                                                                                    |
-| Audiovisual  |                                                                      Only whisper-1 is supported for transcriptions and translations. tts-1 and tts-1-hd are supported for speech creation.                                                                      |                  tts-1-hd for **Create speech** action                   |                                                                                                                                                                                                                                -                                                                                                                                                                                                                                 |
-|    Images    |                                                                                                                        dall-e-2, dall-e-3                                                                                                                        |                                 dall-e-3                                 |                                                                                                                                                                                                                                -                                                                                                                                                                                                                                 |
-|  Embeddings  |                                                                                                                      text-embedding-ada-002                                                                                                                      |                          text-embedding-ada-002                          | text-similarity-ada-001, text-similarity-babbage-001, text-similarity-curie-001, text-similarity-davinci-001, text-search-ada-doc-001, text-search-ada-query-001, text-search-babbage-doc-001, text-search-babbage-query-001, text-search-curie-doc-001, text-search-curie-query-001, text-search-davinci-doc-001, text-search-davinci-query-001, code-search-ada-code-001, code-search-ada-text-001, code-search-babbage-code-001, code-search-babbage-text-001 |
+Upcoming OpenAI deadlines include `gpt-image-1-mini`, `gpt-image-1.5`, and `chatgpt-image-latest` on **December 1, 2026**, and `gpt-5`, `gpt-5-mini`, `gpt-5-nano`, and `o3` on **December 11, 2026**. Consult the deprecations page for dated variants and other model retirements.
 
-You can refer to the [Models](https://platform.openai.com/docs/models) documentation to find information about available models and the differences between them.
+#### Images: model compatibility
 
-Some actions that are offered are pre-engineered on top of OpenAI. This means that they extend OpenAI's endpoints with additional prompt engineering for common language and content operations.
+The current **Generate image** action source code falls back to `dall-e-3` if **Model ID** is unspecified. OpenAI has retired this model. **Do not rely on a blank Model ID until Blackbird has released and validated an updated default.** Where the action offers a supported model, select it explicitly and test the result. DALL·E-specific quality/style controls should not be assumed compatible with GPT Image models.
 
-Do you have a cool use case that we can turn into an action? Let us know!
+Moving the action to a supported GPT Image model, such as `gpt-image-2.6-sunburst` or `gpt-image-2.6-flare`, requires coordinated code, test and deployment changes. Validate supported sizes, request fields, response decoding, and file output; documentation alone cannot migrate the action.
 
-## Eggs
+#### Audio: upcoming migrations
 
-Check downloadable workflow prototypes featuring this app that you can import to your Nests [here](https://docs.blackbird.io/eggs/tms-to-llm/). 
+OpenAI has announced these shutdown dates for audio models and endpoints documented by this app:
 
-### Limitations
+| Model or endpoint | Shutdown date | Migration consideration |
+| --- | --- | --- |
+| `tts-1`, `tts-1-hd` | January 6, 2027 | Evaluate a supported Realtime speech output flow rather than assuming a drop-in model replacement. |
+| `whisper-1` | February 26, 2027 | Evaluate `gpt-transcribe` for file transcription or `gpt-live-transcribe` for live transcription; test formats and timestamps. |
+| `/v1/audio/translations` | February 26, 2027 | Evaluate `/v1/realtime/translations`; endpoint and workflow changes may be necessary. |
 
-- A single batch may include up to 50,000 requests and a 200 MB input file. Each request carries one bucket of segments, so a file rarely comes close.
+These are **migration candidates, not claims that the currently deployed Blackbird actions support the replacements**. Test and migrate existing production workflows before their applicable shutdown dates. See [OpenAI API deprecations](https://developers.openai.com/api/docs/deprecations).
 
-### Reasoning effort
+### Background processing: batch limits and completion
 
-GPT 5.1 introduced the configurable input of "Reasoning effort". All models prior to 5.1 ignore this input and use "medium" reasoning effort. In Blackbird, if you don't provide any input to reasoning effort then by default it passes "medium" to OpenAI.
+An OpenAI Batch API input can contain up to **50,000 requests** and **200 MB**. Each request in this app typically corresponds to a bucket of segments. Background actions return a batch ID and, where applicable, a transformation file; use the corresponding background-result action once processing reaches a terminal state.
 
-With GPT-5, you can now directly control how much the model says using the verbosity parameter. Set it to low for concise answers, medium for balanced detail, or high for in-depth explanations.
+There are three ways to coordinate completion:
 
-### Web search (Chat actions)
+1. **On background job finished** fires when a batch reaches a terminal state. This is a polling event that checks status at the configured interval.
+2. **Checkpoints** can pause and resume a Bird around LLM/batch processing. See [Checkpoints for LLMs and batch processing](https://docs.blackbird.io/concepts/checkpoints/#large-language-models-llms--batch-processing).
+3. A **Delay** followed by a status check can be useful for simple workflows, but a fixed delay does not establish completion.
 
-Web search is available as an optional feature in both chat actions:
-
-- **Chat**
-- **Chat with system prompt**
-
-When enabled, the action can return:
-
-- **Citations** (URLs cited in the generated answer)
-- **Sources** (all URLs consulted during web search)
-
-Optional web search inputs:
-
-- **Web search context size**: low, medium, high
-- **Allow live web access**: if disabled, uses cached/indexed web content only
-- **Allowed domains**: optional domain allow-list (up to 100)
-- **User location**: city, country (ISO-2), region, timezone (IANA)
-
-Web search limitations:
-
-- Web search is not supported for `gpt-4.1-nano`.
-- Web search is not supported for `gpt-5` when reasoning effort is `minimal`.
-- For Azure OpenAI connections, web search in chat actions is not supported by this app.
-
-### How to know if the batch process is completed? 
-
-You have 3 options here:
-
-1. You can use the `On background job finished` event trigger to get notified when the batch process is completed. But note, that this is a polling trigger and it will check the status of the batch process based on the interval you set.
-2. Use the `Delay` operator to wait for a certain amount of time before checking the status of the batch process. This is a more straightforward way to check the status of the batch process.
-3. Since October 2024, users can rely on [Checkpoints](https://docs.blackbird.io/concepts/checkpoints/#large-language-models-llms--batch-processing) to achieve a fully streamlined process. A Checkpoint can pause the workflow until the LLM returns a result or a batch process completes. 
-
-We recommend using the `On background job finished` event trigger as it is more efficient for checking the status of the batch process.
+Prefer events or Checkpoints to repeated fixed waits when the workflow depends on completion. Terminal outcomes also include failure, expiry, or cancellation; account for partial or missing results.
 
 ## Events
 
@@ -254,7 +237,7 @@ This simple example how OpenAI can be used to communicate with the Blackbird Sla
 
 ## Actions limitations
 
-- For every action maximum allowed timeout are 600 seconds (10 minutes). If the action takes longer than 600 seconds, it will be terminated. Based on our experience, even complex actions should take less than 10 minutes. But if you have a use case that requires more time, let us know.
+- Synchronous actions are subject to the timeout configured in the deployed Blackbird environment. The previously documented 600-second (10-minute) limit requires revalidation; do not assume a 20-minute limit or identical settings across all LLM apps without confirming deployment configuration. For long-running processing, consider the available background actions and Checkpoints.
 
 > OpenAI is sometimes prone to errors. If your Flight fails at an OpenAI step, please check https://status.openai.com/history first to see if there is a known incident or error communicated by OpenAI. If there are no known errors or incidents, please feel free to report it to Blackbird Support.
 
