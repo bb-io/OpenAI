@@ -124,7 +124,8 @@ public class TranslationActions(InvocationContext invocationContext, IFileManage
         OutputFileHandling = input.OutputFileHandling,
         GlossaryTbx = glossaryFile,
         AdditionalInstructions = prompt,
-        Summary = SummaryOptions.For(input.DocumentSummary)
+        Summary = SummaryOptions.For(input.DocumentSummary),
+        IncludeSegmentNotes = input.IncludeSegmentNotes ?? false
     };
 
 }
