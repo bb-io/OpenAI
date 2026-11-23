@@ -20,7 +20,6 @@ using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Filters.Enums;
 using Blackbird.Filters.Extensions;
 using Blackbird.Filters.Transformations;
-using DocumentFormat.OpenXml.EMMA;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -146,7 +145,6 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         [ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] ReviewTextRequest input)
     {
-        // The request's Max tokens, Temperature, top_p and top_k were never sent, and still are not.
         var client = CreateLlmClient(modelIdentifier.ModelId, new OpenAiLlmSettings());
         var processor = CreateTextProcessor(client, modelIdentifier.ModelId);
 
@@ -164,7 +162,6 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
 
         return new ReviewTextResponse
         {
-            // No usable score falls back to 0, as before, so the text is routed to a human.
             Score = (float)(result.Score ?? 0),
             SystemPrompt = result.Content.SystemPrompt ?? string.Empty,
             UserPrompt = LastUserPrompt(result.Content),
@@ -254,14 +251,12 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         [ActionParameter] TextChatModelIdentifier modelIdentifier,
         [ActionParameter] ReviewContentRequest input)
     {
-        // Inputs are validated before any download or model call.
         var shouldReview = ReviewSegmentFilter.Create(input.ExcludeSegmentStates);
 
         var threshold = input.Threshold ?? 0.8;
         if (threshold < 0 || threshold > 1)
             throw new PluginMisconfigurationException("Threshold must be in range 0..1.");
 
-        // The model is resolved lazily by the client, so a file with nothing to review never calls the API.
         var client = CreateLlmClient(modelIdentifier.ModelId, new OpenAiLlmSettings());
         var processor = CreateContentProcessor(client, modelIdentifier.ModelId);
 
@@ -284,7 +279,8 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
             Threshold = threshold,
             LowScoreThreshold = threshold,
             StateAboveThreshold = SegmentState.Final,
-            Summary = SummaryOptions.For(input.DocumentSummary)
+            Summary = SummaryOptions.For(input.DocumentSummary),
+            IncludeSegmentNotes = input.IncludeSegmentNotes ?? false
         }));
 
         var review = result.Content.Review!;
